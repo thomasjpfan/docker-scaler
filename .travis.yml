@@ -1,7 +1,5 @@
 sudo: required
 
-language: ruby
-
 services:
   - docker
 
@@ -21,6 +19,7 @@ script:
 
 after_script:
   - docker stack rm test
+  - docker network rm scaling
 
 after_success:
   - >
