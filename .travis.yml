@@ -1,0 +1,28 @@
+sudo: required
+
+language: python
+
+services:
+  - docker
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+
+install:
+  - docker swarm init
+
+script:
+  - ./scripts/unit_test.sh
+  - docker image build -t thomasjpfan/docker-scaler:latest .
+  - docker stack deploy -c scripts/docker-compose.yml test
+  - ./scripts/integration_test.sh
+
+after_script:
+  - docker stack rm test
+
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker push thomasjpfan/docker-scale:latest;
+    fi
