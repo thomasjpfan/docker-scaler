@@ -2,7 +2,7 @@
 
 docker run --rm \
 -v "$(pwd)":/go/src/github.com/thomasjpfan/docker-scaler \
---network test_scaling \
+--network scaling \
 -v "/var/run/docker.sock:/var/run/docker.sock" \
 -e "SCALER_IP=test_scaler" \
 -e "TARGET_SERVICE=test_web" \

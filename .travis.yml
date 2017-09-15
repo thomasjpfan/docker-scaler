@@ -11,6 +11,7 @@ before_install:
 
 install:
   - docker swarm init
+  - docker network create --driver overlay --attachable scaling
 
 script:
   - ./scripts/unit_test.sh
@@ -22,7 +23,8 @@ after_script:
   - docker stack rm test
 
 after_success:
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then
-    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
-    docker push thomasjpfan/docker-scale:latest;
+  - >
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+      docker push thomasjpfan/docker-scale:latest
     fi

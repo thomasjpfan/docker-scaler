@@ -21,8 +21,6 @@ services:
     networks:
       - scaling
 
-
 networks:
   scaling:
-    driver: overlay
-    attachable: true
+    external: true
