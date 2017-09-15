@@ -17,26 +17,26 @@ type ScalerServicer interface {
 
 // ScalerService scales docker services
 type ScalerService struct {
-	c        *client.Client
-	minLabel string
-	maxLabel string
+	c          *client.Client
+	minLabel   string
+	maxLabel   string
+	defaultMin uint64
+	defaultMax uint64
 }
-
-// DefaultMinReplicas is the amount of replicas a service will auto-descale to without a label
-const DefaultMinReplicas uint64 = 1
-
-// DefaultMaxReplicas is the amount of replicas a service will auto-scale to without a label
-const DefaultMaxReplicas uint64 = 100
 
 // NewScalerService creates a New Docker Swarm Client
 func NewScalerService(
 	c *client.Client,
 	minLabel string,
-	maxLabel string) *ScalerService {
+	maxLabel string,
+	defaultMin uint64,
+	defaultMax uint64) *ScalerService {
 	return &ScalerService{
-		c:        c,
-		minLabel: minLabel,
-		maxLabel: maxLabel,
+		c:          c,
+		minLabel:   minLabel,
+		maxLabel:   maxLabel,
+		defaultMin: defaultMin,
+		defaultMax: defaultMax,
 	}
 }
 
@@ -77,8 +77,8 @@ func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
 // GetMinMaxReplicas gets the min and maximum replicas allowed for serviceName
 func (s *ScalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, error) {
 
-	minReplicas := DefaultMinReplicas
-	maxReplicas := DefaultMaxReplicas
+	minReplicas := s.defaultMin
+	maxReplicas := s.defaultMax
 
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
