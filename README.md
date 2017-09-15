@@ -1,6 +1,6 @@
 # Docker Scaler
 
-[![Build Status](https://travis-ci.org/thomasjpfan/docker-scaler.svg)](https://travis-ci.org/thomasjpfan/docker-scaler)
+[![Build Status](https://travis-ci.org/thomasjpfan/docker-scaler.svg?branch=master)](https://travis-ci.org/thomasjpfan/docker-scaler)
 
 Microservice providing a REST API that scales services in Docker Swarm.
 
