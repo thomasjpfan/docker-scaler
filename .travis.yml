@@ -12,7 +12,7 @@ install:
 
 script:
   - ./scripts/unit_test.sh
-  - docker image build -t thomasjpfan/docker-scaler:master .
+  - docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT .
   - docker stack deploy -c scripts/docker-compose.yml test
   - ./scripts/integration_test.sh
 
@@ -23,6 +23,6 @@ after_success:
   - >
     if [ "$TRAVIS_BRANCH" == "master" ]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-      docker tag thomasjpfan/docker-scaler:master thomasjpfan/docker-scaler:latest
+      docker tag thomasjpfan/docker-scaler:$TRAVIS_COMMIT thomasjpfan/docker-scaler:latest
       docker push thomasjpfan/docker-scaler:latest
     fi
