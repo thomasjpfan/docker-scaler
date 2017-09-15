@@ -1,0 +1,20 @@
+version: "3.3"
+
+services:
+  scaler:
+    image: thomasjpfan/docker-scaler:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:8080
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  web:
+    image: alpine:3.6
+    labels:
+      com.df.scaleMin: "2"
+      com.df.scaleMax: "4"
+    deploy:
+      replicas: 3
+    command: sleep 10000000
