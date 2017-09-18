@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -14,12 +15,15 @@ import (
 func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
-	client, err := client.NewEnvClient()
 	minLabel := "com.df.scaleMin"
 	maxLabel := "com.df.scaleMax"
 	defaultMin := uint64(1)
 	defaultMax := uint64(20)
 
+	client, _ := client.NewEnvClient()
+	defer client.Close()
+
+	_, err := client.Info(context.Background())
 	if err != nil {
 		logger.Panicln(err)
 	}
