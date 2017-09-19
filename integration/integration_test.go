@@ -164,7 +164,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	err = json.Unmarshal(body, &m)
 	require.NoError(err)
 	s.Equal(m.Status, "NOK")
-	s.Equal(m.Message, fmt.Sprintf("%s is already scaled to the minimum number of 4 replicas", s.targetService))
+	s.Equal(m.Message, fmt.Sprintf("%s is already descaled to the minimum number of 2 replicas", s.targetService))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
@@ -220,7 +220,9 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	err = json.Unmarshal(body, &m)
 	require.NoError(err)
 	s.Equal(m.Status, "OK")
-	s.Equal(m.Message, fmt.Sprintf("Scaling %s to 2 replicas", s.targetService))
+
+	message := fmt.Sprintf("Scaling %s to 2 replicas", targetService)
+	s.Equal(message, m.Message)
 }
 
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
