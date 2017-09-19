@@ -70,7 +70,7 @@ func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
 		require.Equal(http.StatusBadRequest, rec.Code)
 
 		logMessages := strings.Split(suite.b.String(), "\n")
-		require.Equal(logMessages[0], "Request to scale service: hello")
+		require.Equal(fmt.Sprintf("Request to scale service: hello, delta: %s", deltaStr), logMessages[0])
 
 		var m Response
 		err := json.Unmarshal(rec.Body.Bytes(), &m)
@@ -97,7 +97,7 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 	require.Equal(http.StatusBadRequest, rec.Code)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal("Request to scale service: web", logMessages[0])
+	require.Equal("Request to scale service: web, delta: -10", logMessages[0])
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
@@ -122,7 +122,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require.Equal(http.StatusInternalServerError, rec.Code)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal("Request to scale service: web", logMessages[0])
+	require.Equal("Request to scale service: web, delta: 1", logMessages[0])
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
@@ -147,7 +147,7 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal("Request to scale service: web", logMessages[0])
+	require.Equal("Request to scale service: web, delta: 1", logMessages[0])
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
@@ -173,7 +173,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(logMessages[0], "Request to scale service: web")
+	require.Equal(logMessages[0], "Request to scale service: web, delta: -1")
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
@@ -204,7 +204,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require.Equal("Scaling web to 4 replicas", m.Message)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal("Request to scale service: web", logMessages[0])
+	require.Equal("Request to scale service: web, delta: 1", logMessages[0])
 	require.Equal("Scaling web to 4 replicas", logMessages[1])
 
 	suite.m.AssertExpectations(suite.T())
@@ -230,7 +230,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	require.Equal("Scaling web to 2 replicas", m.Message)
 
 	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal("Request to scale service: web", logMessages[0])
+	require.Equal("Request to scale service: web, delta: -1", logMessages[0])
 	require.Equal("Scaling web to 2 replicas", logMessages[1])
 	suite.m.AssertExpectations(suite.T())
 }
