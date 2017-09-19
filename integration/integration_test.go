@@ -2,7 +2,9 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
+	"github.com/thomasjpfan/docker-scaler/server"
 )
 
 type IntegrationTestSuite struct {
@@ -52,9 +55,18 @@ func (s *IntegrationTestSuite) Test_NonIntegerDeltaQuery() {
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(err)
-	require.NotNil(resp)
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	s.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "NOK")
+	s.Equal(m.Message, "Incorrect delta query: what")
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
@@ -67,6 +79,15 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 	require.NotNil(resp)
 
 	require.Equal(http.StatusInternalServerError, resp.StatusCode)
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "NOK")
 }
 
 func (s *IntegrationTestSuite) Test_DeltaResultsInNegativeReplicas() {
@@ -79,6 +100,15 @@ func (s *IntegrationTestSuite) Test_DeltaResultsInNegativeReplicas() {
 	require.NotNil(resp)
 
 	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "NOK")
+	s.Equal(m.Message, fmt.Sprintf("Delta -100 results in a negative number of replicas for service: %s", s.targetService))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
@@ -97,6 +127,17 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
 	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 4)
+
+	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "NOK")
+	s.Equal(m.Message, fmt.Sprintf("%s is already scaled to the maximum number of 4 replicas", s.targetService))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
@@ -115,6 +156,17 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 
 	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 2)
+
+	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "NOK")
+	s.Equal(m.Message, fmt.Sprintf("%s is already scaled to the minimum number of 4 replicas", s.targetService))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
@@ -133,6 +185,17 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 
 	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 4)
+
+	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "OK")
+	s.Equal(m.Message, fmt.Sprintf("Scaling %s to 4 replicas", s.targetService))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
@@ -151,6 +214,17 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 
 	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 2)
+
+	require.Equal(http.StatusBadRequest, resp.StatusCode)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	s.Equal(m.Status, "OK")
+	s.Equal(m.Message, fmt.Sprintf("Scaling %s to 2 replicas", s.targetService))
 }
 
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
