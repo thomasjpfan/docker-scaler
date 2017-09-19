@@ -52,7 +52,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	deltaStr := q.Get("delta")
 	delta, err := strconv.Atoi(deltaStr)
 
-	s.logger.Printf("Request to scale service: %s", serviceID)
+	s.logger.Printf("Request to scale service: %s, delta: %s", serviceID, deltaStr)
 
 	if err != nil {
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
