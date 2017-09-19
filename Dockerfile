@@ -9,6 +9,11 @@ RUN apk add --no-cache tini
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
 
+ENV MIN_SCALE_LABEL="com.df.scaleMin" \
+    MAX_SCALE_LABEL="com.df.scaleMax" \
+    DEFAULT_MIN_REPLICAS="1" \
+    DEFAULT_MAX_REPLICAS="20"
+
 EXPOSE 8080
 
 ENTRYPOINT  ["/sbin/tini", "--"]

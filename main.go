@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/thomasjpfan/docker-scaler/server"
@@ -15,14 +16,32 @@ import (
 func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
-	minLabel := "com.df.scaleMin"
-	maxLabel := "com.df.scaleMax"
-	defaultMin := uint64(1)
-	defaultMax := uint64(20)
+	minLabel := os.Getenv("MIN_SCALE_LABEL")
+	maxLabel := os.Getenv("MAX_SCALE_LABEL")
+	defaultMinReplicasStr := os.Getenv("DEFAULT_MIN_REPLICAS")
+	defaultMaxReplicasStr := os.Getenv("DEFAULT_MAX_REPLICAS")
+
+	// Check defaultReplicas
+	defaultMinReplicasInt, err := strconv.Atoi(defaultMinReplicasStr)
+	if err != nil {
+		logger.Panicln("DEFAULT_MIN_REPLICAS is not an integer")
+	}
+	defaultMaxReplicasInt, err := strconv.Atoi(defaultMaxReplicasStr)
+	if err != nil {
+		logger.Panicln("DEFAULT_MAX_REPLICAS is not an integer")
+	}
+	if defaultMinReplicasInt <= 0 {
+		logger.Panicln("DEFAULT_MIN_REPLICAS must be at least one")
+	}
+	if defaultMaxReplicasInt <= 0 {
+		logger.Panicln("DEFAULT_MAX_REPLICAS must be at least one")
+	}
+	defaultMinReplicas := uint64(defaultMinReplicasInt)
+	defaultMaxReplicas := uint64(defaultMaxReplicasInt)
 
 	client, _ := client.NewEnvClient()
 	defer client.Close()
-	_, err := client.Info(context.Background())
+	_, err = client.Info(context.Background())
 	if err != nil {
 		logger.Panicln(err)
 	}
@@ -30,7 +49,8 @@ func main() {
 	fmt.Println("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, minLabel, maxLabel,
-		defaultMin, defaultMax)
+		defaultMinReplicas,
+		defaultMaxReplicas)
 	s := server.NewServer(scaler, logger)
 	s.Run(8080)
 }
