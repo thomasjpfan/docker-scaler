@@ -74,7 +74,7 @@ func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
 
 		var m Response
 		err := json.Unmarshal(rec.Body.Bytes(), &m)
-		require.Nil(err)
+		require.NoError(err)
 
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		require.Equal(m.Status, "NOK")
@@ -101,7 +101,7 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	message := fmt.Sprintf("Delta -10 results in a negative number of replicas for service: web")
 	require.Equal(m.Status, "NOK")
@@ -126,7 +126,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.Equal(m.Status, "NOK")
 	require.Equal(m.Message, expErr.Error())
@@ -151,7 +151,7 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.Equal(m.Status, "NOK")
 	require.Equal(m.Message, expErr.Error())
@@ -177,7 +177,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.Equal(m.Status, "NOK")
 	require.Equal(m.Message, expErr.Error())
@@ -198,7 +198,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.Equal(m.Status, "OK")
 	require.Equal(m.Message, "Scaling web to 4 replicas")
@@ -224,7 +224,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 
 	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.Equal(m.Status, "OK")
 	require.Equal(m.Message, "Scaling web to 2 replicas")
