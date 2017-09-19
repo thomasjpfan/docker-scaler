@@ -29,8 +29,8 @@ func (s *ResponseTestSuite) Test_RespondWithError() {
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	s.Equal(m.Status, "NOK")
-	s.Equal(m.Message, message)
+	s.Equal("NOK", m.Status)
+	s.Equal(message, m.Message)
 	s.Equal(code, rec.Code)
 	s.Equal("application/json", rec.HeaderMap["Content-Type"][0])
 
@@ -49,8 +49,8 @@ func (s *ResponseTestSuite) Test_ResponseWithJSON() {
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	s.Equal(m.Status, "OK")
-	s.Equal(m.Message, "world")
+	s.Equal("OK", m.Status)
+	s.Equal("world", m.Message)
 	s.Equal(code, rec.Code)
 	s.Equal("application/json", rec.HeaderMap["Content-Type"][0])
 }
