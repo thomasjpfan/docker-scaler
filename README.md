@@ -23,11 +23,11 @@ services:
         constraints: [node.role == manager]
   web:
     image: alpine:3.6
-    labels:
-      com.df.scaleMin: "2"
-      com.df.scaleMax: "4"
     deploy:
       replicas: 3
+      labels:
+        com.df.scaleMin: "2"
+        com.df.scaleMax: "4"
     command: sleep 10000000
 
 ```
@@ -43,10 +43,10 @@ docker stack deploy -c scripts/docker-compose-example.yml example
 ```
 Follwing the naming convention of `docker stack deploy`, this will create two services `example_scaler` and `example_web`. Running this on your local machine will expose `localhost:8080` as the endpoint to the `example_scaler` service. To scale `example_web` up by one replica send the following request:
 ```
-curl -X POST localhost:8080/scale\?service=example_web\&delta=1
+curl -X POST localhost:8080/scale?service=example_web&delta=1
 ```
 To scale `example_web` by one replica down send the following request:
 ```
-curl -X POST localhost:8080/scale\?service=example_web\&delta=-1
+curl -X POST localhost:8080/scale?service=example_web&delta=-1
 ```
 
