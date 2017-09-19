@@ -128,7 +128,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 4)
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	require.NoError(err)
@@ -157,7 +156,6 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 2)
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	require.NoError(err)
@@ -186,7 +184,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 4)
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	require.NoError(err)
@@ -215,7 +212,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 2)
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	require.NoError(err)
