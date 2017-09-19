@@ -22,7 +22,6 @@ func main() {
 
 	client, _ := client.NewEnvClient()
 	defer client.Close()
-
 	_, err := client.Info(context.Background())
 	if err != nil {
 		logger.Panicln(err)
