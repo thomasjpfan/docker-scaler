@@ -86,7 +86,7 @@ func (s *ScalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, e
 		return minReplicas, maxReplicas, err
 	}
 
-	labels := service.Spec.TaskTemplate.ContainerSpec.Labels
+	labels := service.Spec.Labels
 	minLabel := labels[s.minLabel]
 	maxLabel := labels[s.maxLabel]
 
