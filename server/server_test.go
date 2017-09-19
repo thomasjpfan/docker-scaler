@@ -72,14 +72,14 @@ func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
 		logMessages := strings.Split(suite.b.String(), "\n")
 		require.Equal(logMessages[0], "Request to scale service: hello")
 
-		var m map[string]interface{}
+		var m Response
 		err := json.Unmarshal(rec.Body.Bytes(), &m)
 		require.Nil(err)
 
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
-		require.Equal(m["error"], message)
+		require.Equal(m.Status, "NOK")
+		require.Equal(m.Message, message)
 		require.Equal(logMessages[1], message)
-
 		suite.b.Reset()
 	}
 }
@@ -99,12 +99,13 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
 	message := fmt.Sprintf("Delta -10 results in a negative number of replicas for service: web")
-	require.Equal(m["error"], message)
+	require.Equal(m.Status, "NOK")
+	require.Equal(m.Message, message)
 	require.Equal(logMessages[1], message)
 
 }
@@ -123,11 +124,12 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	require.Equal(m["error"], expErr.Error())
+	require.Equal(m.Status, "NOK")
+	require.Equal(m.Message, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 	require.Equal(logMessages[1], expErr.Error())
 }
@@ -147,11 +149,12 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	require.Equal(m["error"], expErr.Error())
+	require.Equal(m.Status, "NOK")
+	require.Equal(m.Message, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 	require.Equal(logMessages[1], expErr.Error())
 }
@@ -172,11 +175,12 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	require.Equal(m["error"], expErr.Error())
+	require.Equal(m.Status, "NOK")
+	require.Equal(m.Message, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 }
 
@@ -191,6 +195,13 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)
+
+	var m Response
+	err := json.Unmarshal(rec.Body.Bytes(), &m)
+	require.Nil(err)
+
+	require.Equal(m.Status, "OK")
+	require.Equal(m.Message, "Scaling web to 4 replicas")
 
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")
@@ -210,6 +221,13 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)
+
+	var m Response
+	err := json.Unmarshal(rec.Body.Bytes(), &m)
+	require.Nil(err)
+
+	require.Equal(m.Status, "OK")
+	require.Equal(m.Message, "Scaling web to 2 replicas")
 
 	logMessages := strings.Split(suite.b.String(), "\n")
 	require.Equal(logMessages[0], "Request to scale service: web")

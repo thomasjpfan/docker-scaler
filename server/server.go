@@ -101,6 +101,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	s.logger.Printf("Scaling web to %d replicas", newReplicas)
-	w.WriteHeader(http.StatusOK)
+	message := fmt.Sprintf("Scaling web to %d replicas", newReplicas)
+	s.logger.Print(message)
+	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }

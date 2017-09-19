@@ -25,11 +25,12 @@ func (s *ResponseTestSuite) Test_RespondWithError() {
 	rec := httptest.NewRecorder()
 	respondWithError(rec, code, message)
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	s.Equal(m["error"], message)
+	s.Equal(m.Status, "NOK")
+	s.Equal(m.Message, message)
 	s.Equal(code, rec.Code)
 	s.Equal("application/json", rec.HeaderMap["Content-Type"][0])
 
@@ -38,17 +39,18 @@ func (s *ResponseTestSuite) Test_RespondWithError() {
 func (s *ResponseTestSuite) Test_ResponseWithJSON() {
 
 	require := s.Require()
-	payload := map[string]string{"hello": "world"}
+	r := Response{Status: "OK", Message: "world"}
 	code := http.StatusOK
 
 	rec := httptest.NewRecorder()
-	respondWithJSON(rec, code, payload)
+	respondWithJSON(rec, code, r)
 
-	var m map[string]interface{}
+	var m Response
 	err := json.Unmarshal(rec.Body.Bytes(), &m)
 	require.Nil(err)
 
-	s.Equal(m["hello"], "world")
+	s.Equal(m.Status, "OK")
+	s.Equal(m.Message, "world")
 	s.Equal(code, rec.Code)
 	s.Equal("application/json", rec.HeaderMap["Content-Type"][0])
 }
