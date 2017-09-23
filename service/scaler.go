@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/pkg/errors"
 )
 
 // ScalerServicer interface for resizing services
@@ -46,7 +47,7 @@ func (s *ScalerService) GetReplicas(serviceName string) (uint64, error) {
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "docker inspect failed")
 	}
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
@@ -59,7 +60,7 @@ func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "docker inspect failed")
 	}
 
 	var count2 uint64
@@ -83,7 +84,7 @@ func (s *ScalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, e
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return minReplicas, maxReplicas, err
+		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed")
 	}
 
 	labels := service.Spec.Labels
