@@ -63,10 +63,7 @@ func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
 		return errors.Wrap(err, "docker inspect failed")
 	}
 
-	var count2 uint64
-	count2 = uint64(count)
-
-	service.Spec.Mode.Replicated.Replicas = &count2
+	service.Spec.Mode.Replicated.Replicas = &count
 	updateOpts := types.ServiceUpdateOptions{}
 	updateOpts.RegistryAuthFrom = types.RegistryAuthFromSpec
 
