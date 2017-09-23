@@ -64,15 +64,17 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	// Get scaled service
 	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(serviceID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		s.logger.Print(err.Error())
+		message := err.Error()
+		respondWithError(w, http.StatusInternalServerError, message)
+		s.logger.Print(message)
 		return
 	}
 
 	replicas, err := s.scaler.GetReplicas(serviceID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		s.logger.Print(err.Error())
+		message := err.Error()
+		respondWithError(w, http.StatusInternalServerError, message)
+		s.logger.Print(message)
 		return
 	}
 	newReplicasInt := int(replicas) + delta
@@ -98,7 +100,9 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	err = s.scaler.SetReplicas(serviceID, newReplicas)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		message := err.Error()
+		respondWithError(w, http.StatusInternalServerError, message)
+		s.logger.Print(message)
 		return
 	}
 	message := fmt.Sprintf("Scaling %s to %d replicas", serviceID, newReplicas)
