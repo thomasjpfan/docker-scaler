@@ -63,6 +63,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/prometheus/common"
+  packages = ["model"]
+  revision = "2f17f4a9d485bf34b4bfaccc273805040e4f86c8"
+
+[[projects]]
+  branch = "master"
   name = "github.com/stretchr/objx"
   packages = ["."]
   revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
@@ -88,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "06a7a617809deb19275745153c61dfa599774654a3dbd4b05c8f7ef35b1e8222"
+  inputs-digest = "0aad37179d133c0bef0c9548283db90866367dbf7c1ab60259ffd3af1e730614"
   solver-name = "gps-cdcl"
   solver-version = 1
