@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -108,6 +109,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	require := s.Require()
 	targetService := s.targetService
 	s.scaleService(targetService, 4)
+	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the max of 4
 	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.endpoint, targetService)
@@ -136,6 +138,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	require := s.Require()
 	targetService := s.targetService
 	s.scaleService(targetService, 2)
+	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
 	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.endpoint, targetService)
@@ -164,6 +167,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	require := s.Require()
 	targetService := s.targetService
 	s.scaleService(targetService, 3)
+	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 3
 	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.endpoint, targetService)
@@ -192,6 +196,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	require := s.Require()
 	targetService := s.targetService
 	s.scaleService(targetService, 3)
+	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
 	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.endpoint, targetService)
