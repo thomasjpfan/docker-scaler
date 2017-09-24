@@ -243,7 +243,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require.Equal(message, logMessages[1])
 
 	suite.m.AssertExpectations(suite.T())
-	suite.m.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
 }
 
 func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
