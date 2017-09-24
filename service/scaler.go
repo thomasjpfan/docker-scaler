@@ -47,7 +47,7 @@ func (s *ScalerService) GetReplicas(serviceName string) (uint64, error) {
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return 0, errors.Wrap(err, "docker inspect failed")
+		return 0, errors.Wrap(err, "docker inspect failed in ScalerService")
 	}
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
@@ -60,7 +60,7 @@ func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return errors.Wrap(err, "docker inspect failed")
+		return errors.Wrap(err, "docker inspect failed in ScalerService")
 	}
 
 	service.Spec.Mode.Replicated.Replicas = &count
@@ -81,7 +81,7 @@ func (s *ScalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, e
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
 	if err != nil {
-		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed")
+		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed in ScalerService")
 	}
 
 	labels := service.Spec.Labels
