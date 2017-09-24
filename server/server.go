@@ -12,17 +12,20 @@ import (
 
 // Server runs service that scales docker services
 type Server struct {
-	scaler service.ScalerServicer
-	logger *log.Logger
+	scaler  service.ScalerServicer
+	alerter service.AlertServicer
+	logger  *log.Logger
 }
 
 // NewServer creates Server
 func NewServer(
 	scaler service.ScalerServicer,
+	alerter service.AlertServicer,
 	logger *log.Logger) *Server {
 	return &Server{
-		scaler: scaler,
-		logger: logger,
+		scaler:  scaler,
+		alerter: alerter,
+		logger:  logger,
 	}
 }
 
@@ -52,21 +55,29 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	deltaStr := q.Get("delta")
 	delta, err := strconv.Atoi(deltaStr)
 
-	s.logger.Printf("Request to scale service: %s, delta: %s", serviceID, deltaStr)
+	requestMessage := fmt.Sprintf("Scale service: %s, delta: %s", serviceID, deltaStr)
+	s.logger.Printf(requestMessage)
 
 	if err != nil {
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		respondWithError(w, http.StatusBadRequest, message)
 		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	}
 
-	// Get scaled service
 	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(serviceID)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
 		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	}
 
@@ -75,6 +86,10 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
 		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	}
 	newReplicasInt := int(replicas) + delta
@@ -83,6 +98,10 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		message := fmt.Sprintf("Delta %d results in a negative number of replicas for service: %s", delta, serviceID)
 		respondWithError(w, http.StatusBadRequest, message)
 		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	}
 
@@ -91,10 +110,19 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceID, maxReplicas)
 		respondWithError(w, http.StatusPreconditionFailed, message)
 		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	} else if newReplicas < minReplicas {
 		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceID, minReplicas)
 		respondWithError(w, http.StatusPreconditionFailed, message)
+		s.logger.Print(message)
+		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		return
 	}
 
@@ -102,10 +130,18 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
+		err := s.alerter.Send("scaler_service", serviceID, requestMessage, "error", message)
+		if err != nil {
+			s.logger.Print(err.Error())
+		}
 		s.logger.Print(message)
 		return
 	}
 	message := fmt.Sprintf("Scaling %s to %d replicas", serviceID, newReplicas)
 	s.logger.Print(message)
+	err = s.alerter.Send("scale_service", serviceID, requestMessage, "success", message)
+	if err != nil {
+		s.logger.Print(err.Error())
+	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }

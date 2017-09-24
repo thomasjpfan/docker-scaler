@@ -46,11 +46,13 @@ func main() {
 		logger.Panicln(err)
 	}
 
+	alerter := service.SilentAlertService{}
+
 	fmt.Println("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, minLabel, maxLabel,
 		defaultMinReplicas,
 		defaultMaxReplicas)
-	s := server.NewServer(scaler, logger)
+	s := server.NewServer(scaler, alerter, logger)
 	s.Run(8080)
 }
