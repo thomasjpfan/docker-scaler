@@ -6,14 +6,13 @@ import (
 
 // AlertServicer interface to send alerts
 type AlertServicer interface {
-	Send(alertName string,
-		serviceName string, status string,
-		message string, request string) error
+	Send(alertName string, serviceName string,
+		request string, status string,
+		message string) error
 }
 
-func generateAlert(alertName string,
-	serviceName string, status string,
-	message string, request string) *model.Alert {
+func generateAlert(alertName string, serviceName string,
+	request string, status string, message string) *model.Alert {
 	return &model.Alert{
 		Labels: model.LabelSet{
 			"alertname": model.LabelValue(alertName),
@@ -33,7 +32,7 @@ type SilentAlertService struct{}
 
 // Send is a stub for an alert service
 func (s SilentAlertService) Send(alertName string,
-	serviceName string, status string,
-	message string, request string) error {
+	serviceName string, request string,
+	status string, message string) error {
 	return nil
 }
