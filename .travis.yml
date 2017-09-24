@@ -11,10 +11,10 @@ install:
   - docker swarm init
 
 script:
-  - ./scripts/unit_test.sh
-  - docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT .
-  - docker stack deploy -c scripts/docker-compose.yml test
-  - ./scripts/integration_test.sh
+  - ./scripts/unit_test.sh && \
+    docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT . && \
+    docker stack deploy -c scripts/docker-compose.yml test && \
+    ./scripts/integration_test.sh
 
 after_script:
   - docker stack rm test
