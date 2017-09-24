@@ -19,7 +19,7 @@ import (
 type IntegrationTestSuite struct {
 	suite.Suite
 	dc            *client.Client
-	endpoint      string
+	url           string
 	targetService string
 }
 
@@ -37,13 +37,13 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.Require().NotEmpty(scalerIP)
 	s.Require().NotEmpty(targetService)
 
-	s.endpoint = fmt.Sprintf("http://%s:8080", scalerIP)
+	s.url = fmt.Sprintf("http://%s:8080", scalerIP)
 	s.targetService = targetService
 }
 
 func (s *IntegrationTestSuite) Test_NonIntegerDeltaQuery() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale?service=%s&delta=what", s.endpoint, s.targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=what", s.url, s.targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -64,7 +64,7 @@ func (s *IntegrationTestSuite) Test_NonIntegerDeltaQuery() {
 
 func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale?service=BAD&delta=1", s.endpoint)
+	url := fmt.Sprintf("%s/scale?service=BAD&delta=1", s.url)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -85,7 +85,7 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 
 func (s *IntegrationTestSuite) Test_DeltaResultsInNegativeReplicas() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale?service=%s&delta=-100", s.endpoint, s.targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=-100", s.url, s.targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -112,7 +112,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the max of 4
-	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.endpoint, targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.url, targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -141,7 +141,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
-	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.endpoint, targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.url, targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -170,7 +170,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 3
-	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.endpoint, targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=1", s.url, targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -199,7 +199,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
-	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.endpoint, targetService)
+	url := fmt.Sprintf("%s/scale?service=%s&delta=-1", s.url, targetService)
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp, err := http.DefaultClient.Do(req)

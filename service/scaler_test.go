@@ -12,7 +12,6 @@ import (
 
 type ScalerTestSuite struct {
 	suite.Suite
-	client     *client.Client
 	scaler     *ScalerService
 	defaultMax uint64
 	defaultMin uint64
@@ -27,6 +26,7 @@ func TestScalerUnitTestSuite(t *testing.T) {
 
 func (s *ScalerTestSuite) SetupSuite() {
 	client, _ := client.NewEnvClient()
+	defer client.Close()
 	_, err := client.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
@@ -36,7 +36,6 @@ func (s *ScalerTestSuite) SetupSuite() {
 		s.T().Skipf("Docker process is not a part of a swarm")
 	}
 
-	s.client = client
 	s.defaultMin = 1
 	s.defaultMax = 10
 	s.replicaMin = 2
@@ -45,10 +44,6 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.scaler = NewScalerService(
 		client, "com.df.scaleMin", "com.df.scaleMax",
 		s.defaultMin, s.defaultMax)
-}
-
-func (s *ScalerTestSuite) TearDownSuite() {
-	s.client.Close()
 }
 
 func (s *ScalerTestSuite) SetupTest() {
