@@ -25,17 +25,17 @@ func main() {
 	// Check defaultReplicas
 	defaultMinReplicasInt, err := strconv.Atoi(defaultMinReplicasStr)
 	if err != nil {
-		logger.Panicln("DEFAULT_MIN_REPLICAS is not an integer")
+		logger.Panic("DEFAULT_MIN_REPLICAS is not an integer")
 	}
 	defaultMaxReplicasInt, err := strconv.Atoi(defaultMaxReplicasStr)
 	if err != nil {
-		logger.Panicln("DEFAULT_MAX_REPLICAS is not an integer")
+		logger.Panic("DEFAULT_MAX_REPLICAS is not an integer")
 	}
 	if defaultMinReplicasInt <= 0 {
-		logger.Panicln("DEFAULT_MIN_REPLICAS must be at least one")
+		logger.Panic("DEFAULT_MIN_REPLICAS must be at least one")
 	}
 	if defaultMaxReplicasInt <= 0 {
-		logger.Panicln("DEFAULT_MAX_REPLICAS must be at least one")
+		logger.Panic("DEFAULT_MAX_REPLICAS must be at least one")
 	}
 	defaultMinReplicas := uint64(defaultMinReplicasInt)
 	defaultMaxReplicas := uint64(defaultMaxReplicasInt)
@@ -51,11 +51,13 @@ func main() {
 	if len(alertmangerAddress) != 0 {
 		url := fmt.Sprintf("http://%s:9093", alertmangerAddress)
 		alerter = service.NewAlertService(url)
+		logger.Printf("Using alertmanager at: %s", url)
 	} else {
 		alerter = service.SilentAlertService{}
+		logger.Printf("Using a stubbed alertmanager")
 	}
 
-	logger.Println("Starting Docker Scaler")
+	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, minLabel, maxLabel,
 		defaultMinReplicas,
