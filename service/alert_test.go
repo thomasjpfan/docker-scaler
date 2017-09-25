@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func (s *AlertTestSuite) SetupTest() {
 			-d prom/alertmanager:v0.8.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
-		s.T().Skipf("Unable to create alertmanager")
+		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))
 		return
 	}
 
@@ -75,7 +76,7 @@ func (s *AlertTestSuite) Test_SendAlert() {
 	s.alertService.Send(alertname, serviceName, request, status, summary)
 	time.Sleep(1 * time.Second)
 
-	alerts, err := FetchAlerts(s.url)
+	alerts, err := FetchAlerts(s.url, alertname, status, serviceName)
 	require.NoError(err)
 	require.Equal(1, len(alerts))
 

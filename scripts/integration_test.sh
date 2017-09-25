@@ -17,8 +17,10 @@ done
 docker run --rm \
 -v "$(pwd)":/go/src/github.com/thomasjpfan/docker-scaler \
 --network test_scaling \
+--network test_alert \
 -v "/var/run/docker.sock:/var/run/docker.sock" \
 -e "SCALER_IP=scaler" \
 -e "TARGET_SERVICE=test_web" \
+-e "ALERTMANAGER_ADDRESS=alertmanager" \
 golang:1.9.0-alpine3.6 \
 go test github.com/thomasjpfan/docker-scaler/integration -v

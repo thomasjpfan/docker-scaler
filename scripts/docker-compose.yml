@@ -3,10 +3,13 @@ version: "3.3"
 services:
   scaler:
     image: thomasjpfan/docker-scaler:${TRAVIS_COMMIT:-master}
+    environment:
+      - ALERTMANAGER_ADDRESS=alertmanager
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - scaling
+      - alert
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -20,8 +23,18 @@ services:
     command: sleep 10000000
     networks:
       - scaling
+  alertmanager:
+    image: prom/alertmanager:v0.8.0
+    ports:
+      - 9093:9093
+    networks:
+      - alert
 
 networks:
   scaling:
     driver: overlay
     attachable: true
+  alert:
+    driver: overlay
+    attachable: true
+
