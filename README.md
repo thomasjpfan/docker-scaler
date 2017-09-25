@@ -44,15 +44,32 @@ and `com.df.scaleMax` represents the minimum and maximum number of replicas for 
 ## Example
 
 Deploying `script/docker-compose-example.yml` as a stack:
+```bash
+> docker stack deploy -c scripts/docker-compose-example.yml example
 ```
-docker stack deploy -c scripts/docker-compose-example.yml example
+Following the naming convention of `docker stack deploy`, this will create three services `example_scaler`, `example_web`, `example_alertmanager`. Port `8080` exposes the `example_scaler` service and port `9093` exposes `example_alertmanager` to your local machine. To scale `example_web` up by one replica send the following request:
+```bash
+$ curl -X POST localhost:8080/scale?service=example_web&delta=1
 ```
-Follwing the naming convention of `docker stack deploy`, this will create two services `example_scaler` and `example_web`. Running this on your local machine will expose `localhost:8080` as the endpoint to the `example_scaler` service. To scale `example_web` up by one replica send the following request:
+This will also send an alert to the alertmanager, you can query the alertmanager by installing [amtool](https://github.com/prometheus/alertmanager) and running:
 ```
-curl -X POST localhost:8080/scale?service=example_web&delta=1
+$ amtool --alertmanager.url http://localhost:9093 alert
 ```
-To scale `example_web` by one replica down send the following request:
+This will list the alerts received by the alertmanager:
 ```
-curl -X POST localhost:8080/scale?service=example_web&delta=-1
+Alertname      Starts At                Summary
+scale_service  2017-09-25 16:44:12 UTC  Scaling example_web to 4 replicas
 ```
-
+To scale `example_web` down by one, send the following request:
+```bash
+$ curl -X POST localhost:8080/scale?service=example_web&delta=-1
+```
+Running the `amtool` query again will display:
+```
+Alertname      Starts At                Summary
+scale_service  2017-09-25 16:55:01 UTC  Scaling example_web to 3 replicas
+```
+If you wish to display all the information in an alert run:
+```bash
+$ amtool --alertmanager.url http://localhost:9093 -o extended aler
+```
