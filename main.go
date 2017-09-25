@@ -55,7 +55,7 @@ func main() {
 		alerter = service.SilentAlertService{}
 	}
 
-	fmt.Println("Starting Docker Scaler")
+	logger.Println("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, minLabel, maxLabel,
 		defaultMinReplicas,
