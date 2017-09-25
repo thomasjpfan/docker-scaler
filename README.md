@@ -14,6 +14,8 @@ version: "3.3"
 services:
   scaler:
     image: thomasjpfan/docker-scaler:latest
+    environment:
+      - ALERTMANAGER_ADDRESS=alertmanager
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -29,6 +31,10 @@ services:
         com.df.scaleMin: "2"
         com.df.scaleMax: "4"
     command: sleep 10000000
+  alertmanager:
+    image: prom/alertmanager:v0.8.0
+    ports:
+      - 9093:9093
 
 ```
 

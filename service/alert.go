@@ -41,9 +41,7 @@ func NewAlertService(url string) *AlertService {
 }
 
 // Send sends alert to alertmanager
-func (a AlertService) Send(alertName string,
-	serviceName string, request string,
-	status string, message string) error {
+func (a AlertService) Send(alertName string, serviceName string, request string, status string, message string) error {
 	alert := generateAlert(alertName, serviceName, request, status, message)
 	alerts := []*model.Alert{alert}
 	alertsJSON, _ := json.Marshal(alerts)
@@ -61,7 +59,7 @@ func (a AlertService) Send(alertName string,
 	}
 
 	var resJSON alertmanagerAlertResponse
-	err = json.Unmarshal(body, resJSON)
+	err = json.Unmarshal(body, &resJSON)
 	if err != nil {
 		return errors.Wrap(err, "Unable to parse alert response")
 	}
@@ -90,9 +88,9 @@ func generateAlert(alertName string, serviceName string,
 // FetchAlerts gets alerts from alertmanager
 // https://github.com/prometheus/alertmanager/blob/5aff15b30fd10459b9ebf0ef754e1794b9ffd1ff/cli/alert.go#L86
 // Use for testing purposes only
-func FetchAlerts(url string) ([]*APIAlert, error) {
+func FetchAlerts(path, alertname, status, service string) ([]*APIAlert, error) {
 	alertResponse := alertmanagerAlertResponse{}
-	endpoint := fmt.Sprintf("%s/api/v1/alerts/groups", url)
+	endpoint := fmt.Sprintf("%s/api/v1/alerts/groups?filter=alertname=%s,status=%s,service=%s", path, alertname, status, service)
 	res, err := http.Get(endpoint)
 	if err != nil {
 		return []*APIAlert{}, err

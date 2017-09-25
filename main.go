@@ -20,6 +20,7 @@ func main() {
 	maxLabel := os.Getenv("MAX_SCALE_LABEL")
 	defaultMinReplicasStr := os.Getenv("DEFAULT_MIN_REPLICAS")
 	defaultMaxReplicasStr := os.Getenv("DEFAULT_MAX_REPLICAS")
+	alertmangerAddress := os.Getenv("ALERTMANAGER_ADDRESS")
 
 	// Check defaultReplicas
 	defaultMinReplicasInt, err := strconv.Atoi(defaultMinReplicasStr)
@@ -46,7 +47,13 @@ func main() {
 		logger.Panicln(err)
 	}
 
-	alerter := service.SilentAlertService{}
+	var alerter service.AlertServicer
+	if len(alertmangerAddress) != 0 {
+		url := fmt.Sprintf("http://%s:9093", alertmangerAddress)
+		alerter = service.NewAlertService(url)
+	} else {
+		alerter = service.SilentAlertService{}
+	}
 
 	fmt.Println("Starting Docker Scaler")
 	scaler := service.NewScalerService(
