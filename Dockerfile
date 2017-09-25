@@ -1,7 +1,7 @@
 FROM golang:1.9.0-alpine3.6 as build
 WORKDIR /go/src/github.com/thomasjpfan/docker-scaler
 COPY . .
-RUN go build -o docker-scaler .
+RUN go build -o docker-scaler main.go
 
 FROM alpine:3.6
 RUN apk add --no-cache tini
