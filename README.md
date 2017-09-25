@@ -71,5 +71,5 @@ scale_service  2017-09-25 16:55:01 UTC  Scaling example_web to 3 replicas
 ```
 If you wish to display all the information in an alert run:
 ```bash
-$ amtool --alertmanager.url http://localhost:9093 -o extended aler
+$ amtool --alertmanager.url http://localhost:9093 -o extended alert
 ```
