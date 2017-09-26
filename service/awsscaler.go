@@ -17,6 +17,6 @@ func NewAWSScaler(envFile string) (*AWSScaler, error) {
 }
 
 // ScaleByDelta scales aws nodes by delta
-func (s *AWSScaler) ScaleByDelta(delta int) error {
-	return nil
+func (s *AWSScaler) ScaleByDelta(delta int) (uint64, uint64, error) {
+	return 0, 0, nil
 }

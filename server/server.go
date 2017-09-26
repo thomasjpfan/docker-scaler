@@ -137,13 +137,31 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	requestMessage := fmt.Sprintf("Scale node on: %s, delta: %s", nodesOn, deltaStr)
 	s.logger.Printf(requestMessage)
 
-	_, err := strconv.Atoi(deltaStr)
+	delta, err := strconv.Atoi(deltaStr)
 	if err != nil {
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		respondWithError(w, http.StatusBadRequest, message)
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
 		return
 	}
+
+	nodeScaler, err := s.nodeScalerCreater.New(nodesOn)
+	if err != nil {
+		respondWithError(w, http.StatusPreconditionFailed, err.Error())
+		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
+		return
+	}
+
+	nodesBefore, nodesNow, err := nodeScaler.ScaleByDelta(delta)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
+		return
+	}
+
+	message := fmt.Sprintf("Scaling nodes on %s from %d to %d", nodesOn, nodesBefore, nodesNow)
+	s.sendAlert("scale_node", nodesOn, requestMessage, "success", message)
+	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
 func (s *Server) sendAlert(alertName string, serviceName string, request string,
