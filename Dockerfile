@@ -13,7 +13,7 @@ ENV MIN_SCALE_LABEL="com.df.scaleMin" \
     MAX_SCALE_LABEL="com.df.scaleMax" \
     DEFAULT_MIN_REPLICAS="1" \
     DEFAULT_MAX_REPLICAS="20" \
-    ALERTMANAGER_ADDRESS="" \
+    ALERTMANAGER_ADDRESS="alertmanager" \
     AWS_ENV_FILE="/run/secrets/aws"
 
 EXPOSE 8080
