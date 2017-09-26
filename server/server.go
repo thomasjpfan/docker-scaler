@@ -42,7 +42,7 @@ func (s *Server) MakeRouter() *mux.Router {
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
 	m.Path("/scale").
-		Queries("nodesOn", "{node}", "delta", "{delta}").
+		Queries("nodesOn", "{nodesOn}", "delta", "{delta}").
 		Methods("POST").
 		HandlerFunc(s.ScaleNode).
 		Name("ScaleNode")
