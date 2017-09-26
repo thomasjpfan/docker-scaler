@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"github.com/thomasjpfan/docker-scaler/service"
 )
 
 type ScalerServicerMock struct {
@@ -43,14 +44,34 @@ func (am *AlertServicerMock) Send(alertName string, serviceName string, status s
 	return args.Error(0)
 }
 
+type NodeScalerMock struct {
+	mock.Mock
+}
+
+func (nsm *NodeScalerMock) ScaleByDelta(delta int) error {
+	args := nsm.Called(delta)
+	return args.Error(0)
+}
+
+type NodeScalerCreaterMock struct {
+	mock.Mock
+}
+
+func (nscm *NodeScalerCreaterMock) New(nodeBackend string) (service.NodeScaler, error) {
+	args := nscm.Called(nodeBackend)
+	return args.Get(0).(*NodeScalerMock), args.Error(1)
+}
+
 type ServerTestSuite struct {
 	suite.Suite
-	m  *ScalerServicerMock
-	am *AlertServicerMock
-	s  *Server
-	r  *mux.Router
-	l  *log.Logger
-	b  *bytes.Buffer
+	m    *ScalerServicerMock
+	am   *AlertServicerMock
+	nsm  *NodeScalerMock
+	nscm *NodeScalerCreaterMock
+	s    *Server
+	r    *mux.Router
+	l    *log.Logger
+	b    *bytes.Buffer
 }
 
 func TestServerUnitTestSuite(t *testing.T) {
@@ -60,9 +81,14 @@ func TestServerUnitTestSuite(t *testing.T) {
 func (suite *ServerTestSuite) SetupTest() {
 	suite.m = new(ScalerServicerMock)
 	suite.am = new(AlertServicerMock)
+	suite.nsm = new(NodeScalerMock)
+	suite.nscm = new(NodeScalerCreaterMock)
+	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
+
 	suite.b = new(bytes.Buffer)
 	suite.l = log.New(suite.b, "", 0)
-	suite.s = NewServer(suite.m, suite.am, suite.l)
+	suite.s = NewServer(suite.m, suite.am,
+		suite.nscm, suite.l)
 	suite.r = suite.s.MakeRouter()
 }
 
@@ -84,16 +110,8 @@ func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
 		suite.r.ServeHTTP(rec, req)
 		require.Equal(http.StatusBadRequest, rec.Code)
 
-		logMessages := strings.Split(suite.b.String(), "\n")
-		require.Equal(requestMessage, logMessages[0])
-
-		var m Response
-		err := json.Unmarshal(rec.Body.Bytes(), &m)
-		require.NoError(err)
-
-		require.Equal("NOK", m.Status)
-		require.Equal(errorMessage, m.Message)
-		require.Equal(errorMessage, logMessages[1])
+		suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+		suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
 		suite.am.AssertExpectations(suite.T())
 		suite.b.Reset()
 	}
@@ -115,16 +133,8 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusBadRequest, rec.Code)
 
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("NOK", m.Status)
-	require.Equal(errorMessage, m.Message)
-	require.Equal(errorMessage, logMessages[1])
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 
@@ -144,18 +154,10 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusInternalServerError, rec.Code)
 
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("NOK", m.Status)
-	require.Equal(expErr.Error(), m.Message)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
-	require.Equal(expErr.Error(), logMessages[1])
 }
 
 func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
@@ -173,18 +175,10 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
 
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("NOK", m.Status)
-	require.Equal(expErr.Error(), m.Message)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
-	require.Equal(expErr.Error(), logMessages[1])
 }
 
 func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
@@ -203,15 +197,8 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
 
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("NOK", m.Status)
-	require.Equal(expErr.Error(), m.Message)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 }
@@ -231,17 +218,8 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)
 
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("OK", m.Status)
-	require.Equal(message, m.Message)
-
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-	require.Equal(message, logMessages[1])
-
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 }
@@ -262,16 +240,50 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)
 
-	var m Response
-	err := json.Unmarshal(rec.Body.Bytes(), &m)
-	require.NoError(err)
-
-	require.Equal("OK", m.Status)
-	require.Equal(message, m.Message)
-
-	logMessages := strings.Split(suite.b.String(), "\n")
-	require.Equal(requestMessage, logMessages[0])
-	require.Equal(message, logMessages[1])
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
+	require := suite.Require()
+	tt := []string{"what", "2114what", "24y4", "he"}
+
+	for _, deltaStr := range tt {
+
+		url := fmt.Sprintf("/scale?nodesOn=mock&delta=%v", deltaStr)
+		requestMessage := fmt.Sprintf("Scale node on: mock, delta: %s", deltaStr)
+		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
+		suite.am.On("Send", "scale_node", "mock",
+			requestMessage, "error", errorMessage).Return(nil)
+
+		req, _ := http.NewRequest("POST", url, nil)
+		rec := httptest.NewRecorder()
+		suite.r.ServeHTTP(rec, req)
+		require.Equal(http.StatusBadRequest, rec.Code)
+
+		suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
+
+		suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+		suite.am.AssertExpectations(suite.T())
+		suite.b.Reset()
+	}
+}
+
+func (suite *ServerTestSuite) RequireLogs(logMessage string, expectedLogs ...string) {
+	logMessages := strings.Split(logMessage, "\n")
+	suite.Require().True(len(logMessages) >= len(expectedLogs))
+	for i, m := range expectedLogs {
+		suite.Equal(m, logMessages[i])
+	}
+}
+
+func (suite *ServerTestSuite) RequireResponse(data []byte, status string, message string) {
+	var m Response
+	err := json.Unmarshal(data, &m)
+	suite.Require().NoError(err)
+
+	suite.Equal(status, m.Status)
+	suite.Equal(message, m.Message)
 }
