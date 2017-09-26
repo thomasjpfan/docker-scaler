@@ -21,6 +21,7 @@ func main() {
 	defaultMinReplicasStr := os.Getenv("DEFAULT_MIN_REPLICAS")
 	defaultMaxReplicasStr := os.Getenv("DEFAULT_MAX_REPLICAS")
 	alertmangerAddress := os.Getenv("ALERTMANAGER_ADDRESS")
+	awsEnvFile := os.Getenv("AWS_ENV_FILE")
 
 	// Check defaultReplicas
 	defaultMinReplicasInt, err := strconv.Atoi(defaultMinReplicasStr)
@@ -57,11 +58,14 @@ func main() {
 		logger.Printf("Using a stubbed alertmanager")
 	}
 
+	nodeScalerFactory := service.NewNodeScalerFactory()
+	nodeScalerFactory.SetAWSOptions(awsEnvFile)
+
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, minLabel, maxLabel,
 		defaultMinReplicas,
 		defaultMaxReplicas)
-	s := server.NewServer(scaler, alerter, logger)
+	s := server.NewServer(scaler, alerter, nodeScalerFactory, logger)
 	s.Run(8080)
 }
