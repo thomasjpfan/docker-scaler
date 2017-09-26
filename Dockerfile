@@ -14,7 +14,11 @@ ENV MIN_SCALE_LABEL="com.df.scaleMin" \
     DEFAULT_MIN_REPLICAS="1" \
     DEFAULT_MAX_REPLICAS="20" \
     ALERTMANAGER_ADDRESS="alertmanager" \
-    AWS_ENV_FILE="/run/secrets/aws"
+    AWS_ENV_FILE="/run/secrets/aws" \
+    AWS_ACCESS_KEY_ID="" \
+    AWS_SECRET_ACCESS_KEY="" \
+    AWS_DEFAULT_REGION="us-east-1" \
+    AWS_LAUNCH_CONFIGURATION_NAME="example-NodeLaunchConfig"
 
 EXPOSE 8080
 
