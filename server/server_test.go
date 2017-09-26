@@ -48,9 +48,9 @@ type NodeScalerMock struct {
 	mock.Mock
 }
 
-func (nsm *NodeScalerMock) ScaleByDelta(delta int) error {
+func (nsm *NodeScalerMock) ScaleByDelta(delta int) (uint64, uint64, error) {
 	args := nsm.Called(delta)
-	return args.Error(0)
+	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
 
 type NodeScalerCreaterMock struct {
@@ -83,7 +83,6 @@ func (suite *ServerTestSuite) SetupTest() {
 	suite.am = new(AlertServicerMock)
 	suite.nsm = new(NodeScalerMock)
 	suite.nscm = new(NodeScalerCreaterMock)
-	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
 
 	suite.b = new(bytes.Buffer)
 	suite.l = log.New(suite.b, "", 0)
@@ -247,7 +246,6 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
-	require := suite.Require()
 	tt := []string{"what", "2114what", "24y4", "he"}
 
 	for _, deltaStr := range tt {
@@ -257,11 +255,12 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		suite.am.On("Send", "scale_node", "mock",
 			requestMessage, "error", errorMessage).Return(nil)
+		suite.nscm.On("New", "mock").Return(suite.nsm, nil)
 
 		req, _ := http.NewRequest("POST", url, nil)
 		rec := httptest.NewRecorder()
 		suite.r.ServeHTTP(rec, req)
-		require.Equal(http.StatusBadRequest, rec.Code)
+		suite.Equal(http.StatusBadRequest, rec.Code)
 
 		suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
 
@@ -269,6 +268,69 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 		suite.am.AssertExpectations(suite.T())
 		suite.b.Reset()
 	}
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
+	url := "/scale?nodesOn=BADSERVICE&delta=1"
+	requestMessage := "Scale node on: BADSERVICE, delta: 1"
+	expErr := fmt.Errorf("BADSERVICE does not exist")
+
+	suite.nscm.On("New", "BADSERVICE").Return(suite.nsm, expErr)
+	suite.am.On("Send", "scale_node", "BADSERVICE", requestMessage, "error", expErr.Error()).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	suite.Equal(http.StatusPreconditionFailed, rec.Code)
+
+	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
+	suite.nscm.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
+
+	url := "/scale?nodesOn=mock&delta=1"
+	requestMessage := "Scale node on: mock, delta: 1"
+	expErr := fmt.Errorf("Unable to scale node")
+
+	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
+	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", expErr.Error()).Return(nil)
+	suite.nsm.On("ScaleByDelta", 1).Return(uint64(0), uint64(0), expErr)
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	suite.Equal(http.StatusInternalServerError, rec.Code)
+
+	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
+	suite.nscm.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+	suite.nsm.AssertExpectations(suite.T())
+
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDelta() {
+	url := "/scale?nodesOn=mock&delta=1"
+	requestMessage := "Scale node on: mock, delta: 1"
+	message := "Scaling nodes on mock from 3 to 4"
+
+	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
+	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
+	suite.nsm.On("ScaleByDelta", 1).Return(uint64(3), uint64(4), nil)
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	suite.Equal(http.StatusOK, rec.Code)
+
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.nscm.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+	suite.nsm.AssertExpectations(suite.T())
 }
 
 func (suite *ServerTestSuite) RequireLogs(logMessage string, expectedLogs ...string) {
