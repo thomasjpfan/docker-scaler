@@ -31,7 +31,7 @@ func (f *NodeScalerFactory) SetAWSOptions(awsEnvFile string) {
 func (f *NodeScalerFactory) New(nodeBackend string) (NodeScaler, error) {
 	switch nodeBackend {
 	case "aws":
-		scaler, err := NewAWSScaler(f.awsEnvFile)
+		scaler, err := NewAWSScalerFromEnv(f.awsEnvFile)
 		if err != nil {
 			return nil, errors.Wrap(err, "Unable to create aws scaler")
 		}

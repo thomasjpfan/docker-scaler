@@ -159,7 +159,7 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := fmt.Sprintf("Scaling nodes on %s from %d to %d", nodesOn, nodesBefore, nodesNow)
+	message := fmt.Sprintf("Changed the number of nodes on %s from %d to %d", nodesOn, nodesBefore, nodesNow)
 	s.sendAlert("scale_node", nodesOn, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }

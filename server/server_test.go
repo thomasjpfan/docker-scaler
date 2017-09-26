@@ -315,7 +315,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDelta() {
 	url := "/scale?nodesOn=mock&delta=1"
 	requestMessage := "Scale node on: mock, delta: 1"
-	message := "Scaling nodes on mock from 3 to 4"
+	message := "Changed the number of nodes on mock from 3 to 4"
 
 	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
 	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
