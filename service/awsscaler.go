@@ -9,13 +9,14 @@ type AWSScaler struct {
 	sess *session.Session
 }
 
+// NewAWSScaler creates an AWS based node scaler
 func NewAWSScaler(envFile string) (*AWSScaler, error) {
 	return &AWSScaler{
 		sess: nil,
 	}, nil
 }
 
-// ScaleDelta scales aws nodes by delta
+// ScaleByDelta scales aws nodes by delta
 func (s *AWSScaler) ScaleByDelta(delta int) error {
 	return nil
 }

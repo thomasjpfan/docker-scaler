@@ -56,7 +56,7 @@ func (s *ScalerTestSuite) SetupTest() {
 		   sleep 10000000`, s.replicaMin, s.replicaMax, s.replicas)
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
-		s.T().Skipf("Unable to create service")
+		s.T().Skipf("Unable to create service: %s", err.Error())
 	}
 }
 
