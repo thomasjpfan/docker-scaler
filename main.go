@@ -6,40 +6,37 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"github.com/docker/docker/client"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/thomasjpfan/docker-scaler/server"
 	"github.com/thomasjpfan/docker-scaler/service"
 )
 
+type specification struct {
+	MinScaleLabel          string `envconfig:"MIN_SCALE_LABEL"`
+	MaxScaleLabel          string `envconfig:"MAX_SCALE_LABEL"`
+	DefaultMinReplicas     uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
+	DefaultMaxReplicas     uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
+	AlertmanagerAddress    string `envconfig:"ALERTMANAGER_ADDRESS"`
+	AwsEnvFile             string `envconfig:"AWS_ENV_FILE"`
+	AwsManagerConfigName   string `envconfig:"AWS_MANAGER_CONFIG_NAME"`
+	AwsWorkerConfigName    string `envconfig:"AWS_WORKER_CONFIG_NAME"`
+	DefaultMinManagerNodes uint64 `envconfig:"DEFAULT_MIN_MANAGER_NODES"`
+	DefaultMaxManagerNodes uint64 `envconfig:"DEFAULT_MAX_MANAGER_NODES"`
+	DefaultMinWorkerNodes  uint64 `envconfig:"DEFAULT_MIN_WORKER_NODES"`
+	DefaultMaxWorkerNodes  uint64 `envconfig:"DEFAULT_MAX_WORKER_NODES"`
+}
+
 func main() {
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
-	minLabel := os.Getenv("MIN_SCALE_LABEL")
-	maxLabel := os.Getenv("MAX_SCALE_LABEL")
-	defaultMinReplicasStr := os.Getenv("DEFAULT_MIN_REPLICAS")
-	defaultMaxReplicasStr := os.Getenv("DEFAULT_MAX_REPLICAS")
-	alertmangerAddress := os.Getenv("ALERTMANAGER_ADDRESS")
-	awsEnvFile := os.Getenv("AWS_ENV_FILE")
 
-	// Check defaultReplicas
-	defaultMinReplicasInt, err := strconv.Atoi(defaultMinReplicasStr)
+	var spec specification
+	err := envconfig.Process("", &spec)
 	if err != nil {
-		logger.Panic("DEFAULT_MIN_REPLICAS is not an integer")
+		logger.Panic(err.Error())
 	}
-	defaultMaxReplicasInt, err := strconv.Atoi(defaultMaxReplicasStr)
-	if err != nil {
-		logger.Panic("DEFAULT_MAX_REPLICAS is not an integer")
-	}
-	if defaultMinReplicasInt <= 0 {
-		logger.Panic("DEFAULT_MIN_REPLICAS must be at least one")
-	}
-	if defaultMaxReplicasInt <= 0 {
-		logger.Panic("DEFAULT_MAX_REPLICAS must be at least one")
-	}
-	defaultMinReplicas := uint64(defaultMinReplicasInt)
-	defaultMaxReplicas := uint64(defaultMaxReplicasInt)
 
 	client, _ := client.NewEnvClient()
 	defer client.Close()
@@ -49,8 +46,8 @@ func main() {
 	}
 
 	var alerter service.AlertServicer
-	if len(alertmangerAddress) != 0 {
-		url := fmt.Sprintf("http://%s:9093", alertmangerAddress)
+	if len(spec.AlertmanagerAddress) != 0 {
+		url := fmt.Sprintf("http://%s:9093", spec.AlertmanagerAddress)
 		alerter = service.NewAlertService(url)
 		logger.Printf("Using alertmanager at: %s", url)
 	} else {
@@ -59,13 +56,13 @@ func main() {
 	}
 
 	nodeScalerFactory := service.NewNodeScalerFactory()
-	nodeScalerFactory.SetAWSOptions(awsEnvFile)
+	nodeScalerFactory.SetAWSOptions(spec.AwsEnvFile)
 
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
-		client, minLabel, maxLabel,
-		defaultMinReplicas,
-		defaultMaxReplicas)
+		client, spec.MinScaleLabel, spec.MaxScaleLabel,
+		spec.DefaultMinReplicas,
+		spec.DefaultMaxReplicas)
 	s := server.NewServer(scaler, alerter, nodeScalerFactory, logger)
 	s.Run(8080)
 }
