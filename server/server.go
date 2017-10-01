@@ -42,7 +42,8 @@ func (s *Server) MakeRouter() *mux.Router {
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
 	m.Path("/scale").
-		Queries("nodesOn", "{nodesOn}", "delta", "{delta}").
+		Queries("nodesOn", "{nodesOn}", "delta", "{delta}",
+			"type", "{type}").
 		Methods("POST").
 		HandlerFunc(s.ScaleNode).
 		Name("ScaleNode")
@@ -133,9 +134,17 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	nodesOn := q.Get("nodesOn")
 	deltaStr := q.Get("delta")
+	typeStr := q.Get("type")
 
-	requestMessage := fmt.Sprintf("Scale node on: %s, delta: %s", nodesOn, deltaStr)
+	requestMessage := fmt.Sprintf("Scale node on: %s, delta: %s, type: %s", nodesOn, deltaStr, typeStr)
 	s.logger.Printf(requestMessage)
+
+	if typeStr != "worker" && typeStr != "manager" {
+		message := fmt.Sprintf("Incorrect type: %s, type can only be worker or manager", typeStr)
+		respondWithError(w, http.StatusPreconditionFailed, message)
+		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
+		return
+	}
 
 	delta, err := strconv.Atoi(deltaStr)
 	if err != nil {
@@ -152,14 +161,20 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodesBefore, nodesNow, err := nodeScaler.ScaleByDelta(delta)
+	var nodesBefore, nodesNow uint64
+
+	if typeStr == "worker" {
+		nodesBefore, nodesNow, err = nodeScaler.ScaleWorkerByDelta(delta)
+	} else {
+		nodesBefore, nodesNow, err = nodeScaler.ScaleManagerByDelta(delta)
+	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
 		return
 	}
 
-	message := fmt.Sprintf("Changed the number of nodes on %s from %d to %d", nodesOn, nodesBefore, nodesNow)
+	message := fmt.Sprintf("Changed the number of %s nodes on %s from %d to %d", typeStr, nodesOn, nodesBefore, nodesNow)
 	s.sendAlert("scale_node", nodesOn, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
