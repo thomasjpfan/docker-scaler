@@ -19,6 +19,7 @@ type AWSScaler struct {
 
 // AWSSpec defaults the specification for aws node scaling
 type AWSSpec struct {
+	envFile                string `envconfig:"AWS_ENV_FILE"`
 	managerConfigName      string `envconfig:"AWS_MANAGER_CONFIG_NAME"`
 	workerConfigName       string `envconfig:"AWS_WORKER_CONFIG_NAME"`
 	region                 string `envconfig:"AWS_DEFAULT_REGION"`
@@ -29,15 +30,15 @@ type AWSSpec struct {
 }
 
 // NewAWSScalerFromEnv creates an AWS based node scaler
-func NewAWSScalerFromEnv(envFile string) (*AWSScaler, error) {
-
-	godotenv.Load(envFile)
+func NewAWSScalerFromEnv() (*AWSScaler, error) {
 
 	var spec AWSSpec
 	err := envconfig.Process("", &spec)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
+
+	godotenv.Load(spec.envFile)
 
 	sess, err := session.NewSession()
 	if err != nil {

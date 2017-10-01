@@ -1,0 +1,37 @@
+version: "3.3"
+
+services:
+  scaler:
+    image: thomasjpfan/docker-scaler:latest
+    environment:
+      - MIN_SCALE_LABEL=com.df.scaleMin
+      - MAX_SCALE_LABEL=com.df.scaleMin
+      - DEFAULT_MIN_REPLICAS=1
+      - DEFAULT_MAX_REPLICAS=10
+      - ALERTMANAGER_ADDRESS=alertmanager
+      - AWS_ENV_FILE=/run/secrets/aws
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:8080
+    secrets:
+      - aws
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  web:
+    image: alpine:3.6
+    deploy:
+      replicas: 3
+      labels:
+        com.df.scaleMin: "2"
+        com.df.scaleMax: "4"
+    command: sleep 10000000
+  alertmanager:
+    image: prom/alertmanager:v0.8.0
+    ports:
+      - 9093:9093
+
+secrets:
+  aws:
+    external: true
