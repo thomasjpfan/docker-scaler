@@ -45,7 +45,7 @@ and `com.df.scaleMax` represents the minimum and maximum number of replicas for 
 
 Deploying `script/docker-compose-example.yml` as a stack:
 ```bash
-> docker stack deploy -c scripts/docker-compose-example.yml example
+$ docker stack deploy -c scripts/docker-compose-example.yml example
 ```
 Following the naming convention of `docker stack deploy`, this will create three services `example_scaler`, `example_web`, `example_alertmanager`. Port `8080` exposes the `example_scaler` service and port `9093` exposes `example_alertmanager` to your local machine. To scale `example_web` up by one replica send the following request:
 ```bash
@@ -72,4 +72,24 @@ scale_service  2017-09-25 16:55:01 UTC  Scaling example_web to 3 replicas
 If you wish to display all the information in an alert run:
 ```bash
 $ amtool --alertmanager.url http://localhost:9093 -o extended alert
+```
+
+### AWS Integration
+
+Create secret for AWS access
+```
+echo 'export AWS_ACCESS_KEY_ID=xxxx
+export AWS_SECRET_ACCESS_KEY=xxxx
+export AWS_DEFAULT_REGION=us-east-1
+' | docker secret create aws -
+```
+
+Deploying `scripts/docker-compose-aws.yml` as a stack:
+```bash
+$ docker stack deploy -c scripts/docker-compose-aws.yml aws
+```
+
+Send request to scale manager node:
+```bash
+$ curl -X POST localhost:8080/scale?nodesOn=aws&
 ```

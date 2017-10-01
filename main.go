@@ -19,7 +19,6 @@ type specification struct {
 	DefaultMinReplicas  uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
 	DefaultMaxReplicas  uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
 	AlertmanagerAddress string `envconfig:"ALERTMANAGER_ADDRESS"`
-	AwsEnvFile          string `envconfig:"AWS_ENV_FILE"`
 }
 
 func main() {
@@ -50,7 +49,6 @@ func main() {
 	}
 
 	nodeScalerFactory := service.NewNodeScalerFactory()
-	nodeScalerFactory.SetAWSOptions(spec.AwsEnvFile)
 
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
