@@ -14,18 +14,12 @@ import (
 )
 
 type specification struct {
-	MinScaleLabel          string `envconfig:"MIN_SCALE_LABEL"`
-	MaxScaleLabel          string `envconfig:"MAX_SCALE_LABEL"`
-	DefaultMinReplicas     uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
-	DefaultMaxReplicas     uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
-	AlertmanagerAddress    string `envconfig:"ALERTMANAGER_ADDRESS"`
-	AwsEnvFile             string `envconfig:"AWS_ENV_FILE"`
-	AwsManagerConfigName   string `envconfig:"AWS_MANAGER_CONFIG_NAME"`
-	AwsWorkerConfigName    string `envconfig:"AWS_WORKER_CONFIG_NAME"`
-	DefaultMinManagerNodes uint64 `envconfig:"DEFAULT_MIN_MANAGER_NODES"`
-	DefaultMaxManagerNodes uint64 `envconfig:"DEFAULT_MAX_MANAGER_NODES"`
-	DefaultMinWorkerNodes  uint64 `envconfig:"DEFAULT_MIN_WORKER_NODES"`
-	DefaultMaxWorkerNodes  uint64 `envconfig:"DEFAULT_MAX_WORKER_NODES"`
+	MinScaleLabel       string `envconfig:"MIN_SCALE_LABEL"`
+	MaxScaleLabel       string `envconfig:"MAX_SCALE_LABEL"`
+	DefaultMinReplicas  uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
+	DefaultMaxReplicas  uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
+	AlertmanagerAddress string `envconfig:"ALERTMANAGER_ADDRESS"`
+	AwsEnvFile          string `envconfig:"AWS_ENV_FILE"`
 }
 
 func main() {

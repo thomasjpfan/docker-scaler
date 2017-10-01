@@ -48,7 +48,12 @@ type NodeScalerMock struct {
 	mock.Mock
 }
 
-func (nsm *NodeScalerMock) ScaleByDelta(delta int) (uint64, uint64, error) {
+func (nsm *NodeScalerMock) ScaleManagerByDelta(delta int) (uint64, uint64, error) {
+	args := nsm.Called(delta)
+	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
+}
+
+func (nsm *NodeScalerMock) ScaleWorkerByDelta(delta int) (uint64, uint64, error) {
 	args := nsm.Called(delta)
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
@@ -250,8 +255,8 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 
 	for _, deltaStr := range tt {
 
-		url := fmt.Sprintf("/scale?nodesOn=mock&delta=%v", deltaStr)
-		requestMessage := fmt.Sprintf("Scale node on: mock, delta: %s", deltaStr)
+		url := fmt.Sprintf("/scale?nodesOn=mock&delta=%v&type=worker", deltaStr)
+		requestMessage := fmt.Sprintf("Scale node on: mock, delta: %s, type: worker", deltaStr)
 		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		suite.am.On("Send", "scale_node", "mock",
 			requestMessage, "error", errorMessage).Return(nil)
@@ -271,8 +276,8 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
-	url := "/scale?nodesOn=BADSERVICE&delta=1"
-	requestMessage := "Scale node on: BADSERVICE, delta: 1"
+	url := "/scale?nodesOn=BADSERVICE&delta=1&type=worker"
+	requestMessage := "Scale node on: BADSERVICE, delta: 1, type: worker"
 	expErr := fmt.Errorf("BADSERVICE does not exist")
 
 	suite.nscm.On("New", "BADSERVICE").Return(suite.nsm, expErr)
@@ -291,13 +296,13 @@ func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 
-	url := "/scale?nodesOn=mock&delta=1"
-	requestMessage := "Scale node on: mock, delta: 1"
+	url := "/scale?nodesOn=mock&delta=1&type=worker"
+	requestMessage := "Scale node on: mock, delta: 1, type: worker"
 	expErr := fmt.Errorf("Unable to scale node")
 
 	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
 	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", expErr.Error()).Return(nil)
-	suite.nsm.On("ScaleByDelta", 1).Return(uint64(0), uint64(0), expErr)
+	suite.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(0), uint64(0), expErr)
 
 	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
@@ -312,14 +317,50 @@ func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 
 }
 
-func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDelta() {
-	url := "/scale?nodesOn=mock&delta=1"
-	requestMessage := "Scale node on: mock, delta: 1"
-	message := "Changed the number of nodes on mock from 3 to 4"
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleWithBadType() {
+	url := "/scale?nodesOn=mock&delta=1&type=BAD"
+	requestMessage := "Scale node on: mock, delta: 1, type: BAD"
+	message := "Incorrect type: BAD, type can only be worker or manager"
+	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", message).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	suite.Equal(http.StatusPreconditionFailed, rec.Code)
+
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", message)
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleWorkerByDelta() {
+	url := "/scale?nodesOn=mock&delta=1&type=worker"
+	requestMessage := "Scale node on: mock, delta: 1, type: worker"
+	message := "Changed the number of worker nodes on mock from 3 to 4"
 
 	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
 	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
-	suite.nsm.On("ScaleByDelta", 1).Return(uint64(3), uint64(4), nil)
+	suite.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	suite.Equal(http.StatusOK, rec.Code)
+
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.nscm.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+	suite.nsm.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleManagerByDelta() {
+	url := "/scale?nodesOn=mock&delta=-1&type=manager"
+	requestMessage := "Scale node on: mock, delta: -1, type: manager"
+	message := "Changed the number of manager nodes on mock from 3 to 2"
+
+	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
+	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
+	suite.nsm.On("ScaleManagerByDelta", -1).Return(uint64(3), uint64(2), nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
