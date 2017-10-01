@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -19,7 +20,6 @@ type AWSScaler struct {
 
 // AWSSpec defaults the specification for aws node scaling
 type AWSSpec struct {
-	envFile                string `envconfig:"AWS_ENV_FILE"`
 	managerConfigName      string `envconfig:"AWS_MANAGER_CONFIG_NAME"`
 	workerConfigName       string `envconfig:"AWS_WORKER_CONFIG_NAME"`
 	region                 string `envconfig:"AWS_DEFAULT_REGION"`
@@ -32,13 +32,18 @@ type AWSSpec struct {
 // NewAWSScalerFromEnv creates an AWS based node scaler
 func NewAWSScalerFromEnv() (*AWSScaler, error) {
 
+	envFile := os.Getenv("AWS_ENV_FILE")
+	if len(envFile) == 0 {
+		return nil, fmt.Errorf("AWS_ENV_FILE not defined")
+	}
+
+	godotenv.Load(envFile)
+
 	var spec AWSSpec
 	err := envconfig.Process("", &spec)
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
-
-	godotenv.Load(spec.envFile)
 
 	sess, err := session.NewSession()
 	if err != nil {
