@@ -2,12 +2,18 @@ version: "3.3"
 
 services:
   scaler:
-    image: thomasjpfan/docker-scaler:latest
+    image: thomasjpfan/docker-scaler:beta
     environment:
       - DEFAULT_MIN_REPLICAS=1
       - DEFAULT_MAX_REPLICAS=10
       - ALERTMANAGER_ADDRESS=alertmanager
       - AWS_ENV_FILE=/run/secrets/aws
+      - AWS_MANAGER_GROUP_NAME=devops22-ManagerAsg-xxxxxxx
+      - AWS_WORKER_GROUP_NAME=devops22-NodeAsg-xxxxxxx
+      - DEFAULT_MIN_MANAGER_NODES=1
+      - DEFAULT_MAX_MANAGER_NODES=7
+      - DEFAULT_MIN_WORKER_NODES=1
+      - DEFAULT_MAX_WORKER_NODES=10
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -16,7 +22,9 @@ services:
       - aws
     deploy:
       placement:
-        constraints: [node.role == manager]
+        constraints:
+          - node.role == manager
+
   web:
     image: alpine:3.6
     deploy:
