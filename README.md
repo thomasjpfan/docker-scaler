@@ -89,7 +89,7 @@ Deploying `scripts/docker-compose-aws.yml` as a stack:
 $ docker stack deploy -c scripts/docker-compose-aws.yml aws
 ```
 
-Send request to scale manager node:
+To send request to scale up worker node:
 ```bash
-$ curl -X POST localhost:8080/scale?nodesOn=aws&
+$ curl -X POST localhost:8080/scale?nodesOn=aws&delta=1&type=worker
 ```

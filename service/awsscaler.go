@@ -45,7 +45,10 @@ func NewAWSScalerFromEnv() (*AWSScaler, error) {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
 
-	sess, err := session.NewSession()
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(spec.region),
+	})
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create aws session")
 	}

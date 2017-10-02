@@ -4,8 +4,6 @@ services:
   scaler:
     image: thomasjpfan/docker-scaler:latest
     environment:
-      - MIN_SCALE_LABEL=com.df.scaleMin
-      - MAX_SCALE_LABEL=com.df.scaleMin
       - DEFAULT_MIN_REPLICAS=1
       - DEFAULT_MAX_REPLICAS=10
       - ALERTMANAGER_ADDRESS=alertmanager
