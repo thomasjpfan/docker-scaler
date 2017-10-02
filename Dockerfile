@@ -4,7 +4,7 @@ COPY . .
 RUN go build -o docker-scaler main.go
 
 FROM alpine:3.6
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini ca-certificates
 
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
@@ -15,11 +15,9 @@ ENV MIN_SCALE_LABEL="com.df.scaleMin" \
     DEFAULT_MAX_REPLICAS="20" \
     ALERTMANAGER_ADDRESS="alertmanager" \
     AWS_ENV_FILE="/run/secrets/aws" \
-    AWS_ACCESS_KEY_ID="" \
-    AWS_SECRET_ACCESS_KEY="" \
     AWS_DEFAULT_REGION="us-east-1" \
-    AWS_MANAGER_CONFIG_NAME="stack-NodeManagerConfig" \
-    AWS_WORKER_CONFIG_NAME="stack-NodeWorkerConfig" \
+    AWS_MANAGER_GROUP_NAME="stack-NodeManagerConfig" \
+    AWS_WORKER_GROUP_NAME="stack-NodeWorkerConfig" \
     DEFAULT_MIN_MANAGER_NODES="1" \
     DEFAULT_MAX_MANAGER_NODES="7" \
     DEFAULT_MIN_WORKER_NODES="1" \
