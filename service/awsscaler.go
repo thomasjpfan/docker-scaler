@@ -22,7 +22,6 @@ type AWSScaler struct {
 type AWSSpec struct {
 	ManagerGroupName       string `envconfig:"AWS_MANAGER_GROUP_NAME"`
 	WorkerGroupName        string `envconfig:"AWS_WORKER_GROUP_NAME"`
-	Region                 string `envconfig:"AWS_DEFAULT_REGION"`
 	DefaultMinManagerNodes uint64 `envconfig:"DEFAULT_MIN_MANAGER_NODES"`
 	DefaultMaxManagerNodes uint64 `envconfig:"DEFAULT_MAX_MANAGER_NODES"`
 	DefaultMinWorkerNodes  uint64 `envconfig:"DEFAULT_MIN_WORKER_NODES"`
@@ -45,12 +44,13 @@ func NewAWSScalerFromEnv() (*AWSScaler, error) {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
 
-	sess, err := session.NewSession()
+	sess, err := session.NewSessionWithOptions(
+		session.Options{SharedConfigState: session.SharedConfigEnable})
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to create aws session")
 	}
 
-	svc := autoscaling.New(sess, aws.NewConfig().WithRegion(spec.Region))
+	svc := autoscaling.New(sess, aws.NewConfig())
 	return &AWSScaler{
 		svc:  svc,
 		spec: spec,
