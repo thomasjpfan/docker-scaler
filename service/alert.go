@@ -18,30 +18,33 @@ type AlertServicer interface {
 		message string) error
 }
 
-// SilentAlertService is a stub for an alert service
-type SilentAlertService struct{}
+type silentAlertService struct{}
 
-// Send is a stub for an alert service
-func (s SilentAlertService) Send(alertName string,
+func (s silentAlertService) Send(alertName string,
 	serviceName string, request string,
 	status string, message string) error {
 	return nil
 }
 
+// NewSilentAlertService creates a silent alert service
+func NewSilentAlertService() AlertServicer {
+	return &silentAlertService{}
+}
+
 // AlertService sends alerts to an alertmanager
-type AlertService struct {
+type alertService struct {
 	url string
 }
 
 // NewAlertService creates new AlertService
-func NewAlertService(url string) *AlertService {
-	return &AlertService{
+func NewAlertService(url string) AlertServicer {
+	return &alertService{
 		url: url,
 	}
 }
 
-// Send sends alert to alertmanager
-func (a AlertService) Send(alertName string, serviceName string, request string, status string, message string) error {
+// Send sends alert to alert service
+func (a alertService) Send(alertName string, serviceName string, request string, status string, message string) error {
 	alert := generateAlert(alertName, serviceName, request, status, message)
 	alerts := []*model.Alert{alert}
 	alertsJSON, _ := json.Marshal(alerts)

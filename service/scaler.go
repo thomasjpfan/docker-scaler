@@ -17,7 +17,7 @@ type ScalerServicer interface {
 }
 
 // ScalerService scales docker services
-type ScalerService struct {
+type scalerService struct {
 	c          *client.Client
 	minLabel   string
 	maxLabel   string
@@ -31,8 +31,8 @@ func NewScalerService(
 	minLabel string,
 	maxLabel string,
 	defaultMin uint64,
-	defaultMax uint64) *ScalerService {
-	return &ScalerService{
+	defaultMax uint64) ScalerServicer {
+	return &scalerService{
 		c:          c,
 		minLabel:   minLabel,
 		maxLabel:   maxLabel,
@@ -42,7 +42,7 @@ func NewScalerService(
 }
 
 // GetReplicas Gets Replicas
-func (s *ScalerService) GetReplicas(serviceName string) (uint64, error) {
+func (s *scalerService) GetReplicas(serviceName string) (uint64, error) {
 
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
@@ -55,7 +55,7 @@ func (s *ScalerService) GetReplicas(serviceName string) (uint64, error) {
 }
 
 // SetReplicas Sets the number of replicas
-func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
+func (s *scalerService) SetReplicas(serviceName string, count uint64) error {
 
 	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
 
@@ -73,7 +73,7 @@ func (s *ScalerService) SetReplicas(serviceName string, count uint64) error {
 }
 
 // GetMinMaxReplicas gets the min and maximum replicas allowed for serviceName
-func (s *ScalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, error) {
+func (s *scalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, error) {
 
 	minReplicas := s.defaultMin
 	maxReplicas := s.defaultMax
