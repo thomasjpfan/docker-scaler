@@ -17,8 +17,7 @@ type alertGroup struct {
 	Blocks   []*alertBlock  `json:"blocks"`
 }
 
-// AlertStatus stores the state and values associated with an Alert.
-type AlertStatus struct {
+type alertStatus struct {
 	State       string   `json:"state"`
 	SilencedBy  []string `json:"silencedBy"`
 	InhibitedBy []string `json:"inhibitedBy"`
@@ -27,7 +26,7 @@ type AlertStatus struct {
 // APIAlert are alerts from alertmanager
 type APIAlert struct {
 	*model.Alert
-	Status AlertStatus `json:"status"`
+	Status alertStatus `json:"status"`
 }
 
 type alertBlock struct {

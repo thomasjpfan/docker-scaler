@@ -12,7 +12,7 @@ import (
 
 type ScalerTestSuite struct {
 	suite.Suite
-	scaler     *ScalerService
+	scaler     ScalerServicer
 	defaultMax uint64
 	defaultMin uint64
 	replicaMin uint64

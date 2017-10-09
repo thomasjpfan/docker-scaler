@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// Response message returns to HTTP clients for scaleing
+// Response message returns to HTTP clients for scaling
 type Response struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`

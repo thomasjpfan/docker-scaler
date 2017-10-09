@@ -44,7 +44,7 @@ func main() {
 		alerter = service.NewAlertService(url)
 		logger.Printf("Using alertmanager at: %s", url)
 	} else {
-		alerter = service.SilentAlertService{}
+		alerter = service.NewSilentAlertService()
 		logger.Printf("Using a stubbed alertmanager")
 	}
 

@@ -16,7 +16,7 @@ import (
 type AlertTestSuite struct {
 	suite.Suite
 	url          string
-	alertService *AlertService
+	alertService AlertServicer
 	client       *client.Client
 }
 

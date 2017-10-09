@@ -11,16 +11,15 @@ type NodeScalerCreater interface {
 	New(nodeBackend string) (NodeScaler, error)
 }
 
-// NodeScalerFactory creates NodeScalers
-type NodeScalerFactory struct{}
+type nodeScalerFactory struct{}
 
 // NewNodeScalerFactory creates a factory for generating NodeScalers
-func NewNodeScalerFactory() *NodeScalerFactory {
-	return &NodeScalerFactory{}
+func NewNodeScalerFactory() NodeScalerCreater {
+	return &nodeScalerFactory{}
 }
 
 // New creates NodeScalers with a passed in node backend
-func (f *NodeScalerFactory) New(nodeBackend string) (NodeScaler, error) {
+func (f nodeScalerFactory) New(nodeBackend string) (NodeScaler, error) {
 	switch nodeBackend {
 	case "aws":
 		scaler, err := NewAWSScalerFromEnv()
