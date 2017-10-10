@@ -11,9 +11,9 @@ import (
 
 // ScalerServicer interface for resizing services
 type ScalerServicer interface {
-	GetReplicas(serviceName string) (uint64, error)
-	SetReplicas(serviceName string, count uint64) error
-	GetMinMaxReplicas(serviceName string) (uint64, uint64, error)
+	GetReplicas(ctx context.Context, serviceName string) (uint64, error)
+	SetReplicas(ctx context.Context, serviceName string, count uint64) error
+	GetMinMaxReplicas(ctx context.Context, serviceName string) (uint64, uint64, error)
 }
 
 // ScalerService scales docker services
@@ -42,9 +42,9 @@ func NewScalerService(
 }
 
 // GetReplicas Gets Replicas
-func (s *scalerService) GetReplicas(serviceName string) (uint64, error) {
+func (s *scalerService) GetReplicas(ctx context.Context, serviceName string) (uint64, error) {
 
-	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
 
 	if err != nil {
 		return 0, errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -55,9 +55,9 @@ func (s *scalerService) GetReplicas(serviceName string) (uint64, error) {
 }
 
 // SetReplicas Sets the number of replicas
-func (s *scalerService) SetReplicas(serviceName string, count uint64) error {
+func (s *scalerService) SetReplicas(ctx context.Context, serviceName string, count uint64) error {
 
-	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
 
 	if err != nil {
 		return errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -68,17 +68,17 @@ func (s *scalerService) SetReplicas(serviceName string, count uint64) error {
 	updateOpts.RegistryAuthFrom = types.RegistryAuthFromSpec
 
 	_, updateErr := s.c.ServiceUpdate(
-		context.Background(), service.ID, service.Version, service.Spec, updateOpts)
+		ctx, service.ID, service.Version, service.Spec, updateOpts)
 	return updateErr
 }
 
 // GetMinMaxReplicas gets the min and maximum replicas allowed for serviceName
-func (s *scalerService) GetMinMaxReplicas(serviceName string) (uint64, uint64, error) {
+func (s *scalerService) GetMinMaxReplicas(ctx context.Context, serviceName string) (uint64, uint64, error) {
 
 	minReplicas := s.defaultMin
 	maxReplicas := s.defaultMax
 
-	service, _, err := s.c.ServiceInspectWithRaw(context.Background(), serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
 
 	if err != nil {
 		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed in ScalerService")
