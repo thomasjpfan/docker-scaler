@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/thomasjpfan/docker-scaler/server/handler"
+
 	"github.com/gorilla/mux"
 	"github.com/thomasjpfan/docker-scaler/service"
 )
@@ -54,7 +56,8 @@ func (s *Server) MakeRouter() *mux.Router {
 func (s *Server) Run(port uint16) {
 	address := fmt.Sprintf(":%d", port)
 	m := s.MakeRouter()
-	log.Fatal(http.ListenAndServe(address, m))
+	h := handler.RecoveryHandler(s.logger)
+	log.Fatal(http.ListenAndServe(address, h(m)))
 }
 
 // ScaleService scales service
@@ -82,7 +85,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		s.logger.Print(message)
 		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
 		if err != nil {
-			s.logger.Print(err.Error())
+			s.logger.Print(message)
 		}
 		return
 	}
@@ -184,7 +187,7 @@ func (s *Server) sendAlert(alertName string, serviceName string, request string,
 	s.logger.Print(message)
 	err := s.alerter.Send(alertName, serviceName, request, status, message)
 	if err != nil {
-		s.logger.Printf("Alertmanager did not receive message: %s, error: %s", message, err.Error())
+		s.logger.Printf("Alertmanager did not receive message: %s, error: %v", message, err)
 	} else {
 		s.logger.Printf("Alertmanager received message: %s", message)
 	}
