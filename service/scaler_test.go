@@ -13,6 +13,7 @@ import (
 type ScalerTestSuite struct {
 	suite.Suite
 	scaler     ScalerServicer
+	ctx        context.Context
 	defaultMax uint64
 	defaultMin uint64
 	replicaMin uint64
@@ -41,6 +42,7 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.replicaMin = 2
 	s.replicaMax = 4
 	s.replicas = 3
+	s.ctx = context.Background()
 	s.scaler = NewScalerService(
 		client, "com.df.scaleMin", "com.df.scaleMax",
 		s.defaultMin, s.defaultMax)
@@ -66,26 +68,26 @@ func (s *ScalerTestSuite) TearDownTest() {
 }
 
 func (s *ScalerTestSuite) Test_GetReplicasServiceDoesNotExist() {
-	_, err := s.scaler.GetReplicas("BADTEST")
+	_, err := s.scaler.GetReplicas(s.ctx, "BADTEST")
 	s.Error(err)
 }
 
 func (s *ScalerTestSuite) Test_GetReplicas() {
-	replicas, err := s.scaler.GetReplicas("web_test")
+	replicas, err := s.scaler.GetReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicas, replicas)
 }
 
 func (s *ScalerTestSuite) Test_SetReplicas() {
-	err := s.scaler.SetReplicas("web_test", 4)
+	err := s.scaler.SetReplicas(s.ctx, "web_test", 4)
 	s.Require().NoError(err)
-	replicas, err := s.scaler.GetReplicas("web_test")
+	replicas, err := s.scaler.GetReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(uint64(4), replicas)
 }
 
 func (s *ScalerTestSuite) Test_GetMinMaxReplicas() {
-	min, max, err := s.scaler.GetMinMaxReplicas("web_test")
+	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.replicaMax, max)
@@ -95,7 +97,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleMax`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas("web_test")
+	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.defaultMax, max)
@@ -105,7 +107,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleMin`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas("web_test")
+	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.replicaMax, max)
@@ -116,7 +118,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 			--label-rm com.df.scaleMin \
 			--label-rm com.df.scaleMax`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas("web_test")
+	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.defaultMax, max)

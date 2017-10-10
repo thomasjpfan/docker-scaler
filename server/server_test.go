@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -20,17 +21,17 @@ type ScalerServicerMock struct {
 	mock.Mock
 }
 
-func (m *ScalerServicerMock) GetReplicas(serviceName string) (uint64, error) {
+func (m *ScalerServicerMock) GetReplicas(ctx context.Context, serviceName string) (uint64, error) {
 	args := m.Called(serviceName)
 	return args.Get(0).(uint64), args.Error(1)
 }
 
-func (m *ScalerServicerMock) SetReplicas(serviceName string, count uint64) error {
+func (m *ScalerServicerMock) SetReplicas(ctx context.Context, serviceName string, count uint64) error {
 	args := m.Called(serviceName, count)
 	return args.Error(0)
 }
 
-func (m *ScalerServicerMock) GetMinMaxReplicas(serviceName string) (uint64, uint64, error) {
+func (m *ScalerServicerMock) GetMinMaxReplicas(ctx context.Context, serviceName string) (uint64, uint64, error) {
 	args := m.Called(serviceName)
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
@@ -48,12 +49,12 @@ type NodeScalerMock struct {
 	mock.Mock
 }
 
-func (nsm *NodeScalerMock) ScaleManagerByDelta(delta int) (uint64, uint64, error) {
+func (nsm *NodeScalerMock) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
 	args := nsm.Called(delta)
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
 
-func (nsm *NodeScalerMock) ScaleWorkerByDelta(delta int) (uint64, uint64, error) {
+func (nsm *NodeScalerMock) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
 	args := nsm.Called(delta)
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
@@ -126,13 +127,14 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -10"
 	errorMessage := "Delta -10 results in a negative number of replicas for service: web"
+	url := "/scale?service=web&delta=-10"
+	req, _ := http.NewRequest("POST", url, nil)
+
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(4), nil)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", errorMessage).Return(nil)
 
-	url := "/scale?service=web&delta=-10"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusBadRequest, rec.Code)
@@ -148,12 +150,13 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require := suite.Require()
 	expErr := fmt.Errorf("No such service: web")
 	requestMessage := "Scale service: web, delta: 1"
+	url := "/scale?service=web&delta=1"
+	req, _ := http.NewRequest("POST", url, nil)
+
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(0), uint64(0), expErr)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", expErr.Error()).Return(nil)
 
-	url := "/scale?service=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusInternalServerError, rec.Code)
@@ -168,13 +171,14 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: 1"
 	expErr := fmt.Errorf("web is already scaled to the maximum number of 4 replicas")
+	url := "/scale?service=web&delta=1"
+	req, _ := http.NewRequest("POST", url, nil)
+
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(4), nil)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", expErr.Error()).Return(nil)
 
-	url := "/scale?service=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
@@ -190,13 +194,14 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -1"
 	expErr := fmt.Errorf("web is already descaled to the minimum number of 2 replicas")
+	url := "/scale?service=web&delta=-1"
+	req, _ := http.NewRequest("POST", url, nil)
+
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(2), nil)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", expErr.Error()).Return(nil)
 
-	url := "/scale?service=web&delta=-1"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusPreconditionFailed, rec.Code)
@@ -211,13 +216,14 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: 1"
 	message := "Scaling web to 4 replicas"
+	url := "/scale?service=web&delta=1"
+	req, _ := http.NewRequest("POST", url, nil)
+
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
 	suite.m.On("SetReplicas", "web", uint64(4)).Return(nil)
 	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
 
-	url := "/scale?service=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)
@@ -232,14 +238,14 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -1"
 	message := "Scaling web to 2 replicas"
+	url := "/scale?service=web&delta=-1"
+	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
 	suite.m.On("SetReplicas", "web", uint64(2)).Return(nil)
 	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
 
-	url := "/scale?service=web&delta=-1"
-	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusOK, rec.Code)

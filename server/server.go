@@ -63,6 +63,7 @@ func (s *Server) Run(port uint16) {
 // ScaleService scales service
 func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
+	ctx := r.Context()
 	q := r.URL.Query()
 	serviceID := q.Get("service")
 	deltaStr := q.Get("delta")
@@ -78,7 +79,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(serviceID)
+	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(ctx, serviceID)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
@@ -90,7 +91,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	replicas, err := s.scaler.GetReplicas(serviceID)
+	replicas, err := s.scaler.GetReplicas(ctx, serviceID)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
@@ -119,7 +120,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.scaler.SetReplicas(serviceID, newReplicas)
+	err = s.scaler.SetReplicas(ctx, serviceID, newReplicas)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
@@ -138,6 +139,7 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	nodesOn := q.Get("nodesOn")
 	deltaStr := q.Get("delta")
 	typeStr := q.Get("type")
+	ctx := r.Context()
 
 	requestMessage := fmt.Sprintf("Scale node on: %s, delta: %s, type: %s", nodesOn, deltaStr, typeStr)
 	s.logger.Printf(requestMessage)
@@ -167,9 +169,9 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	var nodesBefore, nodesNow uint64
 
 	if typeStr == "worker" {
-		nodesBefore, nodesNow, err = nodeScaler.ScaleWorkerByDelta(delta)
+		nodesBefore, nodesNow, err = nodeScaler.ScaleWorkerByDelta(ctx, delta)
 	} else {
-		nodesBefore, nodesNow, err = nodeScaler.ScaleManagerByDelta(delta)
+		nodesBefore, nodesNow, err = nodeScaler.ScaleManagerByDelta(ctx, delta)
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())

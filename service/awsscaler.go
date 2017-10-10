@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -12,8 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// AWSScaler scales nodes back by Amazon web services
-type AWSScaler struct {
+type awsScaler struct {
 	svc  *autoscaling.AutoScaling
 	spec AWSSpec
 }
@@ -29,7 +29,7 @@ type AWSSpec struct {
 }
 
 // NewAWSScalerFromEnv creates an AWS based node scaler
-func NewAWSScalerFromEnv() (*AWSScaler, error) {
+func NewAWSScalerFromEnv() (NodeScaler, error) {
 
 	envFile := os.Getenv("AWS_ENV_FILE")
 	if len(envFile) == 0 {
@@ -51,27 +51,27 @@ func NewAWSScalerFromEnv() (*AWSScaler, error) {
 	}
 
 	svc := autoscaling.New(sess, aws.NewConfig())
-	return &AWSScaler{
+	return &awsScaler{
 		svc:  svc,
 		spec: spec,
 	}, nil
 }
 
 // ScaleWorkerByDelta scales aws worker nodes by delta
-func (s *AWSScaler) ScaleWorkerByDelta(delta int) (uint64, uint64, error) {
-	return s.scaleNodes(delta, s.spec.WorkerGroupName, int64(s.spec.DefaultMinWorkerNodes),
+func (s *awsScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
+	return s.scaleNodes(ctx, delta, s.spec.WorkerGroupName, int64(s.spec.DefaultMinWorkerNodes),
 		int64(s.spec.DefaultMaxWorkerNodes))
 }
 
 // ScaleManagerByDelta scales aws manager nodes by delta
-func (s *AWSScaler) ScaleManagerByDelta(delta int) (uint64, uint64, error) {
-	return s.scaleNodes(delta, s.spec.ManagerGroupName, int64(s.spec.DefaultMinManagerNodes),
+func (s *awsScaler) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
+	return s.scaleNodes(ctx, delta, s.spec.ManagerGroupName, int64(s.spec.DefaultMinManagerNodes),
 		int64(s.spec.DefaultMaxManagerNodes))
 }
 
-func (s *AWSScaler) scaleNodes(delta int, groupName string, minSize int64, maxSize int64) (uint64, uint64, error) {
+func (s *awsScaler) scaleNodes(ctx context.Context, delta int, groupName string, minSize int64, maxSize int64) (uint64, uint64, error) {
 
-	groupsOutput, err := s.svc.DescribeAutoScalingGroups(&autoscaling.DescribeAutoScalingGroupsInput{})
+	groupsOutput, err := s.svc.DescribeAutoScalingGroupsWithContext(ctx, &autoscaling.DescribeAutoScalingGroupsInput{})
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "Unable to describe-auto-scaling-groups")
 	}
@@ -98,7 +98,7 @@ func (s *AWSScaler) scaleNodes(delta int, groupName string, minSize int64, maxSi
 		return 0, 0, fmt.Errorf("New capacity: %d is not in between %d and %d", newCapacity, minSize, maxSize)
 	}
 
-	_, err = s.svc.UpdateAutoScalingGroup(&autoscaling.UpdateAutoScalingGroupInput{
+	_, err = s.svc.UpdateAutoScalingGroupWithContext(ctx, &autoscaling.UpdateAutoScalingGroupInput{
 		AutoScalingGroupName: &groupName,
 		DesiredCapacity:      &newCapacity,
 		MinSize:              &minSize,
