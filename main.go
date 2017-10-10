@@ -28,14 +28,14 @@ func main() {
 	var spec specification
 	err := envconfig.Process("", &spec)
 	if err != nil {
-		logger.Panic(err.Error())
+		logger.Panic(err)
 	}
 
 	client, _ := client.NewEnvClient()
 	defer client.Close()
 	_, err = client.Info(context.Background())
 	if err != nil {
-		logger.Panicln(err)
+		logger.Panic(err)
 	}
 
 	var alerter service.AlertServicer
