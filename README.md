@@ -82,18 +82,16 @@ echo 'export AWS_ACCESS_KEY_ID=xxxx
 export AWS_SECRET_ACCESS_KEY=xxxx
 ' | docker secret create aws -
 ```
-
-Deploying `scripts/docker-compose-aws.yml` as a stack:
+In `scripts/docker-compose-aws.yml`, overwrite `AWS_MANAGER_GROUP_NAME` and `AWS_WORKER_GROUP_NAME`
+with your autoscaling group names. Then deploy it as a stack:
 ```bash
 $ docker stack deploy -c scripts/docker-compose-aws.yml aws
 ```
-
 To send request to scale up worker node:
 ```bash
-$ curl -X POST localhost:8080/scale?nodesOn=aws&delta=1&type=worker
+$ curl -X POST [PUBLIC_DNS]:8080/scale?nodesOn=aws&delta=1&type=worker
 ```
-
 Or scaling up a manager node:
 ```bash
-$ curl -X POST localhost:8080/scale?nodesOn=aws&delta=1&type=manager
+$ curl -X POST [PUBLIC_DNS]:8080/scale?nodesOn=aws&delta=1&type=manager
 ```
