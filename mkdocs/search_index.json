@@ -2,17 +2,37 @@
     "docs": [
         {
             "location": "/",
-            "text": "",
+            "text": "Docker Scaler\n\u00b6\n\n\nThe goal of the \nDocker Scaler\n project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to \nAlertmanager\n which can be configured to notify you through email, Slack, etc.\n\n\nPlease visit the \ntutorial\n for a brief introduction or \nUsage\n sections for more details.",
             "title": "Home"
         },
         {
+            "location": "/#docker-scaler",
+            "text": "The goal of the  Docker Scaler  project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to  Alertmanager  which can be configured to notify you through email, Slack, etc.  Please visit the  tutorial  for a brief introduction or  Usage  sections for more details.",
+            "title": "Docker Scaler"
+        },
+        {
             "location": "/usage/",
+            "text": "Usage\n\u00b6",
+            "title": "Usage"
+        },
+        {
+            "location": "/usage/#usage",
             "text": "",
             "title": "Usage"
         },
         {
+            "location": "/tutorial/",
+            "text": "Running Docker Scaler\n\u00b6",
+            "title": "Tutorial"
+        },
+        {
+            "location": "/tutorial/#running-docker-scaler",
+            "text": "",
+            "title": "Running Docker Scaler"
+        },
+        {
             "location": "/feedback-and-contribution/",
-            "text": "Feedback and Contribution\n\u00b6\n\n\nThe \nDocker Scaler\n project welcomes, and depends, on contributions from developers and users in the open source community. Contributions can be made in a number of ways, a few examples are:\n\n\n\n\nCode patches or new features via pull requests\n\n\nDocumentation improvements\n\n\nBug reports and patch reviews\n\n\n\n\nReporting an Issue\n\u00b6\n\n\nFeel fee to \ncreate a new issue\n. Include as much detail as you can.\n\n\nIf an issue is a bug, please provide steps to reproduce it.\n\n\nIf an issue is a request for a new feature, please specify the use-case behind it.\n\n\nDiscussion\n\u00b6\n\n\nPlease join the \nDevOps20\n Slack channel if you'd like to discuss the project or have a problem you'd like us to solve\n\n\nContributing To The Project\n\u00b6",
+            "text": "Feedback and Contribution\n\u00b6\n\n\nThe \nDocker Scaler\n project welcomes, and depends, on contributions from developers and users in the open source community. Contributions can be made in a number of ways, a few examples are:\n\n\n\n\nCode patches or new features via pull requests\n\n\nDocumentation improvements\n\n\nBug reports and patch reviews\n\n\n\n\nReporting an Issue\n\u00b6\n\n\nFeel fee to \ncreate a new issue\n. Include as much detail as you can.\n\n\nIf an issue is a bug, please provide steps to reproduce it.\n\n\nIf an issue is a request for a new feature, please specify the use-case behind it.\n\n\nDiscussion\n\u00b6\n\n\nContributing To The Project\n\u00b6",
             "title": "Feedback and Contribution"
         },
         {
@@ -27,7 +47,7 @@
         },
         {
             "location": "/feedback-and-contribution/#discussion",
-            "text": "Please join the  DevOps20  Slack channel if you'd like to discuss the project or have a problem you'd like us to solve",
+            "text": "",
             "title": "Discussion"
         },
         {
