@@ -1,0 +1,7 @@
+FROM squidfunk/mkdocs-material:1.10.1 AS build
+COPY docs /docs/docs
+COPY mkdocs.yml /docs
+RUN mkdocs build --site-dir /site
+
+FROM nginx:1.12.1-alpine
+COPY --from=build /site /usr/share/nginx/html
