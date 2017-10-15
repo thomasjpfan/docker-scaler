@@ -1,0 +1,35 @@
+site_name: Docker Scaler
+pages:
+  - Home: index.md
+  - Usage: usage.md
+  - About:
+    - Feedback and Contribution: feedback-and-contribution.md
+    - License: license.md
+repo_url: https://github.com/thomasjpfan/docker-scaler
+site_author: Thomas Fan
+copyright: Copyright © 2017 Thomas Fan
+strict: true
+theme: 'material'
+extra:
+  palette:
+    primary: 'blue'
+    accent: 'light blue'
+markdown_extensions:
+  - toc
+  - admonition
+  - codehilite(guess_lang=false)
+  - toc(permalink=true)
+  - footnotes
+  - pymdownx.arithmatex
+  - pymdownx.betterem(smart_enable=all)
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:pymdownx.emoji.to_svg
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist(custom_checkbox=true)
+  - pymdownx.tilde
