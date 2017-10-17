@@ -16,7 +16,5 @@ If an issue is a request for a new feature, please specify the use-case behind i
 
 ## Discussion
 
-Please join the [DevOps20](http://slack.devops20toolkit.com/) Slack channel if you'd like to discuss the project or have a problem you'd like us to solve
-
 ## Contributing To The Project
 
