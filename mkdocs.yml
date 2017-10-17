@@ -2,6 +2,9 @@ site_name: Docker Scaler
 pages:
   - Home: index.md
   - Usage: usage.md
+  - Tutorial:
+    - Service Scaling: service-scale.md
+    - AWS Node Scaling: aws-node-scale.md
   - About:
     - Feedback and Contribution: feedback-and-contribution.md
     - License: license.md
