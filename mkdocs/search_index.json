@@ -2,12 +2,12 @@
     "docs": [
         {
             "location": "/",
-            "text": "Docker Scaler\n\u00b6\n\n\nThe goal of the \nDocker Scaler\n project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to \nAlertmanager\n which can be configured to notify you through email, Slack, etc.\n\n\nDocker Scaler\n exammples can be foudn in the \nTutorials\n section located in the left-hand menu.",
+            "text": "Docker Scaler\n\u00b6\n\n\nThe goal of the \nDocker Scaler\n project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to \nAlertmanager\n which can be configured to notify you through email, Slack, etc.\n\n\nDocker Scaler\n examples can be found in the \nTutorials\n section located in the left-hand menu.",
             "title": "Home"
         },
         {
             "location": "/#docker-scaler",
-            "text": "The goal of the  Docker Scaler  project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to  Alertmanager  which can be configured to notify you through email, Slack, etc.  Docker Scaler  exammples can be foudn in the  Tutorials  section located in the left-hand menu.",
+            "text": "The goal of the  Docker Scaler  project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to  Alertmanager  which can be configured to notify you through email, Slack, etc.  Docker Scaler  examples can be found in the  Tutorials  section located in the left-hand menu.",
             "title": "Docker Scaler"
         },
         {
