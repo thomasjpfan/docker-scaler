@@ -2,12 +2,12 @@
     "docs": [
         {
             "location": "/",
-            "text": "Docker Scaler\n\u00b6\n\n\nThe goal of the \nDocker Scaler\n project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to \nAlertmanager\n which can be configured to notify you through email, Slack, etc.\n\n\nPlease visit the \ntutorial\n for a brief introduction or \nUsage\n sections for more details.",
+            "text": "Docker Scaler\n\u00b6\n\n\nThe goal of the \nDocker Scaler\n project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to \nAlertmanager\n which can be configured to notify you through email, Slack, etc.\n\n\nDocker Scaler\n exammples can be foudn in the \nTutorials\n sectino located in the left-hand menu.",
             "title": "Home"
         },
         {
             "location": "/#docker-scaler",
-            "text": "The goal of the  Docker Scaler  project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to  Alertmanager  which can be configured to notify you through email, Slack, etc.  Please visit the  tutorial  for a brief introduction or  Usage  sections for more details.",
+            "text": "The goal of the  Docker Scaler  project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to  Alertmanager  which can be configured to notify you through email, Slack, etc.  Docker Scaler  exammples can be foudn in the  Tutorials  sectino located in the left-hand menu.",
             "title": "Docker Scaler"
         },
         {
@@ -21,14 +21,24 @@
             "title": "Usage"
         },
         {
-            "location": "/tutorial/",
-            "text": "Running Docker Scaler\n\u00b6",
-            "title": "Tutorial"
+            "location": "/service-scale/",
+            "text": "Service Scaing\n\u00b6",
+            "title": "Service Scaling"
         },
         {
-            "location": "/tutorial/#running-docker-scaler",
+            "location": "/service-scale/#service-scaing",
             "text": "",
-            "title": "Running Docker Scaler"
+            "title": "Service Scaing"
+        },
+        {
+            "location": "/aws-node-scale/",
+            "text": "AWS Node Scaling\n\u00b6",
+            "title": "AWS Node Scaling"
+        },
+        {
+            "location": "/aws-node-scale/#aws-node-scaling",
+            "text": "",
+            "title": "AWS Node Scaling"
         },
         {
             "location": "/feedback-and-contribution/",

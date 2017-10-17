@@ -222,10 +222,46 @@
       
 
 
-  <li class="md-nav__item">
-    <a href="tutorial/" title="Tutorial" class="md-nav__link">
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
       Tutorial
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        Tutorial
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="service-scale/" title="Service Scaling" class="md-nav__link">
+      Service Scaling
     </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="aws-node-scale/" title="AWS Node Scaling" class="md-nav__link">
+      AWS Node Scaling
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
   </li>
 
     
@@ -309,7 +345,7 @@
                 
                 <h1 id="docker-scaler">Docker Scaler<a class="headerlink" href="#docker-scaler" title="Permanent link">&para;</a></h1>
 <p>The goal of the <em>Docker Scaler</em> project is to provide a REST HTTP interface to scale services and nodes. It sends scaling alerts to <a href="https://prometheus.io/docs/alerting/alertmanager/">Alertmanager</a> which can be configured to notify you through email, Slack, etc.</p>
-<p>Please visit the <a href="./tutorial">tutorial</a> for a brief introduction or <a href="./usage">Usage</a> sections for more details.</p>
+<p><em>Docker Scaler</em> exammples can be foudn in the <em>Tutorials</em> sectino located in the left-hand menu.</p>
                 
                   
                 
