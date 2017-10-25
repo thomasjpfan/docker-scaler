@@ -37,19 +37,20 @@ func NewServer(
 
 // MakeRouter routes url paths to handlers
 func (s *Server) MakeRouter() *mux.Router {
-	m := mux.NewRouter()
-	m.Path("/scale").
-		Queries("service", "{service}", "delta", "{delta}").
+	router := mux.NewRouter()
+	v1Router := router.PathPrefix("/v1").Subrouter()
+	v1Router.Path("/scale-service").
+		Queries("name", "{name}", "delta", "{delta}").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
-	m.Path("/scale").
-		Queries("nodesOn", "{nodesOn}", "delta", "{delta}",
+	v1Router.Path("/scale-nodes").
+		Queries("backend", "{backend}", "delta", "{delta}",
 			"type", "{type}").
 		Methods("POST").
 		HandlerFunc(s.ScaleNode).
 		Name("ScaleNode")
-	return m
+	return router
 }
 
 // Run starts server
@@ -65,7 +66,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	q := r.URL.Query()
-	serviceID := q.Get("service")
+	serviceID := q.Get("name")
 	deltaStr := q.Get("delta")
 
 	requestMessage := fmt.Sprintf("Scale service: %s, delta: %s", serviceID, deltaStr)
@@ -136,7 +137,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
-	nodesOn := q.Get("nodesOn")
+	nodesOn := q.Get("backend")
 	deltaStr := q.Get("delta")
 	typeStr := q.Get("type")
 	ctx := r.Context()
