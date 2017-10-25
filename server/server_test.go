@@ -104,7 +104,7 @@ func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
 
 	for _, deltaStr := range tt {
 
-		url := fmt.Sprintf("/scale?service=hello&delta=%v", deltaStr)
+		url := fmt.Sprintf("/v1/scale-service?name=hello&delta=%v", deltaStr)
 		requestMessage := fmt.Sprintf("Scale service: hello, delta: %s", deltaStr)
 		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		suite.am.On("Send", "scale_service", "hello",
@@ -127,7 +127,7 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -10"
 	errorMessage := "Delta -10 results in a negative number of replicas for service: web"
-	url := "/scale?service=web&delta=-10"
+	url := "/v1/scale-service?name=web&delta=-10"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
@@ -150,7 +150,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require := suite.Require()
 	expErr := fmt.Errorf("No such service: web")
 	requestMessage := "Scale service: web, delta: 1"
-	url := "/scale?service=web&delta=1"
+	url := "/v1/scale-service?name=web&delta=1"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(0), uint64(0), expErr)
@@ -171,7 +171,7 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: 1"
 	expErr := fmt.Errorf("web is already scaled to the maximum number of 4 replicas")
-	url := "/scale?service=web&delta=1"
+	url := "/v1/scale-service?name=web&delta=1"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
@@ -194,7 +194,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -1"
 	expErr := fmt.Errorf("web is already descaled to the minimum number of 2 replicas")
-	url := "/scale?service=web&delta=-1"
+	url := "/v1/scale-service?name=web&delta=-1"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -216,7 +216,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: 1"
 	message := "Scaling web to 4 replicas"
-	url := "/scale?service=web&delta=1"
+	url := "/v1/scale-service?name=web&delta=1"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -238,7 +238,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -1"
 	message := "Scaling web to 2 replicas"
-	url := "/scale?service=web&delta=-1"
+	url := "/v1/scale-service?name=web&delta=-1"
 	req, _ := http.NewRequest("POST", url, nil)
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -261,7 +261,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 
 	for _, deltaStr := range tt {
 
-		url := fmt.Sprintf("/scale?nodesOn=mock&delta=%v&type=worker", deltaStr)
+		url := fmt.Sprintf("/v1/scale-nodes?backend=mock&delta=%v&type=worker", deltaStr)
 		requestMessage := fmt.Sprintf("Scale node on: mock, delta: %s, type: worker", deltaStr)
 		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		suite.am.On("Send", "scale_node", "mock",
@@ -282,7 +282,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
-	url := "/scale?nodesOn=BADSERVICE&delta=1&type=worker"
+	url := "/v1/scale-nodes?backend=BADSERVICE&delta=1&type=worker"
 	requestMessage := "Scale node on: BADSERVICE, delta: 1, type: worker"
 	expErr := fmt.Errorf("BADSERVICE does not exist")
 
@@ -302,7 +302,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 
-	url := "/scale?nodesOn=mock&delta=1&type=worker"
+	url := "/v1/scale-nodes?backend=mock&delta=1&type=worker"
 	requestMessage := "Scale node on: mock, delta: 1, type: worker"
 	expErr := fmt.Errorf("Unable to scale node")
 
@@ -324,7 +324,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleWithBadType() {
-	url := "/scale?nodesOn=mock&delta=1&type=BAD"
+	url := "/v1/scale-nodes?backend=mock&delta=1&type=BAD"
 	requestMessage := "Scale node on: mock, delta: 1, type: BAD"
 	message := "Incorrect type: BAD, type can only be worker or manager"
 	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", message).Return(nil)
@@ -339,7 +339,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_ScaleWithBadType() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleWorkerByDelta() {
-	url := "/scale?nodesOn=mock&delta=1&type=worker"
+	url := "/v1/scale-nodes?backend=mock&delta=1&type=worker"
 	requestMessage := "Scale node on: mock, delta: 1, type: worker"
 	message := "Changed the number of worker nodes on mock from 3 to 4"
 
@@ -360,7 +360,7 @@ func (suite *ServerTestSuite) Test_ScaleNode_ScaleWorkerByDelta() {
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleManagerByDelta() {
-	url := "/scale?nodesOn=mock&delta=-1&type=manager"
+	url := "/v1/scale-nodes?backend=mock&delta=-1&type=manager"
 	requestMessage := "Scale node on: mock, delta: -1, type: manager"
 	message := "Changed the number of manager nodes on mock from 3 to 2"
 
