@@ -19,7 +19,7 @@ script:
   - >
     go test ./... --run UnitTest -v &&
     docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT . &&
-    docker stack deploy -c scripts/docker-compose.yml test &&
+    docker stack deploy -c stacks/docker-compose-test.yml test &&
     ./scripts/integration_test.sh
 
 after_script:
