@@ -6,7 +6,7 @@ services:
     environment:
       - DEFAULT_MIN_REPLICAS=1
       - DEFAULT_MAX_REPLICAS=10
-      - ALERTMANAGER_ADDRESS=alertmanager
+      - ALERTMANAGER_ADDRESS=http://alertmanager:9093
       - AWS_ENV_FILE=/run/secrets/aws
       - AWS_MANAGER_GROUP_NAME=devops22-ManagerAsg-xxxxxxx
       - AWS_WORKER_GROUP_NAME=devops22-NodeAsg-xxxxxxx
@@ -22,8 +22,7 @@ services:
       - aws
     deploy:
       placement:
-        constraints:
-          - node.role == manager
+        constraints: [node.role == manager]
 
   web:
     image: alpine:3.6

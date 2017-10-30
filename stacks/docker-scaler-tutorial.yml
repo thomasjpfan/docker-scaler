@@ -1,0 +1,19 @@
+version: "3.1"
+
+services:
+
+  scaler:
+    image: thomasjpfan/docker-scaler:latest
+    environment:
+      - ALERTMANAGER_ADDRESS=http://alertmanager:9093
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - scaler
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  scaler:
+    external: true

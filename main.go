@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -40,7 +39,7 @@ func main() {
 
 	var alerter service.AlertServicer
 	if len(spec.AlertmanagerAddress) != 0 {
-		url := fmt.Sprintf("http://%s:9093", spec.AlertmanagerAddress)
+		url := spec.AlertmanagerAddress
 		alerter = service.NewAlertService(url)
 		logger.Printf("Using alertmanager at: %s", url)
 	} else {

@@ -21,6 +21,6 @@ docker run --rm \
 -v "/var/run/docker.sock:/var/run/docker.sock" \
 -e "SCALER_IP=scaler" \
 -e "TARGET_SERVICE=test_web" \
--e "ALERTMANAGER_ADDRESS=alertmanager" \
+-e "ALERTMANAGER_ADDRESS=http://alertmanager:9093" \
 golang:1.9.0-alpine3.6 \
 go test github.com/thomasjpfan/docker-scaler/integration -v

@@ -15,7 +15,7 @@ services:
   scaler:
     image: thomasjpfan/docker-scaler:latest
     environment:
-      - ALERTMANAGER_ADDRESS=alertmanager
+      - ALERTMANAGER_ADDRESS=http://alertmanager:9093
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -43,9 +43,9 @@ and `com.df.scaleMax` represents the minimum and maximum number of replicas for 
 
 ## Example
 
-Deploying `script/docker-compose-example.yml` as a stack:
+Deploying `script/docker-scaler-readme.yml` as a stack:
 ```bash
-$ docker stack deploy -c scripts/docker-compose-example.yml example
+$ docker stack deploy -c scripts/docker-scaler-readme.yml example
 ```
 Following the naming convention of `docker stack deploy`, this will create three services `example_scaler`, `example_web`, `example_alertmanager`. Port `8080` exposes the `example_scaler` service and port `9093` exposes `example_alertmanager` to your local machine. To scale `example_web` up by one replica send the following request:
 ```bash
@@ -82,10 +82,10 @@ echo 'export AWS_ACCESS_KEY_ID=xxxx
 export AWS_SECRET_ACCESS_KEY=xxxx
 ' | docker secret create aws -
 ```
-In `scripts/docker-compose-aws.yml`, overwrite `AWS_MANAGER_GROUP_NAME` and `AWS_WORKER_GROUP_NAME`
+In `scripts/docker-scaler-aws.yml`, overwrite `AWS_MANAGER_GROUP_NAME` and `AWS_WORKER_GROUP_NAME`
 with your autoscaling group names. Then deploy it as a stack:
 ```bash
-$ docker stack deploy -c scripts/docker-compose-aws.yml aws
+$ docker stack deploy -c scripts/docker-scaler-aws.yml aws
 ```
 To send request to scale up worker node:
 ```bash
