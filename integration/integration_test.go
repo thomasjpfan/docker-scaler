@@ -43,7 +43,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 	s.scaleURL = fmt.Sprintf("http://%s:8080/v1", scalerIP)
 	s.targetService = targetService
-	s.alertURL = fmt.Sprintf("http://%s:9093", alertAddress)
+	s.alertURL = alertAddress
 }
 
 func (s *IntegrationTestSuite) Test_NonIntegerDeltaQuery() {
