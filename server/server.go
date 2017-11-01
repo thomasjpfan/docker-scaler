@@ -128,7 +128,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
 		return
 	}
-	message := fmt.Sprintf("Scaling %s to %d replicas", serviceID, newReplicas)
+	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceID, replicas, newReplicas)
 	s.sendAlert("scale_service", serviceID, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }

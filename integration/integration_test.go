@@ -249,7 +249,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	var m server.Response
 	err = json.Unmarshal(body, &m)
 	require.NoError(err)
-	message := fmt.Sprintf("Scaling %s to 4 replicas", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 4 replicas", s.targetService)
 	s.Equal("OK", m.Status)
 	s.Equal(message, m.Message)
 
@@ -291,7 +291,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	require.NoError(err)
 	s.Equal("OK", m.Status)
 
-	message := fmt.Sprintf("Scaling %s to 2 replicas", targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas", targetService)
 	s.Equal(message, m.Message)
 
 	// Check alert
