@@ -553,7 +553,7 @@ docker stack deploy <span class="se">\</span>
 <h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
 <p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
 <div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
-<span class="s2">  slack_api_url: &#39;https://hooks.slack.com/services/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&#39;</span>
+<span class="s2">  slack_api_url: &#39;https://hooks.slack.com/services/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&#39;</span>
 <span class="s2">route:</span>
 <span class="s2">  group_by: [service, scale]</span>
 <span class="s2">  repeat_interval: 5m</span>
@@ -690,7 +690,7 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 <div class="codehilite"><pre><span></span>docker service logs scaler_scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>go-demo_main was scaled from 3 to 2 replicas</strong>. We can check that this happened:</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 2 replicas</strong>. We can check that this happened:</p>
 <div class="codehilite"><pre><span></span>docker stack ps -f desired-state<span class="o">=</span>running go-demo
 </pre></div>
 
@@ -717,7 +717,7 @@ go-demo_main.2 vfarcic/go-demo:latest swarm-3 Running       Running 2 minutes ag
 <div class="codehilite"><pre><span></span>docker service logs scaler_docker-scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>go-demo_main was scaled from 2 to 3 replicas</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 2 to 3 replicas</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
 <p>We can confirm that the number of replicas indeed scaled to three by querying the stack processes:</p>
 <div class="codehilite"><pre><span></span>docker stack ps -f desired-state<span class="o">=</span>running go-demo
 </pre></div>
