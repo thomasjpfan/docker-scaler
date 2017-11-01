@@ -84,7 +84,7 @@ The next stack defines the *Docker Flow Monitor* and *Alertmanager* services. Be
 
 ```bash
 echo "global:
-  slack_api_url: 'https://hooks.slack.com/services/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'
+  slack_api_url: 'https://hooks.slack.com/services/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'
 route:
   group_by: [service, scale]
   repeat_interval: 5m
