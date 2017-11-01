@@ -215,7 +215,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: 1"
-	message := "Scaling web to 4 replicas"
+	message := "Scaling web from 3 to 4 replicas"
 	url := "/v1/scale-service?name=web&delta=1"
 	req, _ := http.NewRequest("POST", url, nil)
 
@@ -237,7 +237,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	require := suite.Require()
 	requestMessage := "Scale service: web, delta: -1"
-	message := "Scaling web to 2 replicas"
+	message := "Scaling web from 3 to 2 replicas"
 	url := "/v1/scale-service?name=web&delta=-1"
 	req, _ := http.NewRequest("POST", url, nil)
 

@@ -254,7 +254,7 @@ Let's look at the logs of `docker-scaler`:
 docker service logs scaler_scaler
 ```
 
-There should be a log message that states **go-demo_main was scaled from 3 to 2 replicas**. We can check that this happened:
+There should be a log message that states **Scaling go-demo_main from 3 to 2 replicas**. We can check that this happened:
 
 ```bash
 docker stack ps -f desired-state=running go-demo
@@ -292,7 +292,7 @@ The `godemo_main_resp_time_above` turned red indicating that the threshold is re
 docker service logs scaler_docker-scaler
 ```
 
-There should be a log message that states **go-demo_main was scaled from 2 to 3 replicas**. This message is also sent through Slack to notify us of this scaling event.
+There should be a log message that states **Scaling go-demo_main from 2 to 3 replicas**. This message is also sent through Slack to notify us of this scaling event.
 
 We can confirm that the number of replicas indeed scaled to three by querying the stack processes:
 
