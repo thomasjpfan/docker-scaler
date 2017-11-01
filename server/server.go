@@ -111,12 +111,12 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	newReplicas := uint64(newReplicasInt)
 	if newReplicas > maxReplicas {
 		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceID, maxReplicas)
-		respondWithError(w, http.StatusPreconditionFailed, message)
+		respondWithError(w, http.StatusOK, message)
 		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
 		return
 	} else if newReplicas < minReplicas {
 		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceID, minReplicas)
-		respondWithError(w, http.StatusPreconditionFailed, message)
+		respondWithError(w, http.StatusOK, message)
 		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
 		return
 	}

@@ -181,7 +181,7 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
-	require.Equal(http.StatusPreconditionFailed, rec.Code)
+	require.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
 	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
@@ -204,7 +204,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
-	require.Equal(http.StatusPreconditionFailed, rec.Code)
+	require.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
 	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())

@@ -158,7 +158,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	require.NoError(err)
 	require.NotNil(resp)
 
-	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
+	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(s.getReplicas(targetService), 4)
 
 	defer resp.Body.Close()
@@ -199,7 +199,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	require.NoError(err)
 	require.NotNil(resp)
 
-	require.Equal(http.StatusPreconditionFailed, resp.StatusCode)
+	require.Equal(http.StatusOK, resp.StatusCode)
 	require.Equal(2, s.getReplicas(targetService))
 
 	defer resp.Body.Close()
