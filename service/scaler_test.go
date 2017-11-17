@@ -12,13 +12,17 @@ import (
 
 type ScalerTestSuite struct {
 	suite.Suite
-	scaler     ScalerServicer
-	ctx        context.Context
-	defaultMax uint64
-	defaultMin uint64
-	replicaMin uint64
-	replicaMax uint64
-	replicas   uint64
+	scaler             ScalerServicer
+	ctx                context.Context
+	defaultMax         uint64
+	defaultMin         uint64
+	replicaMin         uint64
+	replicaMax         uint64
+	replicas           uint64
+	scaleUpBy          uint64
+	scaleDownBy        uint64
+	defaultScaleDownBy uint64
+	defaultScaleUpBy   uint64
 }
 
 func TestScalerUnitTestSuite(t *testing.T) {
@@ -40,22 +44,30 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.defaultMin = 1
 	s.defaultMax = 10
 	s.replicaMin = 2
-	s.replicaMax = 4
-	s.replicas = 3
+	s.replicaMax = 6
+	s.replicas = 4
+	s.scaleDownBy = 1
+	s.scaleUpBy = 2
 	s.ctx = context.Background()
 	s.scaler = NewScalerService(
 		client, "com.df.scaleMin", "com.df.scaleMax",
-		s.defaultMin, s.defaultMax)
+		"com.df.scaleDownBy", "com.df.scaleUpBy",
+		s.defaultMin, s.defaultMax,
+		s.defaultScaleDownBy,
+		s.defaultScaleUpBy)
 }
 
 func (s *ScalerTestSuite) SetupTest() {
 	cmd := fmt.Sprintf(`docker service create --name web_test \
 		   -l com.df.scaleMin=%d \
 		   -l com.df.scaleMax=%d \
+		   -l com.df.scaleDownBy=%d \
+		   -l com.df.scaleUpBy=%d \
 		   --replicas %d \
 		   -d \
 		   alpine:3.6 \
-		   sleep 10000000`, s.replicaMin, s.replicaMax, s.replicas)
+		   sleep 10000000`, s.replicaMin, s.replicaMax,
+		s.scaleDownBy, s.scaleUpBy, s.replicas)
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		s.T().Skipf("Unable to create service: %s", err.Error())
@@ -122,4 +134,22 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 	s.Require().NoError(err)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.defaultMax, max)
+}
+
+func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
+	scaleDownBy, scaleUpBy, err := s.scaler.GetDownUpScaleDeltas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(s.scaleDownBy, scaleDownBy)
+	s.Equal(s.scaleUpBy, scaleUpBy)
+}
+
+func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
+	cmd := `docker service update web_test \
+			--label-rm com.df.scaleDownBy \
+			--label-rm com.df.scaleUpBy`
+	exec.Command("/bin/sh", "-c", cmd).Output()
+	min, max, err := s.scaler.GetDownUpScaleDeltas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(s.defaultScaleDownBy, min)
+	s.Equal(s.defaultScaleUpBy, max)
 }

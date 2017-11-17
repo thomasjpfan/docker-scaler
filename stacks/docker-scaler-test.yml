@@ -19,7 +19,9 @@ services:
       replicas: 3
       labels:
         com.df.scaleMin: 2
-        com.df.scaleMax: 4
+        com.df.scaleMax: 5
+        com.df.scaleDownBy: 1
+        com.df.scaleUpBy: 2
     command: sleep 10000000
     networks:
       - scaling

@@ -17,6 +17,10 @@ type specification struct {
 	MaxScaleLabel       string `envconfig:"MAX_SCALE_LABEL"`
 	DefaultMinReplicas  uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
 	DefaultMaxReplicas  uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
+	ScaleDownByLabel    string `envconfig:"SCALE_DOWN_BY_LABEL"`
+	ScaleUpByLabel      string `envconfig:"SCALE_UP_BY_LABEL"`
+	DefaultScaleDownBy  uint64 `envconfig:"DEFAULT_SCALE_DOWN_BY"`
+	DefaultScaleUpBy    uint64 `envconfig:"DEFAULT_SCALE_UP_BY"`
 	AlertmanagerAddress string `envconfig:"ALERTMANAGER_ADDRESS"`
 }
 
@@ -52,8 +56,11 @@ func main() {
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, spec.MinScaleLabel, spec.MaxScaleLabel,
+		spec.ScaleDownByLabel, spec.ScaleUpByLabel,
 		spec.DefaultMinReplicas,
-		spec.DefaultMaxReplicas)
+		spec.DefaultMaxReplicas,
+		spec.DefaultScaleDownBy,
+		spec.DefaultScaleUpBy)
 	s := server.NewServer(scaler, alerter, nodeScalerFactory, logger)
 	s.Run(8080)
 }

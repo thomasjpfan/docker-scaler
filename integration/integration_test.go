@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -32,7 +33,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 
 func (s *IntegrationTestSuite) SetupSuite() {
 	dc, err := client.NewEnvClient()
-	s.Require().Nil(err)
+	s.Require().NoError(err)
 	s.dc = dc
 
 	scalerIP := os.Getenv("SCALER_IP")
@@ -46,59 +47,99 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.alertURL = alertAddress
 }
 
-func (s *IntegrationTestSuite) Test_NonIntegerDeltaQuery() {
+func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=what", s.scaleURL, s.targetService)
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	req, _ := http.NewRequest("POST", url, nil)
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-
-	s.Equal(http.StatusBadRequest, resp.StatusCode)
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
-	message := "Incorrect delta query: what"
-	s.Equal("NOK", m.Status)
-	s.Equal(message, m.Message)
+	resp := s.responseForRequest(req, http.StatusBadRequest)
+	message := "Unable to recognize POST body"
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
 	require.NoError(err)
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: what", s.targetService)
-	s.Equal(request, string(alert.Annotations["request"]))
-	s.Equal(message, string(alert.Annotations["summary"]))
+	s.Equal(0, len(alert.Annotations["request"]))
+	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
+}
+
+func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
+	require := s.Require()
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := `{"groupLabels":{"scale":"up"}}`
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	resp := s.responseForRequest(req, http.StatusBadRequest)
+	message := "No service name in request body"
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
+	require.NoError(err)
+	require.Equal(1, len(alerts))
+
+	alert := alerts[0]
+	s.Equal(0, len(alert.Annotations["request"]))
+	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
+}
+
+func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
+	require := s.Require()
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := `{"groupLabels":{"service":"test_web"}}`
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	resp := s.responseForRequest(req, http.StatusBadRequest)
+	message := "No scale direction in request body"
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
+	require.NoError(err)
+	require.Equal(1, len(alerts))
+
+	alert := alerts[0]
+	s.Equal(0, len(alert.Annotations["request"]))
+	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
+}
+
+func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
+	require := s.Require()
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"boo"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	resp := s.responseForRequest(req, http.StatusBadRequest)
+	message := "Incorrect scale direction in request body"
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
+	require.NoError(err)
+	require.Equal(1, len(alerts))
+
+	alert := alerts[0]
+	s.Equal(0, len(alert.Annotations["request"]))
+	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale-service?name=BAD&delta=1", s.scaleURL)
-	req, _ := http.NewRequest("POST", url, nil)
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := `{"groupLabels":{"service":"BAD", "scale":"up"}}`
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
-
-	require.Equal(http.StatusInternalServerError, resp.StatusCode)
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
+	resp := s.responseForRequest(req, http.StatusInternalServerError)
 	message := "docker inspect failed in ScalerService"
-	s.Equal("NOK", m.Status)
-	s.True(strings.Contains(m.Message, message))
+	s.Equal("NOK", resp.Status)
+	s.True(strings.Contains(resp.Message, message))
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "BAD")
@@ -106,39 +147,33 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := "Scale service: BAD, delta: 1"
+	request := "Scale service up: BAD"
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
-func (s *IntegrationTestSuite) Test_DeltaResultsInNegativeReplicas() {
+func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 	require := s.Require()
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=-100", s.scaleURL, s.targetService)
-	req, _ := http.NewRequest("POST", url, nil)
+	s.scaleService(s.targetService, 4)
+	time.Sleep(1 * time.Second)
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
+	// Scaled to 4 with com.df.scaleUpBy = 2 => bound by com.df.scaleMax
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"up"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	require.Equal(http.StatusBadRequest, resp.StatusCode)
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
-	message := fmt.Sprintf("Delta -100 results in a negative number of replicas for service: %s", s.targetService)
-	s.Equal("NOK", m.Status)
-	s.Equal(message, m.Message)
+	resp := s.responseForRequest(req, http.StatusOK)
+	message := fmt.Sprintf("Scaling %s from 4 to 5 replicas", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	require.NoError(err)
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: -100", s.targetService)
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 }
@@ -146,31 +181,18 @@ func (s *IntegrationTestSuite) Test_DeltaResultsInNegativeReplicas() {
 func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
 	require := s.Require()
-	targetService := s.targetService
-	s.scaleService(targetService, 4)
+	s.scaleService(s.targetService, 5)
 	time.Sleep(1 * time.Second)
 
-	// Now service is scaled to the max of 4
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=1", s.scaleURL, targetService)
-	req, _ := http.NewRequest("POST", url, nil)
+	// Now service is scaled to the max of 5
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"up"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
-
-	require.Equal(http.StatusOK, resp.StatusCode)
-	require.Equal(s.getReplicas(targetService), 4)
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
-	message := fmt.Sprintf("%s is already scaled to the maximum number of 4 replicas", s.targetService)
-	s.Equal("NOK", m.Status)
-	s.Equal(message, m.Message)
+	resp := s.responseForRequest(req, http.StatusOK)
+	message := fmt.Sprintf("%s is already scaled to the maximum number of 5 replicas", s.targetService)
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
@@ -178,7 +200,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: 1", s.targetService)
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 
@@ -187,31 +209,20 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 
 	require := s.Require()
-	targetService := s.targetService
-	s.scaleService(targetService, 2)
+	s.scaleService(s.targetService, 2)
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=-1", s.scaleURL, targetService)
-	req, _ := http.NewRequest("POST", url, nil)
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"down"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
+	resp := s.responseForRequest(req, http.StatusOK)
+	require.Equal(2, s.getReplicas(s.targetService))
 
-	require.Equal(http.StatusOK, resp.StatusCode)
-	require.Equal(2, s.getReplicas(targetService))
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
 	message := fmt.Sprintf("%s is already descaled to the minimum number of 2 replicas", s.targetService)
-	s.Equal("NOK", m.Status)
-	s.Equal(message, m.Message)
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
@@ -219,7 +230,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: -1", s.targetService)
+	request := fmt.Sprintf("Scale service down: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 }
@@ -227,31 +238,20 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 
 	require := s.Require()
-	targetService := s.targetService
-	s.scaleService(targetService, 3)
+	s.scaleService(s.targetService, 3)
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 3
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=1", s.scaleURL, targetService)
-	req, _ := http.NewRequest("POST", url, nil)
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"up"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
+	resp := s.responseForRequest(req, http.StatusOK)
+	require.Equal(5, s.getReplicas(s.targetService))
 
-	require.Equal(http.StatusOK, resp.StatusCode)
-	require.Equal(4, s.getReplicas(targetService))
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
-	message := fmt.Sprintf("Scaling %s from 3 to 4 replicas", s.targetService)
-	s.Equal("OK", m.Status)
-	s.Equal(message, m.Message)
+	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
@@ -259,7 +259,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: 1", s.targetService)
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 }
@@ -267,32 +267,20 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 
 	require := s.Require()
-	targetService := s.targetService
-	s.scaleService(targetService, 3)
+	s.scaleService(s.targetService, 3)
 	time.Sleep(1 * time.Second)
 
 	// Now service is scaled to the min of 2
-	url := fmt.Sprintf("%s/scale-service?name=%s&delta=-1", s.scaleURL, targetService)
-	req, _ := http.NewRequest("POST", url, nil)
+	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
+	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"down"}}`, s.targetService)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(err)
-	require.NotNil(resp)
+	resp := s.responseForRequest(req, http.StatusOK)
+	require.Equal(2, s.getReplicas(s.targetService))
 
-	require.Equal(http.StatusOK, resp.StatusCode)
-	require.Equal(2, s.getReplicas(targetService))
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	require.NoError(err)
-
-	var m server.Response
-	err = json.Unmarshal(body, &m)
-	require.NoError(err)
-	s.Equal("OK", m.Status)
-
-	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas", targetService)
-	s.Equal(message, m.Message)
+	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
@@ -300,7 +288,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	require.Equal(1, len(alerts))
 
 	alert := alerts[0]
-	request := fmt.Sprintf("Scale service: %s, delta: -1", s.targetService)
+	request := fmt.Sprintf("Scale service down: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 }
@@ -328,4 +316,24 @@ func (s *IntegrationTestSuite) getReplicas(serviceName string) int {
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
 	return int(currentReplicas)
+}
+
+func (s *IntegrationTestSuite) responseForRequest(request *http.Request, code int) *server.Response {
+
+	require := s.Require()
+	resp, err := http.DefaultClient.Do(request)
+	require.NoError(err)
+
+	s.Equal(code, resp.StatusCode)
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	require.NoError(err)
+
+	var m server.Response
+	err = json.Unmarshal(body, &m)
+	require.NoError(err)
+	require.NotNil(m)
+
+	return &m
 }

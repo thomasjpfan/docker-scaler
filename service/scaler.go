@@ -14,15 +14,20 @@ type ScalerServicer interface {
 	GetReplicas(ctx context.Context, serviceName string) (uint64, error)
 	SetReplicas(ctx context.Context, serviceName string, count uint64) error
 	GetMinMaxReplicas(ctx context.Context, serviceName string) (uint64, uint64, error)
+	GetDownUpScaleDeltas(ctx context.Context, serviceName string) (uint64, uint64, error)
 }
 
 // ScalerService scales docker services
 type scalerService struct {
-	c          *client.Client
-	minLabel   string
-	maxLabel   string
-	defaultMin uint64
-	defaultMax uint64
+	c                  *client.Client
+	minLabel           string
+	maxLabel           string
+	scaleDownByLabel   string
+	scaleUpByLabel     string
+	defaultMin         uint64
+	defaultMax         uint64
+	defaultScaleDownBy uint64
+	defaultScaleUpBy   uint64
 }
 
 // NewScalerService creates a New Docker Swarm Client
@@ -30,14 +35,22 @@ func NewScalerService(
 	c *client.Client,
 	minLabel string,
 	maxLabel string,
+	scaleDownByLabel string,
+	scaleUpByLabel string,
 	defaultMin uint64,
-	defaultMax uint64) ScalerServicer {
+	defaultMax uint64,
+	defaultScaleDownBy uint64,
+	defaultScaleUpBy uint64) ScalerServicer {
 	return &scalerService{
-		c:          c,
-		minLabel:   minLabel,
-		maxLabel:   maxLabel,
-		defaultMin: defaultMin,
-		defaultMax: defaultMax,
+		c:                  c,
+		minLabel:           minLabel,
+		maxLabel:           maxLabel,
+		scaleDownByLabel:   scaleDownByLabel,
+		scaleUpByLabel:     scaleUpByLabel,
+		defaultMin:         defaultMin,
+		defaultMax:         defaultMax,
+		defaultScaleDownBy: defaultScaleDownBy,
+		defaultScaleUpBy:   defaultScaleUpBy,
 	}
 }
 
@@ -101,5 +114,37 @@ func (s *scalerService) GetMinMaxReplicas(ctx context.Context, serviceName strin
 		}
 	}
 
-	return minReplicas, maxReplicas, err
+	return minReplicas, maxReplicas, nil
+}
+
+// GetDownUpScaleDeltas gets how much to scale service up or down by
+func (s *scalerService) GetDownUpScaleDeltas(ctx context.Context, serviceName string) (uint64, uint64, error) {
+	scaleDownBy := s.defaultScaleDownBy
+	scaleUpBy := s.defaultScaleUpBy
+
+	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
+
+	if err != nil {
+		return scaleDownBy, scaleUpBy, errors.Wrap(err, "docker inspect failed in ScalerService")
+	}
+
+	labels := service.Spec.Labels
+	downLabel := labels[s.scaleDownByLabel]
+	upLabel := labels[s.scaleUpByLabel]
+
+	if len(downLabel) > 0 {
+		scaleDownLabel, err := strconv.Atoi(downLabel)
+		if err == nil {
+			scaleDownBy = uint64(scaleDownLabel)
+		}
+	}
+
+	if len(upLabel) > 0 {
+		scaleUpLabel, err := strconv.Atoi(upLabel)
+		if err == nil {
+			scaleUpBy = uint64(scaleUpLabel)
+		}
+	}
+
+	return scaleDownBy, scaleUpBy, nil
 }
