@@ -107,7 +107,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoBody() {
 	errorMessage := "No POST body"
 	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
 	url := "/v1/scale-service"
-	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	suite.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 
@@ -125,7 +125,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"scale": "up"}}`
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
-	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	suite.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	rec := httptest.NewRecorder()
@@ -141,7 +141,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	errorMessage := "No scale direction in request body"
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"service": "web"}}`
-	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	suite.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -159,7 +159,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	require := suite.Require()
 	errorMessage := "Incorrect scale direction in request body"
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "boo"}}`
-	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	suite.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
 	url := "/v1/scale-service"
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
