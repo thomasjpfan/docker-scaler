@@ -1,7 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -40,7 +42,6 @@ func (s *Server) MakeRouter() *mux.Router {
 	router := mux.NewRouter()
 	v1Router := router.PathPrefix("/v1").Subrouter()
 	v1Router.Path("/scale-service").
-		Queries("name", "{name}", "delta", "{delta}").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
@@ -65,71 +66,136 @@ func (s *Server) Run(port uint16) {
 func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	q := r.URL.Query()
-	serviceID := q.Get("name")
-	deltaStr := q.Get("delta")
 
-	requestMessage := fmt.Sprintf("Scale service: %s, delta: %s", serviceID, deltaStr)
-	s.logger.Printf(requestMessage)
-
-	delta, err := strconv.Atoi(deltaStr)
-	if err != nil {
-		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
+	if r.Body == nil {
+		message := "No POST body"
+		s.logger.Printf("scale-service error: %s", message)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
 		return
 	}
 
-	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(ctx, serviceID)
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		message := "Unable to decode POST body"
+		s.logger.Printf("scale-service error: %s", message)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	var ssReq ScaleServiceRequest
+	err = json.Unmarshal(body, &ssReq)
+
+	if err != nil {
+		message := "Unable to recognize POST body"
+		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	serviceName := ssReq.GroupLabels.Service
+	scaleDirection := ssReq.GroupLabels.Scale
+
+	if len(serviceName) == 0 {
+		message := "No service name in request body"
+		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	if len(scaleDirection) == 0 {
+		message := "No scale direction in request body"
+		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	if scaleDirection != "up" && scaleDirection != "down" {
+		message := "Incorrect scale direction in request body"
+		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	requestMessage := fmt.Sprintf("Scale service %s: %s", scaleDirection, serviceName)
+	s.logger.Print(requestMessage)
+
+	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(ctx, serviceName)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
 		s.logger.Print(message)
-		err := s.alerter.Send("scale_service", serviceID, requestMessage, "error", message)
-		if err != nil {
-			s.logger.Print(message)
-		}
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
 
-	replicas, err := s.scaler.GetReplicas(ctx, serviceID)
+	scaleDownBy, scaleUpBy, err := s.scaler.GetDownUpScaleDeltas(ctx, serviceName)
+	if err != nil {
+		message := "Unable to get scaling delta"
+		s.logger.Print(message)
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	var delta int
+	if scaleDirection == "down" {
+		delta = -1 * int(scaleDownBy)
+	} else {
+		delta = int(scaleUpBy)
+	}
+
+	replicas, err := s.scaler.GetReplicas(ctx, serviceName)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
+		s.logger.Print(message)
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
 	newReplicasInt := int(replicas) + delta
 
-	if newReplicasInt <= 0 {
-		message := fmt.Sprintf("Delta %d results in a negative number of replicas for service: %s", delta, serviceID)
-		respondWithError(w, http.StatusBadRequest, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
+	var newReplicas uint64
+	if newReplicasInt < int(minReplicas) {
+		newReplicas = minReplicas
+	} else if newReplicasInt > int(maxReplicas) {
+		newReplicas = maxReplicas
+	} else {
+		newReplicas = uint64(newReplicasInt)
+	}
+
+	if replicas == maxReplicas && newReplicas == maxReplicas {
+		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
+		respondWithError(w, http.StatusOK, message)
+		s.logger.Print(message)
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
+		return
+	} else if replicas == minReplicas && newReplicas == minReplicas {
+		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
+		respondWithError(w, http.StatusOK, message)
+		s.logger.Print(message)
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
 
-	newReplicas := uint64(newReplicasInt)
-	if newReplicas > maxReplicas {
-		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceID, maxReplicas)
-		respondWithError(w, http.StatusOK, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
-		return
-	} else if newReplicas < minReplicas {
-		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceID, minReplicas)
-		respondWithError(w, http.StatusOK, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
-		return
-	}
-
-	err = s.scaler.SetReplicas(ctx, serviceID, newReplicas)
+	err = s.scaler.SetReplicas(ctx, serviceName, newReplicas)
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
-		s.sendAlert("scale_service", serviceID, requestMessage, "error", message)
+		s.logger.Print(message)
+		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceID, replicas, newReplicas)
-	s.sendAlert("scale_service", serviceID, requestMessage, "success", message)
+	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceName, replicas, newReplicas)
+	s.logger.Print(message)
+	s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
@@ -148,6 +214,7 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	if typeStr != "worker" && typeStr != "manager" {
 		message := fmt.Sprintf("Incorrect type: %s, type can only be worker or manager", typeStr)
 		respondWithError(w, http.StatusPreconditionFailed, message)
+		s.logger.Print(message)
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
 		return
 	}
@@ -156,6 +223,7 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
 		respondWithError(w, http.StatusBadRequest, message)
+		s.logger.Print(message)
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
 		return
 	}
@@ -163,6 +231,7 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	nodeScaler, err := s.nodeScalerCreater.New(nodesOn)
 	if err != nil {
 		respondWithError(w, http.StatusPreconditionFailed, err.Error())
+		s.logger.Print(err)
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
 		return
 	}
@@ -176,18 +245,19 @@ func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
+		s.logger.Print(err)
 		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
 		return
 	}
 
 	message := fmt.Sprintf("Changed the number of %s nodes on %s from %d to %d", typeStr, nodesOn, nodesBefore, nodesNow)
+	s.logger.Print(message)
 	s.sendAlert("scale_node", nodesOn, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
 func (s *Server) sendAlert(alertName string, serviceName string, request string,
 	status string, message string) {
-	s.logger.Print(message)
 	err := s.alerter.Send(alertName, serviceName, request, status, message)
 	if err != nil {
 		s.logger.Printf("Alertmanager did not receive message: %s, error: %v", message, err)

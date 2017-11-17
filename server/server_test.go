@@ -36,6 +36,11 @@ func (m *ScalerServicerMock) GetMinMaxReplicas(ctx context.Context, serviceName 
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
 
+func (m *ScalerServicerMock) GetDownUpScaleDeltas(ctx context.Context, serviceName string) (uint64, uint64, error) {
+	args := m.Called(serviceName)
+	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
+}
+
 type AlertServicerMock struct {
 	mock.Mock
 }
@@ -97,51 +102,73 @@ func (suite *ServerTestSuite) SetupTest() {
 	suite.r = suite.s.MakeRouter()
 }
 
-func (suite *ServerTestSuite) Test_NonIntegerDeltaQuery() {
-
+func (suite *ServerTestSuite) Test_ScaleServiceNoBody() {
 	require := suite.Require()
-	tt := []string{"what", "2114what", "24y4", "he"}
+	errorMessage := "No POST body"
+	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
+	url := "/v1/scale-service"
+	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
 
-	for _, deltaStr := range tt {
-
-		url := fmt.Sprintf("/v1/scale-service?name=hello&delta=%v", deltaStr)
-		requestMessage := fmt.Sprintf("Scale service: hello, delta: %s", deltaStr)
-		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
-		suite.am.On("Send", "scale_service", "hello",
-			requestMessage, "error", errorMessage).Return(nil)
-
-		req, _ := http.NewRequest("POST", url, nil)
-		rec := httptest.NewRecorder()
-		suite.r.ServeHTTP(rec, req)
-		require.Equal(http.StatusBadRequest, rec.Code)
-
-		suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-		suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
-		suite.am.AssertExpectations(suite.T())
-		suite.b.Reset()
-	}
-}
-
-func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
-
-	require := suite.Require()
-	requestMessage := "Scale service: web, delta: -10"
-	errorMessage := "Delta -10 results in a negative number of replicas for service: web"
-	url := "/v1/scale-service?name=web&delta=-10"
 	req, _ := http.NewRequest("POST", url, nil)
-
-	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
-	suite.m.On("GetReplicas", "web").Return(uint64(4), nil)
-	suite.am.On("Send", "scale_service", "web",
-		requestMessage, "error", errorMessage).Return(nil)
 
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	require.Equal(http.StatusBadRequest, rec.Code)
-
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-	suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
-	suite.m.AssertExpectations(suite.T())
+	suite.RequireLogs(suite.b.String(), logMessage)
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleServiceNoServiceNameInBody() {
+	require := suite.Require()
+	errorMessage := "No service name in request body"
+	url := "/v1/scale-service"
+	jsonStr := `{"groupLabels":{"scale": "up"}}`
+	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusBadRequest, rec.Code)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), logMessage)
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleServiceNoScaleNameInBody() {
+	require := suite.Require()
+	errorMessage := "No scale direction in request body"
+	url := "/v1/scale-service"
+	jsonStr := `{"groupLabels":{"service": "web"}}`
+	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusBadRequest, rec.Code)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), logMessage)
+	suite.am.AssertExpectations(suite.T())
+
+}
+
+func (suite *ServerTestSuite) Test_ScaleServiceIncorrectScaleName() {
+	require := suite.Require()
+	errorMessage := "Incorrect scale direction in request body"
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "boo"}}`
+	suite.am.On("Send", "scale_service", "bad request", "", "error", errorMessage).Return(nil)
+	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+	url := "/v1/scale-service"
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusBadRequest, rec.Code)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), logMessage)
 	suite.am.AssertExpectations(suite.T())
 
 }
@@ -149,9 +176,10 @@ func (suite *ServerTestSuite) Test_DeltaResultsNegativeReplica() {
 func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require := suite.Require()
 	expErr := fmt.Errorf("No such service: web")
-	requestMessage := "Scale service: web, delta: 1"
-	url := "/v1/scale-service?name=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
+	requestMessage := "Scale service up: web"
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "up")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(0), uint64(0), expErr)
 	suite.am.On("Send", "scale_service", "web",
@@ -169,13 +197,15 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 
 func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require := suite.Require()
-	requestMessage := "Scale service: web, delta: 1"
+	requestMessage := "Scale service up: web"
 	expErr := fmt.Errorf("web is already scaled to the maximum number of 4 replicas")
-	url := "/v1/scale-service?name=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "up")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(4), nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(1), uint64(1), nil)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", expErr.Error()).Return(nil)
 
@@ -192,13 +222,15 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 
 	require := suite.Require()
-	requestMessage := "Scale service: web, delta: -1"
+	requestMessage := "Scale service down: web"
 	expErr := fmt.Errorf("web is already descaled to the minimum number of 2 replicas")
-	url := "/v1/scale-service?name=web&delta=-1"
-	req, _ := http.NewRequest("POST", url, nil)
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "down")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(2), nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(1), uint64(1), nil)
 	suite.am.On("Send", "scale_service", "web",
 		requestMessage, "error", expErr.Error()).Return(nil)
 
@@ -214,14 +246,40 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 
 func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	require := suite.Require()
-	requestMessage := "Scale service: web, delta: 1"
+	requestMessage := "Scale service up: web"
 	message := "Scaling web from 3 to 4 replicas"
-	url := "/v1/scale-service?name=web&delta=1"
-	req, _ := http.NewRequest("POST", url, nil)
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "up")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
 	suite.m.On("SetReplicas", "web", uint64(4)).Return(nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(1), uint64(1), nil)
+	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusOK, rec.Code)
+
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
+	suite.m.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUpPassMax() {
+	require := suite.Require()
+	requestMessage := "Scale service up: web"
+	message := "Scaling web from 3 to 5 replicas"
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "up")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
+
+	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(5), nil)
+	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
+	suite.m.On("SetReplicas", "web", uint64(5)).Return(nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(1), uint64(3), nil)
 	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
 
 	rec := httptest.NewRecorder()
@@ -236,14 +294,40 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 
 func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	require := suite.Require()
-	requestMessage := "Scale service: web, delta: -1"
+	requestMessage := "Scale service down: web"
 	message := "Scaling web from 3 to 2 replicas"
-	url := "/v1/scale-service?name=web&delta=-1"
-	req, _ := http.NewRequest("POST", url, nil)
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "down")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
 	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
 	suite.m.On("SetReplicas", "web", uint64(2)).Return(nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(1), uint64(1), nil)
+	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusOK, rec.Code)
+
+	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
+	suite.RequireLogs(suite.b.String(), requestMessage, message)
+	suite.m.AssertExpectations(suite.T())
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDownPassMin() {
+	require := suite.Require()
+	requestMessage := "Scale service down: web"
+	message := "Scaling web from 3 to 1 replicas"
+	url := "/v1/scale-service"
+	body := NewScaleServiceRequestBody("web", "down")
+	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
+
+	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
+	suite.m.On("GetReplicas", "web").Return(uint64(3), nil)
+	suite.m.On("SetReplicas", "web", uint64(1)).Return(nil)
+	suite.m.On("GetDownUpScaleDeltas", "web").Return(uint64(3), uint64(1), nil)
 	suite.am.On("Send", "scale_service", "web", requestMessage, "success", message).Return(nil)
 
 	rec := httptest.NewRecorder()
