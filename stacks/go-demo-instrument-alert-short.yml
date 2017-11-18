@@ -21,6 +21,8 @@ services:
         - com.df.port=8080
         - com.df.scaleMin=2
         - com.df.scaleMax=4
+        - com.df.scaleDownBy=1
+        - com.df.scaleUpBy=2
         - com.df.scrapePort=8080
         - com.df.alertName.1=mem_limit
         - com.df.alertIf.1=@service_mem_limit:0.8
