@@ -17,8 +17,10 @@ services:
     deploy:
       replicas: 3
       labels:
-        com.df.scaleMin: "2"
-        com.df.scaleMax: "4"
+        com.df.scaleMin: 2
+        com.df.scaleMax: 5
+        com.df.scaleDownBy: 1
+        com.df.scaleUpBy: 2
     command: sleep 10000000
   alertmanager:
     image: prom/alertmanager:v0.8.0
