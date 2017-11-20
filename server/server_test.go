@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"github.com/thomasjpfan/docker-scaler/service"
 )
 
 type ScalerServicerMock struct {
@@ -64,25 +63,19 @@ func (nsm *NodeScalerMock) ScaleWorkerByDelta(ctx context.Context, delta int) (u
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
 
-type NodeScalerCreaterMock struct {
-	mock.Mock
-}
-
-func (nscm *NodeScalerCreaterMock) New(nodeBackend string) (service.NodeScaler, error) {
-	args := nscm.Called(nodeBackend)
-	return args.Get(0).(*NodeScalerMock), args.Error(1)
+func (nsm *NodeScalerMock) String() string {
+	return "mock"
 }
 
 type ServerTestSuite struct {
 	suite.Suite
-	m    *ScalerServicerMock
-	am   *AlertServicerMock
-	nsm  *NodeScalerMock
-	nscm *NodeScalerCreaterMock
-	s    *Server
-	r    *mux.Router
-	l    *log.Logger
-	b    *bytes.Buffer
+	m   *ScalerServicerMock
+	am  *AlertServicerMock
+	nsm *NodeScalerMock
+	s   *Server
+	r   *mux.Router
+	l   *log.Logger
+	b   *bytes.Buffer
 }
 
 func TestServerUnitTestSuite(t *testing.T) {
@@ -93,16 +86,15 @@ func (suite *ServerTestSuite) SetupTest() {
 	suite.m = new(ScalerServicerMock)
 	suite.am = new(AlertServicerMock)
 	suite.nsm = new(NodeScalerMock)
-	suite.nscm = new(NodeScalerCreaterMock)
 
 	suite.b = new(bytes.Buffer)
 	suite.l = log.New(suite.b, "", 0)
 	suite.s = NewServer(suite.m, suite.am,
-		suite.nscm, suite.l)
+		suite.nsm, suite.l)
 	suite.r = suite.s.MakeRouter()
 }
 
-func (suite *ServerTestSuite) Test_ScaleServiceNoBody() {
+func (suite *ServerTestSuite) Test_ScaleService_NoBody() {
 	require := suite.Require()
 	errorMessage := "No POST body"
 	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
@@ -119,7 +111,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoBody() {
 	suite.am.AssertExpectations(suite.T())
 }
 
-func (suite *ServerTestSuite) Test_ScaleServiceNoServiceNameInBody() {
+func (suite *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
 	require := suite.Require()
 	errorMessage := "No service name in request body"
 	url := "/v1/scale-service"
@@ -136,7 +128,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	suite.am.AssertExpectations(suite.T())
 }
 
-func (suite *ServerTestSuite) Test_ScaleServiceNoScaleNameInBody() {
+func (suite *ServerTestSuite) Test_ScaleService_NoScaleDirectionInBody() {
 	require := suite.Require()
 	errorMessage := "No scale direction in request body"
 	url := "/v1/scale-service"
@@ -155,7 +147,7 @@ func (suite *ServerTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 
 }
 
-func (suite *ServerTestSuite) Test_ScaleServiceIncorrectScaleName() {
+func (suite *ServerTestSuite) Test_ScaleService_IncorrectScaleName() {
 	require := suite.Require()
 	errorMessage := "Incorrect scale direction in request body"
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "boo"}}`
@@ -176,9 +168,10 @@ func (suite *ServerTestSuite) Test_ScaleServiceIncorrectScaleName() {
 func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require := suite.Require()
 	expErr := fmt.Errorf("No such service: web")
+	logMessage := fmt.Sprintf("scale-service error: %s", expErr)
 	requestMessage := "Scale service up: web"
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "up")
+	body := NewScaleRequestBody("web", "up")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(0), uint64(0), expErr)
@@ -190,7 +183,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DoesNotExist() {
 	require.Equal(http.StatusInternalServerError, rec.Code)
 
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
-	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, logMessage)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 }
@@ -199,8 +192,9 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require := suite.Require()
 	requestMessage := "Scale service up: web"
 	expErr := fmt.Errorf("web is already scaled to the maximum number of 4 replicas")
+	logMessage := fmt.Sprintf("scale-service error: %s", expErr)
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "up")
+	body := NewScaleRequestBody("web", "up")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
@@ -214,7 +208,7 @@ func (suite *ServerTestSuite) Test_ScaleService_ScaledToMax() {
 	require.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
-	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, logMessage)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 }
@@ -225,7 +219,8 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	requestMessage := "Scale service down: web"
 	expErr := fmt.Errorf("web is already descaled to the minimum number of 2 replicas")
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "down")
+	logMessage := fmt.Sprintf("scale-service error: %s", expErr)
+	body := NewScaleRequestBody("web", "down")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -239,7 +234,7 @@ func (suite *ServerTestSuite) Test_ScaleService_DescaledToMin() {
 	require.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
-	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, logMessage)
 	suite.m.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 }
@@ -249,7 +244,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUp() {
 	requestMessage := "Scale service up: web"
 	message := "Scaling web from 3 to 4 replicas"
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "up")
+	body := NewScaleRequestBody("web", "up")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -273,7 +268,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerUpPassMax() {
 	requestMessage := "Scale service up: web"
 	message := "Scaling web from 3 to 5 replicas"
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "up")
+	body := NewScaleRequestBody("web", "up")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(5), nil)
@@ -297,7 +292,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDown() {
 	requestMessage := "Scale service down: web"
 	message := "Scaling web from 3 to 2 replicas"
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "down")
+	body := NewScaleRequestBody("web", "down")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(2), uint64(4), nil)
@@ -321,7 +316,7 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDownPassMin()
 	requestMessage := "Scale service down: web"
 	message := "Scaling web from 3 to 1 replicas"
 	url := "/v1/scale-service"
-	body := NewScaleServiceRequestBody("web", "down")
+	body := NewScaleRequestBody("web", "down")
 	req, _ := http.NewRequest("POST", url, bytes.NewReader(body))
 
 	suite.m.On("GetMinMaxReplicas", "web").Return(uint64(1), uint64(4), nil)
@@ -340,126 +335,145 @@ func (suite *ServerTestSuite) Test_ScaleService_CallsScalerServicerDownPassMin()
 	suite.am.AssertExpectations(suite.T())
 }
 
-func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerDeltaQuery() {
+func (suite *ServerTestSuite) Test_ScaleNode_NoPOSTBody() {
+	require := suite.Require()
+	errorMessage := "No POST body"
+	logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
+	url := "/v1/scale-nodes?by=1&type=worker"
+	suite.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, nil)
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusBadRequest, rec.Code)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), logMessage)
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_NoScaleDirectionInBody() {
+	require := suite.Require()
+	errorMessage := "No scale direction in request body"
+	url := "/v1/scale-nodes?by=1&type=worker"
+	jsonStr := `{"groupLabels":{}}`
+	logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
+	suite.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+	rec := httptest.NewRecorder()
+	suite.r.ServeHTTP(rec, req)
+	require.Equal(http.StatusBadRequest, rec.Code)
+	suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	suite.RequireLogs(suite.b.String(), logMessage)
+	suite.am.AssertExpectations(suite.T())
+}
+
+func (suite *ServerTestSuite) Test_ScaleNode_InvalidScaleValue() {
 	tt := []string{"what", "2114what", "24y4", "he"}
 
 	for _, deltaStr := range tt {
 
-		url := fmt.Sprintf("/v1/scale-nodes?backend=mock&delta=%v&type=worker", deltaStr)
-		requestMessage := fmt.Sprintf("Scale node on: mock, delta: %s, type: worker", deltaStr)
-		errorMessage := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
-		suite.am.On("Send", "scale_node", "mock",
-			requestMessage, "error", errorMessage).Return(nil)
-		suite.nscm.On("New", "mock").Return(suite.nsm, nil)
+		errorMessage := "Incorrect scale direction in request body"
+		url := "/v1/scale-nodes?by=1&type=worker"
+		jsonStr := fmt.Sprintf(`{"groupLabels":{"scale":"%s"}}`, deltaStr)
+		logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
+		suite.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
-		req, _ := http.NewRequest("POST", url, nil)
 		rec := httptest.NewRecorder()
 		suite.r.ServeHTTP(rec, req)
 		suite.Equal(http.StatusBadRequest, rec.Code)
-
-		suite.RequireLogs(suite.b.String(), requestMessage, errorMessage)
-
+		suite.RequireLogs(suite.b.String(), logMessage)
 		suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
 		suite.am.AssertExpectations(suite.T())
 		suite.b.Reset()
 	}
 }
 
-func (suite *ServerTestSuite) Test_ScaleNode_BackEndDoesNotExist() {
-	url := "/v1/scale-nodes?backend=BADSERVICE&delta=1&type=worker"
-	requestMessage := "Scale node on: BADSERVICE, delta: 1, type: worker"
-	expErr := fmt.Errorf("BADSERVICE does not exist")
+func (suite *ServerTestSuite) Test_ScaleNode_NonIntegerByQuery() {
 
-	suite.nscm.On("New", "BADSERVICE").Return(suite.nsm, expErr)
-	suite.am.On("Send", "scale_node", "BADSERVICE", requestMessage, "error", expErr.Error()).Return(nil)
+	tt := []string{"what", "2114what", "24y4", "he"}
 
-	req, _ := http.NewRequest("POST", url, nil)
-	rec := httptest.NewRecorder()
-	suite.r.ServeHTTP(rec, req)
-	suite.Equal(http.StatusPreconditionFailed, rec.Code)
+	for _, byStr := range tt {
 
-	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
-	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
-	suite.nscm.AssertExpectations(suite.T())
-	suite.am.AssertExpectations(suite.T())
+		errorMessage := fmt.Sprintf("Non integer by query parameter: %s", byStr)
+		url := fmt.Sprintf("/v1/scale-nodes?by=%s&type=worker", byStr)
+		jsonStr := `{"groupLabels":{"scale":"up"}}`
+		logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
+		suite.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+
+		rec := httptest.NewRecorder()
+		suite.r.ServeHTTP(rec, req)
+		suite.Equal(http.StatusBadRequest, rec.Code)
+
+		suite.RequireLogs(suite.b.String(), logMessage)
+		suite.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+		suite.am.AssertExpectations(suite.T())
+		suite.b.Reset()
+	}
 }
 
 func (suite *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 
-	url := "/v1/scale-nodes?backend=mock&delta=1&type=worker"
-	requestMessage := "Scale node on: mock, delta: 1, type: worker"
+	url := "/v1/scale-nodes?type=worker&by=1"
+	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
 	expErr := fmt.Errorf("Unable to scale node")
+	logMessage := fmt.Sprintf("scale-nodes error: %s", expErr)
+	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
-	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
-	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", expErr.Error()).Return(nil)
+	suite.am.On("Send", "scale_nodes", "mock", requestMessage, "error", expErr.Error()).Return(nil)
 	suite.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(0), uint64(0), expErr)
 
-	req, _ := http.NewRequest("POST", url, nil)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	suite.Equal(http.StatusInternalServerError, rec.Code)
 
-	suite.RequireLogs(suite.b.String(), requestMessage, expErr.Error())
+	suite.RequireLogs(suite.b.String(), requestMessage, logMessage)
 	suite.RequireResponse(rec.Body.Bytes(), "NOK", expErr.Error())
-	suite.nscm.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 	suite.nsm.AssertExpectations(suite.T())
 
 }
 
-func (suite *ServerTestSuite) Test_ScaleNode_ScaleWithBadType() {
-	url := "/v1/scale-nodes?backend=mock&delta=1&type=BAD"
-	requestMessage := "Scale node on: mock, delta: 1, type: BAD"
-	message := "Incorrect type: BAD, type can only be worker or manager"
-	suite.am.On("Send", "scale_node", "mock", requestMessage, "error", message).Return(nil)
-
-	req, _ := http.NewRequest("POST", url, nil)
-	rec := httptest.NewRecorder()
-	suite.r.ServeHTTP(rec, req)
-	suite.Equal(http.StatusPreconditionFailed, rec.Code)
-
-	suite.RequireLogs(suite.b.String(), requestMessage, message)
-	suite.RequireResponse(rec.Body.Bytes(), "NOK", message)
-}
-
-func (suite *ServerTestSuite) Test_ScaleNode_ScaleWorkerByDelta() {
-	url := "/v1/scale-nodes?backend=mock&delta=1&type=worker"
-	requestMessage := "Scale node on: mock, delta: 1, type: worker"
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
+	url := "/v1/scale-nodes?type=worker&by=1"
+	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
 	message := "Changed the number of worker nodes on mock from 3 to 4"
+	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
-	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
-	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
+	suite.am.On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	suite.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
 
-	req, _ := http.NewRequest("POST", url, nil)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	suite.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireLogs(suite.b.String(), requestMessage, message)
 	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
-	suite.nscm.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 	suite.nsm.AssertExpectations(suite.T())
 }
 
-func (suite *ServerTestSuite) Test_ScaleNode_ScaleManagerByDelta() {
-	url := "/v1/scale-nodes?backend=mock&delta=-1&type=manager"
-	requestMessage := "Scale node on: mock, delta: -1, type: manager"
+func (suite *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
+	url := "/v1/scale-nodes?type=manager&by=1"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: manager"
 	message := "Changed the number of manager nodes on mock from 3 to 2"
+	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
-	suite.nscm.On("New", "mock").Return(suite.nsm, nil)
-	suite.am.On("Send", "scale_node", "mock", requestMessage, "success", message).Return(nil)
+	suite.am.On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	suite.nsm.On("ScaleManagerByDelta", -1).Return(uint64(3), uint64(2), nil)
 
-	req, _ := http.NewRequest("POST", url, nil)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
 	suite.r.ServeHTTP(rec, req)
 	suite.Equal(http.StatusOK, rec.Code)
 
 	suite.RequireLogs(suite.b.String(), requestMessage, message)
 	suite.RequireResponse(rec.Body.Bytes(), "OK", message)
-	suite.nscm.AssertExpectations(suite.T())
 	suite.am.AssertExpectations(suite.T())
 	suite.nsm.AssertExpectations(suite.T())
 }

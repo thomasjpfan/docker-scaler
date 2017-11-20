@@ -1,25 +1,24 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
 )
 
-// NodeScalerCreater is an interface for a factory that creates NodeScalers
-type NodeScalerCreater interface {
-	New(nodeBackend string) (NodeScaler, error)
+type silentNodeScaler struct{}
+
+func (s silentNodeScaler) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
+	return 0, 0, fmt.Errorf("node-scaler not configured with a backend")
 }
 
-type nodeScalerFactory struct{}
-
-// NewNodeScalerFactory creates a factory for generating NodeScalers
-func NewNodeScalerFactory() NodeScalerCreater {
-	return &nodeScalerFactory{}
+func (s silentNodeScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
+	return 0, 0, fmt.Errorf("node-scaler not configured with a backend")
 }
 
-// New creates NodeScalers with a passed in node backend
-func (f nodeScalerFactory) New(nodeBackend string) (NodeScaler, error) {
+// NewNodeScaler creates a node scaler
+func NewNodeScaler(nodeBackend string) (NodeScaler, error) {
 	switch nodeBackend {
 	case "aws":
 		scaler, err := NewAWSScalerFromEnv()
@@ -27,6 +26,8 @@ func (f nodeScalerFactory) New(nodeBackend string) (NodeScaler, error) {
 			return nil, errors.Wrap(err, "Unable to create aws scaler")
 		}
 		return scaler, nil
+	default:
+		scaler := silentNodeScaler{}
+		return &scaler, nil
 	}
-	return nil, fmt.Errorf("Node Backend %s is not supported", nodeBackend)
 }

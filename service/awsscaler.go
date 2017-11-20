@@ -44,6 +44,14 @@ func NewAWSScalerFromEnv() (NodeScaler, error) {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
 
+	if len(spec.ManagerGroupName) == 0 {
+		return nil, fmt.Errorf("AWS Scaling requires AWS_MANAGER_GROUP_NAME")
+	}
+
+	if len(spec.WorkerGroupName) == 0 {
+		return nil, fmt.Errorf("AWS Scaling requires AWS_WORKER_GROUP_NAME")
+	}
+
 	sess, err := session.NewSessionWithOptions(
 		session.Options{SharedConfigState: session.SharedConfigEnable})
 	if err != nil {
@@ -67,6 +75,11 @@ func (s *awsScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, 
 func (s *awsScaler) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
 	return s.scaleNodes(ctx, delta, s.spec.ManagerGroupName, int64(s.spec.DefaultMinManagerNodes),
 		int64(s.spec.DefaultMaxManagerNodes))
+}
+
+// String conforms to Stringer interface
+func (s *awsScaler) String() string {
+	return "aws"
 }
 
 func (s *awsScaler) scaleNodes(ctx context.Context, delta int, groupName string, minSize int64, maxSize int64) (uint64, uint64, error) {

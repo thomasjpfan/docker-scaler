@@ -13,15 +13,16 @@ import (
 )
 
 type specification struct {
-	MinScaleLabel       string `envconfig:"MIN_SCALE_LABEL"`
-	MaxScaleLabel       string `envconfig:"MAX_SCALE_LABEL"`
-	DefaultMinReplicas  uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
-	DefaultMaxReplicas  uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
-	ScaleDownByLabel    string `envconfig:"SCALE_DOWN_BY_LABEL"`
-	ScaleUpByLabel      string `envconfig:"SCALE_UP_BY_LABEL"`
-	DefaultScaleDownBy  uint64 `envconfig:"DEFAULT_SCALE_DOWN_BY"`
-	DefaultScaleUpBy    uint64 `envconfig:"DEFAULT_SCALE_UP_BY"`
-	AlertmanagerAddress string `envconfig:"ALERTMANAGER_ADDRESS"`
+	MinScaleLabel             string `envconfig:"MIN_SCALE_LABEL"`
+	MaxScaleLabel             string `envconfig:"MAX_SCALE_LABEL"`
+	DefaultMinReplicas        uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
+	DefaultMaxReplicas        uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
+	ScaleDownByLabel          string `envconfig:"SCALE_DOWN_BY_LABEL"`
+	ScaleUpByLabel            string `envconfig:"SCALE_UP_BY_LABEL"`
+	DefaultScaleServiceDownBy uint64 `envconfig:"DEFAULT_SCALE_SERVICE_DOWN_BY"`
+	DefaultScaleServiceUpBy   uint64 `envconfig:"DEFAULT_SCALE_SERVICE_UP_BY"`
+	AlertmanagerAddress       string `envconfig:"ALERTMANAGER_ADDRESS"`
+	NodeScalerBackend         string `envconfig:"NODE_SCALER_BACKEND"`
 }
 
 func main() {
@@ -51,7 +52,11 @@ func main() {
 		logger.Printf("Using a stubbed alertmanager")
 	}
 
-	nodeScalerFactory := service.NewNodeScalerFactory()
+	nodeScaler, err := service.NewNodeScaler(spec.NodeScalerBackend)
+	if err != nil {
+		logger.Panic(err)
+	}
+	logger.Printf("Using node-scaling backend: %s", nodeScaler)
 
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
@@ -59,8 +64,8 @@ func main() {
 		spec.ScaleDownByLabel, spec.ScaleUpByLabel,
 		spec.DefaultMinReplicas,
 		spec.DefaultMaxReplicas,
-		spec.DefaultScaleDownBy,
-		spec.DefaultScaleUpBy)
-	s := server.NewServer(scaler, alerter, nodeScalerFactory, logger)
+		spec.DefaultScaleServiceDownBy,
+		spec.DefaultScaleServiceUpBy)
+	s := server.NewServer(scaler, alerter, nodeScaler, logger)
 	s.Run(8080)
 }
