@@ -18,7 +18,7 @@
     
     
       
-        <title>License - Docker Scaler</title>
+        <title>Configuration - Docker Scaler</title>
       
     
     
@@ -79,12 +79,8 @@
           
             
               
-                <span class="md-header-nav__parent">
-                  About
-                </span>
-              
             
-            License
+            Configuration
           
         </span>
       </div>
@@ -216,11 +212,67 @@
       
       
 
+  
 
-  <li class="md-nav__item">
-    <a href="../configuration/" title="Configuration" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        Configuration
+      </label>
+    
+    <a href="./" title="Configuration" class="md-nav__link md-nav__link--active">
       Configuration
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#service-scaling-environment-variables" title="Service Scaling Environment Variables" class="md-nav__link">
+    Service Scaling Environment Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#node-scaling-environment-variables" title="Node Scaling Environment Variables" class="md-nav__link">
+    Node Scaling Environment Variables
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-node-scaling-envronment-variables" title="AWS Node Scaling Envronment Variables" class="md-nav__link">
+    AWS Node Scaling Envronment Variables
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
     
@@ -276,12 +328,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
     
     <label class="md-nav__link" for="nav-5">
       About
@@ -309,20 +359,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
-    
-      
-    
-    
-    <a href="./" title="License" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../license/" title="License" class="md-nav__link">
       License
     </a>
-    
   </li>
 
         
@@ -348,6 +389,40 @@
     
   
   
+    <label class="md-nav__title" for="toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#service-scaling-environment-variables" title="Service Scaling Environment Variables" class="md-nav__link">
+    Service Scaling Environment Variables
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#node-scaling-environment-variables" title="Node Scaling Environment Variables" class="md-nav__link">
+    Node Scaling Environment Variables
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-node-scaling-envronment-variables" title="AWS Node Scaling Envronment Variables" class="md-nav__link">
+    AWS Node Scaling Envronment Variables
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -358,27 +433,76 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/thomasjpfan/docker-scaler/edit/master/docs/license.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/thomasjpfan/docker-scaler/edit/master/docs/configuration.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="docker-scaler-license-mit">Docker Scaler License (MIT)<a class="headerlink" href="#docker-scaler-license-mit" title="Permanent link">&para;</a></h1>
-<p>Copyright &copy; 2017 Thomas Fan</p>
-<p>The MIT License (MIT)</p>
-<p>Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:</p>
-<p>The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.</p>
-<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.</p>
+                <h1 id="configuring-docker-scaler">Configuring Docker Scaler<a class="headerlink" href="#configuring-docker-scaler" title="Permanent link">&para;</a></h1>
+<p><em>Docker Scaler</em> can be configured through Docker enivonment variables and/or by creating a new image based on <code>thomasjpfan/docker-scaler</code></p>
+<h2 id="service-scaling-environment-variables">Service Scaling Environment Variables<a class="headerlink" href="#service-scaling-environment-variables" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <em>Docker Scaler</em> container can be configured through envionment variables</p>
+</div>
+<p>The following environment variables can be used to configure the <em>Docker Scaler</em> relating to service scaling.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MIN_SCALE_LABEL</td>
+<td>Service label key with value representing the minimum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMin</code></td>
+</tr>
+<tr>
+<td>MAX_SCALE_LABEL</td>
+<td>Service label key with value representing the maximum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMax</code></td>
+</tr>
+<tr>
+<td>SCALE_DOWN_BY_LABEL</td>
+<td>Service label key with value representing the number of replicas to scale down by.<br><strong>Default:</strong> <code>com.df.scaleDownBy</code></td>
+</tr>
+<tr>
+<td>SCALE_UP_BY_LABEL</td>
+<td>Service label key with value representing the number of replicas to scale up by.<br><strong>Default:</strong> <code>com.df.scaleUpBy</code></td>
+</tr>
+<tr>
+<td>DEFAULT_MIN_REPLICAS</td>
+<td>Default minimum number of replicas for a service.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>DEFAULT_MAX_REPLICAS</td>
+<td>Default maximum number of replicas for a service.<br><strong>Default:</strong> 5</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_SERVICE_DOWN_BY</td>
+<td>Default number of replicas to scale service down by.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_SERVICE_UP_BY</td>
+<td>Default number of replicas to scale service up by.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>ALERTMANAGER_ADDRESS</td>
+<td>Address for alertmanager.<br><strong>Default:</strong> <code>http://alertmanager:9093</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="node-scaling-environment-variables">Node Scaling Environment Variables<a class="headerlink" href="#node-scaling-environment-variables" title="Permanent link">&para;</a></h2>
+<p>The following environment variables can be used to configure the <em>Docker Scaler</em> relating to node scaling.</p>
+<p>| NODE_SCALER_BACKEND | Backend of node backend.<br><strong>Accepted Values:</strong> [none, aws]<br><strong>Default:</strong> none |
+| DEFAULT_MIN_MANAGER_NODES | Miniumum number of manager nodes.<br><strong>Default:</strong> 3 |
+| DEFAULT_MAX_MANAGER_NODES | Maximum number of manager nodes.<br><strong>Default:</strong> 7 |
+| DEFAULT_MIN_WORKER_NODES | Miniumum number of worker nodes.<br><strong>Default:</strong> 1 |
+| DEFAULT_MAX_WORKER_NODES | Maximum number of worker nodes.<br><strong>Default:</strong> 5 |</p>
+<h3 id="aws-node-scaling-envronment-variables">AWS Node Scaling Envronment Variables<a class="headerlink" href="#aws-node-scaling-envronment-variables" title="Permanent link">&para;</a></h3>
+<p>The following environment variables can be used to configure the <em>Docker Scaler</em> relating to AWS node scaling.</p>
+<p>| AWS_ENV_FILE | Location of AWS env file used when <code>NODE_SCALER_BACKEND</code> is sent to <code>aws</code>.<br><strong>Default:</strong> <code>/run/secrets/aws</code> |
+| AWS_DEFAULT_REGION | Default AWS region.<br><strong>Default:</strong> us-east-1 |
+| AWS_MANAGER_GROUP_NAME | AWS group name for manager nodes. |
+| AWS_WORKER_GROUP_NAME | AWS group name for worker nodes.</p>
                 
                   
                 
@@ -397,7 +521,7 @@ SOFTWARE.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../feedback-and-contribution/" title="Feedback and Contribution" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../usage/" title="Usage" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -406,11 +530,25 @@ SOFTWARE.</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Feedback and Contribution
+                Usage
               </span>
             </div>
           </a>
         
+        
+          <a href="../service-scale/" title="Service Scaling" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Service Scaling
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
         
       </nav>
     </div>
