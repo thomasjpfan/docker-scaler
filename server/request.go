@@ -7,17 +7,17 @@ type groupLabels struct {
 	Scale   string `json:"scale,omitempty"`
 }
 
-// ScaleServiceRequest is the POST body used to scale services
+// ScaleRequest is the POST body used to scale services/nodes
 // It only needs the `groupLabels` value of the Alertmanager POST
 // webhook request
-type ScaleServiceRequest struct {
+type ScaleRequest struct {
 	GroupLabels groupLabels `json:"groupLabels,omitempty"`
 }
 
-// NewScaleServiceRequestBody returns json body of service-related
+// NewScaleRequestBody returns json body of service-related
 // POST request
-func NewScaleServiceRequestBody(service, scale string) []byte {
-	request := ScaleServiceRequest{
+func NewScaleRequestBody(service, scale string) []byte {
+	request := ScaleRequest{
 		GroupLabels: groupLabels{
 			Service: service,
 			Scale:   scale,

@@ -14,6 +14,33 @@ If an issue is a bug, please provide steps to reproduce it.
 
 If an issue is a request for a new feature, please specify the use-case behind it.
 
-## Discussion
-
 ## Contributing To The Project
+
+This project is developed using **Test Driven Development**. When a new feature is added please run through the testing procedure:
+
+### Fork repo
+
+```bash
+git clone https://github.com/thomasjpfan/docker-scaler
+```
+
+### Unit Testing
+
+```bash
+go test ./... --run UnitTest -v
+```
+
+### Build
+
+```bash
+docker image build -t thomasjpfan/docker-scaler:beta .
+```
+
+### Test
+
+``` bash
+export TRAVIS_COMMIT=beta
+docker stack deploy -c stacks/docker-scaler-test.yml test
+
+./scripts/integration_test.sh
+```

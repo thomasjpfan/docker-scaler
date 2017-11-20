@@ -16,24 +16,23 @@ import (
 
 // Server runs service that scales docker services
 type Server struct {
-	scaler            service.ScalerServicer
-	alerter           service.AlertServicer
-	nodeScaler        service.NodeScaler
-	nodeScalerCreater service.NodeScalerCreater
-	logger            *log.Logger
+	scaler     service.ScalerServicer
+	alerter    service.AlertServicer
+	nodeScaler service.NodeScaler
+	logger     *log.Logger
 }
 
 // NewServer creates Server
 func NewServer(
 	scaler service.ScalerServicer,
 	alerter service.AlertServicer,
-	nodeScalerCreater service.NodeScalerCreater,
+	nodeScaler service.NodeScaler,
 	logger *log.Logger) *Server {
 	return &Server{
-		scaler:            scaler,
-		alerter:           alerter,
-		nodeScalerCreater: nodeScalerCreater,
-		logger:            logger,
+		scaler:     scaler,
+		alerter:    alerter,
+		nodeScaler: nodeScaler,
+		logger:     logger,
 	}
 }
 
@@ -46,10 +45,9 @@ func (s *Server) MakeRouter() *mux.Router {
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
 	v1Router.Path("/scale-nodes").
-		Queries("backend", "{backend}", "delta", "{delta}",
-			"type", "{type}").
+		Queries("type", "{type}", "by", "{by}").
 		Methods("POST").
-		HandlerFunc(s.ScaleNode).
+		HandlerFunc(s.ScaleNodes).
 		Name("ScaleNode")
 	return router
 }
@@ -86,7 +84,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ssReq ScaleServiceRequest
+	var ssReq ScaleRequest
 	err = json.Unmarshal(body, &ssReq)
 
 	if err != nil {
@@ -131,7 +129,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
@@ -139,7 +137,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	scaleDownBy, scaleUpBy, err := s.scaler.GetDownUpScaleDeltas(ctx, serviceName)
 	if err != nil {
 		message := "Unable to get scaling delta"
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
@@ -156,7 +154,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
@@ -174,13 +172,13 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if replicas == maxReplicas && newReplicas == maxReplicas {
 		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
 		respondWithError(w, http.StatusOK, message)
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	} else if replicas == minReplicas && newReplicas == minReplicas {
 		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
 		respondWithError(w, http.StatusOK, message)
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
@@ -189,7 +187,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
-		s.logger.Print(message)
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
@@ -199,60 +197,105 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
-// ScaleNode scales nodes
-func (s *Server) ScaleNode(w http.ResponseWriter, r *http.Request) {
+// ScaleNodes scales nodes
+func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
-	q := r.URL.Query()
-	nodesOn := q.Get("backend")
-	deltaStr := q.Get("delta")
-	typeStr := q.Get("type")
 	ctx := r.Context()
 
-	requestMessage := fmt.Sprintf("Scale node on: %s, delta: %s, type: %s", nodesOn, deltaStr, typeStr)
+	q := r.URL.Query()
+	typeStr := q.Get("type")
+	byStr := q.Get("by")
+
+	if r.Body == nil {
+		message := "No POST body"
+		s.logger.Printf("scale-nodes error: %s", message)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	byInt, err := strconv.Atoi(byStr)
+
+	if err != nil {
+		message := fmt.Sprintf("Non integer by query parameter: %s", byStr)
+		s.logger.Printf("scale-nodes error: %s", message)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+
+	if err != nil {
+		message := "Unable to decode POST body"
+		s.logger.Printf("scale-nodes error: %s", message)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	var ssReq ScaleRequest
+	err = json.Unmarshal(body, &ssReq)
+
+	if err != nil {
+		message := "Unable to recognize POST body"
+		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	scaleDirection := ssReq.GroupLabels.Scale
+
+	if len(scaleDirection) == 0 {
+		message := "No scale direction in request body"
+		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	if scaleDirection != "up" && scaleDirection != "down" {
+		message := "Incorrect scale direction in request body"
+		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
+		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		respondWithError(w, http.StatusBadRequest, message)
+		return
+	}
+
+	if scaleDirection == "down" {
+		byInt *= -1
+	}
+
+	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %s, type: %s", scaleDirection, s.nodeScaler, byStr, typeStr)
 	s.logger.Printf(requestMessage)
 
 	if typeStr != "worker" && typeStr != "manager" {
 		message := fmt.Sprintf("Incorrect type: %s, type can only be worker or manager", typeStr)
 		respondWithError(w, http.StatusPreconditionFailed, message)
-		s.logger.Print(message)
-		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
-		return
-	}
-
-	delta, err := strconv.Atoi(deltaStr)
-	if err != nil {
-		message := fmt.Sprintf("Incorrect delta query: %v", deltaStr)
-		respondWithError(w, http.StatusBadRequest, message)
-		s.logger.Print(message)
-		s.sendAlert("scale_node", nodesOn, requestMessage, "error", message)
-		return
-	}
-
-	nodeScaler, err := s.nodeScalerCreater.New(nodesOn)
-	if err != nil {
-		respondWithError(w, http.StatusPreconditionFailed, err.Error())
-		s.logger.Print(err)
-		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
+		s.logger.Printf("scale-nodes error: %s", message)
+		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "error", message)
 		return
 	}
 
 	var nodesBefore, nodesNow uint64
 
 	if typeStr == "worker" {
-		nodesBefore, nodesNow, err = nodeScaler.ScaleWorkerByDelta(ctx, delta)
+		nodesBefore, nodesNow, err = s.nodeScaler.ScaleWorkerByDelta(ctx, byInt)
 	} else {
-		nodesBefore, nodesNow, err = nodeScaler.ScaleManagerByDelta(ctx, delta)
+		nodesBefore, nodesNow, err = s.nodeScaler.ScaleManagerByDelta(ctx, byInt)
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
-		s.logger.Print(err)
-		s.sendAlert("scale_node", nodesOn, requestMessage, "error", err.Error())
+		s.logger.Printf("scale-nodes error: %s", err)
+		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "error", err.Error())
 		return
 	}
 
-	message := fmt.Sprintf("Changed the number of %s nodes on %s from %d to %d", typeStr, nodesOn, nodesBefore, nodesNow)
+	message := fmt.Sprintf("Changed the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
 	s.logger.Print(message)
-	s.sendAlert("scale_node", nodesOn, requestMessage, "success", message)
+	s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 

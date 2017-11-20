@@ -4,6 +4,8 @@
 
 Microservice providing a REST API that scales services in Docker Swarm.
 
+Please visit the [documentation](https://thomasjpfan.github.io/docker-scaler/) for configuration and tutorials.
+
 ## Usage
 
 Consider the services defined by the following compose spec:
@@ -91,11 +93,13 @@ with your autoscaling group names. Then deploy it as a stack:
 ```bash
 $ docker stack deploy -c scripts/docker-scaler-aws.yml aws
 ```
-To send request to scale up worker node:
+To send request to scale up worker node by 1:
 ```bash
-$ curl -X POST [PUBLIC_DNS]:8080/v1/scale-nodes?backend=aws&delta=1&type=worker
+$ curl -X POST [PUBLIC_DNS]:8080/v1/scale-nodes?by=1&type=worker -d \
+'{"groupLabels": {"scale": "up"}}'
 ```
-Or scaling up a manager node:
+Or scaling up a manager node by 2:
 ```bash
-$ curl -X POST [PUBLIC_DNS]:8080/v1/scale-nodes?backend=aws&delta=1&type=manager
+$ curl -X POST [PUBLIC_DNS]:8080/v1/scale-nodes?by=2&type=manager -d \
+'{"groupLabels": {"scale": "up"}}'
 ```
