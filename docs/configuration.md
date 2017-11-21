@@ -36,6 +36,16 @@ The following environment variables can be used to configure the *Docker Scaler*
 The following environment variables can be used to configure the *Docker Scaler* relating to AWS node scaling.
 
 | AWS_ENV_FILE | Location of AWS env file used when `NODE_SCALER_BACKEND` is sent to `aws`.<br>**Default:** `/run/secrets/aws` |
-| AWS_DEFAULT_REGION | Default AWS region.<br>**Default:** us-east-1 |
+| AWS_DEFAULT_REGION | Default AWS region.<br>**Default:** `us-east-1` |
 | AWS_MANAGER_GROUP_NAME | AWS group name for manager nodes. |
 | AWS_WORKER_GROUP_NAME | AWS group name for worker nodes.
+
+#### AWS Secrets file
+
+AWS secret file defines the necessary environment variables to authenticate with AWS.
+
+```bash
+echo 'export AWS_ACCESS_KEY_ID=xxxx
+export AWS_SECRET_ACCESS_KEY=xxxx
+' | docker secret create aws -
+```
