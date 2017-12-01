@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/thomasjpfan/docker-scaler/server/handler"
 
@@ -16,10 +17,11 @@ import (
 
 // Server runs service that scales docker services
 type Server struct {
-	scaler     service.ScalerServicer
-	alerter    service.AlertServicer
-	nodeScaler service.NodeScaler
-	logger     *log.Logger
+	scaler      service.ScalerServicer
+	alerter     service.AlertServicer
+	nodeScaler  service.NodeScaler
+	rescheduler service.ReschedulerServicer
+	logger      *log.Logger
 }
 
 // NewServer creates Server
@@ -27,12 +29,14 @@ func NewServer(
 	scaler service.ScalerServicer,
 	alerter service.AlertServicer,
 	nodeScaler service.NodeScaler,
+	rescheduler service.ReschedulerServicer,
 	logger *log.Logger) *Server {
 	return &Server{
-		scaler:     scaler,
-		alerter:    alerter,
-		nodeScaler: nodeScaler,
-		logger:     logger,
+		scaler:      scaler,
+		alerter:     alerter,
+		nodeScaler:  nodeScaler,
+		rescheduler: rescheduler,
+		logger:      logger,
 	}
 }
 
@@ -49,6 +53,15 @@ func (s *Server) MakeRouter() *mux.Router {
 		Methods("POST").
 		HandlerFunc(s.ScaleNodes).
 		Name("ScaleNode")
+	v1Router.Path("/reschedule-services").
+		Methods("POST").
+		HandlerFunc(s.RescheduleAllServices).
+		Name("RescheduleAllServices")
+	v1Router.Path("/reschedule-service").
+		Methods("POST").
+		Queries("service", "{service}").
+		HandlerFunc(s.RescheduleOneService).
+		Name("RescheduleOneService")
 	return router
 }
 
@@ -281,10 +294,12 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
 	var nodesBefore, nodesNow uint64
 
-	if typeStr == "worker" {
-		nodesBefore, nodesNow, err = s.nodeScaler.ScaleWorkerByDelta(ctx, byInt)
-	} else {
+	isManager := (typeStr == "manager")
+
+	if isManager {
 		nodesBefore, nodesNow, err = s.nodeScaler.ScaleManagerByDelta(ctx, byInt)
+	} else {
+		nodesBefore, nodesNow, err = s.nodeScaler.ScaleWorkerByDelta(ctx, byInt)
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -293,10 +308,14 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := fmt.Sprintf("Changed the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
+	message := fmt.Sprintf("Changing the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
 	s.logger.Print(message)
 	s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
+
+	// Call rescheduler
+	// rightNow := time.Now().UTC()
+	// s.RescheduleServices2(int(nodesNow), isManager, rightNow)
 }
 
 func (s *Server) sendAlert(alertName string, serviceName string, request string,
@@ -307,4 +326,115 @@ func (s *Server) sendAlert(alertName string, serviceName string, request string,
 	} else {
 		s.logger.Printf("Alertmanager received message: %s", message)
 	}
+}
+
+// RescheduleAllServices reschedules all services
+func (s *Server) RescheduleAllServices(w http.ResponseWriter, r *http.Request) {
+	requestMessage := "Rescheduling all labeled services"
+	s.logger.Print(requestMessage)
+
+	nowStr := time.Now().UTC().Format("20060102T150405")
+	err := s.rescheduler.RescheduleAll(nowStr)
+
+	if err != nil {
+		s.logger.Printf("reschedule-services error: %s", err)
+		s.alerter.Send("reschedule_services", "reschedule", requestMessage, "error", err.Error())
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	message := "Rescheduled all services"
+	s.logger.Printf("reschedule-services success: %s", message)
+	s.alerter.Send("reschedule_services", "reschedule", requestMessage, "success", message)
+	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
+}
+
+// RescheduleOneService reschedule one service
+func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
+
+	q := r.URL.Query()
+	service := q.Get("service")
+
+	requestMessage := fmt.Sprintf("Rescheduling service: %s", service)
+	s.logger.Print(requestMessage)
+
+	nowStr := time.Now().UTC().Format("20060102T150405")
+	err := s.rescheduler.RescheduleService(service, nowStr)
+
+	if err != nil {
+		s.logger.Printf("reschedule-service error: %s", err.Error())
+		s.alerter.Send("reschedule_service", "reschedule", requestMessage, "error", err.Error())
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	message := fmt.Sprintf("Rescheduled service: %s", service)
+	s.logger.Printf("reschedule_service success: %s", message)
+	s.alerter.Send("reschedule_service", "reschedule", requestMessage, "success", message)
+	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
+
+}
+
+// RescheduleServices2 reschedule services when the number of nodes
+// equal `targetNodeCnt`
+func (s *Server) rescheduleService(serviceName string, targetNodeCnt int, manager bool, rightNow time.Time) {
+
+	// var typeStr string
+	// if manager {
+	// 	typeStr = "manager"
+	// } else {
+	// 	typeStr = "worker"
+	// }
+
+	// requestMessage := fmt.Sprintf("Rescheduling services after scaling %s nodes", typeStr)
+	// errorPrefix := "reschedule-services error"
+	// rightNowStr := rightNow.Format("20060102T150405")
+	// envAdd := fmt.Sprintf("RESCHEDULE_DATE=%s", rightNowStr)
+
+	// err := s.rescheduler.RescheduleServiceWaitForNodes(manager, envAdd)
+	// if err != nil {
+	// 	// Error
+	// }
+	// success
+
+	// for {
+	// 	select {
+	// 	case <-tickerChan:
+	// 		equalTarget, err := s.equalTargetCount(targetNodeCnt, manager)
+	// 		if err != nil {
+	// 			s.logger.Printf("reschedule-services error: %s", err)
+	// 			s.sendAlert("scale_nodes", "rescheduler_services", requestMessage, "error", err.Error())
+	// 			return
+	// 		}
+	// 		if !equalTarget {
+	// 			continue
+	// 		}
+
+	// 		envAdd := fmt.Sprintf("RESCHEDULE_DATE=%s", rightNowStr)
+	// 		errs := s.rescheduler.Reschedule(envAdd)
+	// 		if len(errs) != 0 {
+	// 			errMessages := []string{}
+	// 			for _, err := range errs {
+	// 				errMessages = append(errMessages, err.Error())
+	// 			}
+	// 			errMessage := strings.Join(errMessages, ", ")
+	// 			s.logger.Printf("reschedule-services error: %s", errMessage)
+	// 			s.sendAlert("scale_nodes", "rescheduler_services", requestMessage, "error", errMessage)
+	// 			return
+	// 		}
+
+	// 		// success
+	// 		message := "Rescheduling services successful"
+	// 		s.logger.Printf(message)
+	// 		s.sendAlert("scale_nodes", "reschedule_services",
+	// 			requestMessage, "success", message)
+	// 		return
+	// 	case <-timerChan:
+	// 		errMessage := "reschedule-services error: Time ran ou"
+	// 		s.logger.Print(errMessage)
+	// 		s.sendAlert("scale_nodes", "rescheduler_services",
+	// 			requestMessage, "error", errMessage)
+	// 		return
+	// 	}
+	// }
 }

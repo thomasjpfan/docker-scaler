@@ -17,7 +17,6 @@ type ScalerServicer interface {
 	GetDownUpScaleDeltas(ctx context.Context, serviceName string) (uint64, uint64, error)
 }
 
-// ScalerService scales docker services
 type scalerService struct {
 	c                  *client.Client
 	minLabel           string

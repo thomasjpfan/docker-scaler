@@ -13,7 +13,7 @@ services:
     deploy:
       placement:
         constraints: [node.role == manager]
-  web:
+  web1:
     image: alpine:3.6
     deploy:
       replicas: 3
@@ -22,6 +22,16 @@ services:
         com.df.scaleMax: 5
         com.df.scaleDownBy: 1
         com.df.scaleUpBy: 2
+        com.df.reschedule: "true"
+    command: sleep 10000000
+    networks:
+      - scaling
+  web2:
+    image: alpine:3.6
+    deploy:
+      replicas: 1
+      labels:
+        com.df.reschedule: "false"
     command: sleep 10000000
     networks:
       - scaling

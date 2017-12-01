@@ -21,10 +21,11 @@ import (
 
 type IntegrationTestSuite struct {
 	suite.Suite
-	dc            *client.Client
-	scaleURL      string
-	targetService string
-	alertURL      string
+	dc                     *client.Client
+	scaleURL               string
+	targetService          string
+	falseRescheduleService string
+	alertURL               string
 }
 
 func TestIntegrationTestSuite(t *testing.T) {
@@ -39,16 +40,18 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	scalerIP := os.Getenv("SCALER_IP")
 	targetService := os.Getenv("TARGET_SERVICE")
 	alertAddress := os.Getenv("ALERTMANAGER_ADDRESS")
+	falseRescheduleService := os.Getenv("FALSE_RESCHEDULE_SERVICE")
 	s.Require().NotEmpty(scalerIP)
 	s.Require().NotEmpty(targetService)
+	s.Require().NotEmpty(falseRescheduleService)
 
 	s.scaleURL = fmt.Sprintf("http://%s:8080/v1", scalerIP)
 	s.targetService = targetService
 	s.alertURL = alertAddress
+	s.falseRescheduleService = falseRescheduleService
 }
 
 func (s *IntegrationTestSuite) Test_NoPOSTBody() {
-	require := s.Require()
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	req, _ := http.NewRequest("POST", url, nil)
 
@@ -59,8 +62,8 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -68,7 +71,6 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 }
 
 func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
-	require := s.Require()
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -80,8 +82,8 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -89,7 +91,6 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 }
 
 func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
-	require := s.Require()
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := `{"groupLabels":{"service":"test_web"}}`
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -101,8 +102,8 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -110,7 +111,6 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 }
 
 func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
-	require := s.Require()
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := fmt.Sprintf(`{"groupLabels":{"service":"%s", "scale":"boo"}}`, s.targetService)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -122,8 +122,8 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -131,7 +131,6 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
-	require := s.Require()
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := `{"groupLabels":{"service":"BAD", "scale":"up"}}`
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -143,8 +142,8 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "BAD")
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := "Scale service up: BAD"
@@ -153,7 +152,6 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
-	require := s.Require()
 	s.scaleService(s.targetService, 4)
 	time.Sleep(1 * time.Second)
 
@@ -169,8 +167,8 @@ func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service up: %s", s.targetService)
@@ -180,7 +178,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 
 func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
-	require := s.Require()
 	s.scaleService(s.targetService, 5)
 	time.Sleep(1 * time.Second)
 
@@ -196,8 +193,8 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service up: %s", s.targetService)
@@ -208,7 +205,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
 func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 
-	require := s.Require()
 	s.scaleService(s.targetService, 2)
 	time.Sleep(1 * time.Second)
 
@@ -218,7 +214,7 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	require.Equal(2, s.getReplicas(s.targetService))
+	s.Require().Equal(2, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("%s is already descaled to the minimum number of 2 replicas", s.targetService)
 	s.Equal("NOK", resp.Status)
@@ -226,8 +222,8 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service down: %s", s.targetService)
@@ -237,7 +233,6 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 
 func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 
-	require := s.Require()
 	s.scaleService(s.targetService, 3)
 	time.Sleep(1 * time.Second)
 
@@ -247,7 +242,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	require.Equal(5, s.getReplicas(s.targetService))
+	s.Require().Equal(5, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas", s.targetService)
 	s.Equal("OK", resp.Status)
@@ -255,8 +250,8 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service up: %s", s.targetService)
@@ -266,7 +261,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 
 func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 
-	require := s.Require()
 	s.scaleService(s.targetService, 3)
 	time.Sleep(1 * time.Second)
 
@@ -276,7 +270,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	require.Equal(2, s.getReplicas(s.targetService))
+	s.Require().Equal(2, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas", s.targetService)
 	s.Equal("OK", resp.Status)
@@ -284,13 +278,106 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
-	require.NoError(err)
-	require.Equal(1, len(alerts))
+	s.Require().NoError(err)
+	s.Require().Equal(1, len(alerts))
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service down: %s", s.targetService)
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
+}
+
+func (s *IntegrationTestSuite) Test_RescheduleAll() {
+
+	url := fmt.Sprintf("%s/reschedule-services", s.scaleURL)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusOK)
+
+	message := "Rescheduled all services"
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_services", "success", "reschedule")
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := "Rescheduling all labeled services"
+	s.Equal(request, string(alert.Annotations["request"]))
+
+	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(context.Background(), s.targetService)
+	s.Require().NoError(err)
+	spec := &serviceInfo.Spec
+	envs := spec.TaskTemplate.ContainerSpec.Env
+
+	var target1 string
+	for _, env := range envs {
+		envSplit := strings.Split(env, "=")
+		s.Require().Len(envSplit, 2)
+		if envSplit[0] == "RESCHEDULE_DATE" {
+			target1 = envSplit[1]
+			break
+		}
+	}
+
+	s.NotEqual("", target1)
+
+	serviceInfo, _, err = s.dc.ServiceInspectWithRaw(context.Background(), s.falseRescheduleService)
+	s.Require().NoError(err)
+	spec = &serviceInfo.Spec
+	envs = spec.TaskTemplate.ContainerSpec.Env
+
+	var target2 string
+	for _, env := range envs {
+		envSplit := strings.Split(env, "=")
+		s.Require().Len(envSplit, 2)
+		if envSplit[0] == "RESCHEDULE_DATE" {
+			target2 = envSplit[1]
+			break
+		}
+	}
+
+	s.Equal("", target2)
+}
+
+func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
+
+	url := fmt.Sprintf("%s/reschedule-service?service=%s", s.scaleURL, s.falseRescheduleService)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusInternalServerError)
+
+	message := fmt.Sprintf("%s is not labeled with com.df.reschedule=true (com.df.reschedule=false)", s.falseRescheduleService)
+	s.Equal("NOK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_service", "error", "reschedule")
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Rescheduling service: %s", s.falseRescheduleService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
+
+	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(context.Background(), s.falseRescheduleService)
+	s.Require().NoError(err)
+	spec := &serviceInfo.Spec
+	envs := spec.TaskTemplate.ContainerSpec.Env
+
+	var target string
+	for _, env := range envs {
+		envSplit := strings.Split(env, "=")
+		s.Require().Len(envSplit, 2)
+		if envSplit[0] == "RESCHEDULE_DATE" {
+			target = envSplit[1]
+			break
+		}
+	}
+
+	s.Equal("", target)
+
 }
 
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
