@@ -30,9 +30,12 @@ func TestScalerUnitTestSuite(t *testing.T) {
 }
 
 func (s *ScalerTestSuite) SetupSuite() {
-	client, _ := client.NewEnvClient()
+	client, err := client.NewEnvClient()
+	if err != nil {
+		s.T().Skipf("Unable to connect to Docker Client")
+	}
 	defer client.Close()
-	_, err := client.Info(context.Background())
+	_, err = client.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
@@ -107,7 +110,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicas() {
 
 func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
 	cmd := `docker service update web_test \
-			--label-rm com.df.scaleMax`
+			--label-rm com.df.scaleMax -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
@@ -117,7 +120,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
 
 func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
 	cmd := `docker service update web_test \
-			--label-rm com.df.scaleMin`
+			--label-rm com.df.scaleMin -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
@@ -128,7 +131,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
 func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleMin \
-			--label-rm com.df.scaleMax`
+			--label-rm com.df.scaleMax -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
@@ -146,7 +149,7 @@ func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
 func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleDownBy \
-			--label-rm com.df.scaleUpBy`
+			--label-rm com.df.scaleUpBy -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	min, max, err := s.scaler.GetDownUpScaleDeltas(s.ctx, "web_test")
 	s.Require().NoError(err)

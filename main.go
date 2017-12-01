@@ -5,6 +5,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/kelseyhightower/envconfig"
@@ -22,6 +23,10 @@ type specification struct {
 	DefaultScaleServiceDownBy uint64 `envconfig:"DEFAULT_SCALE_SERVICE_DOWN_BY"`
 	DefaultScaleServiceUpBy   uint64 `envconfig:"DEFAULT_SCALE_SERVICE_UP_BY"`
 	AlertmanagerAddress       string `envconfig:"ALERTMANAGER_ADDRESS"`
+	RescheduleFilterLabel     string `envconfig:"RESCHEDULE_FILTER_LABEL"`
+	RescheduleTickerInterval  int64  `envconfig:"RESCHEDULE_TICKER_INTERVAL"`
+	RescheduleTimeOut         int64  `envconfig:"RESCHEDULE_TIMEOUT"`
+	RescheduleEnvKey          string `envconfig:"RESCHEDULE_ENV_KEY"`
 	NodeScalerBackend         string `envconfig:"NODE_SCALER_BACKEND"`
 }
 
@@ -58,6 +63,17 @@ func main() {
 	}
 	logger.Printf("Using node-scaling backend: %s", nodeScaler)
 
+	rescheduler, err := service.NewReschedulerService(
+		client,
+		spec.RescheduleFilterLabel,
+		spec.RescheduleEnvKey,
+		time.Duration(spec.RescheduleTickerInterval)*time.Second,
+		time.Duration(spec.RescheduleTimeOut)*time.Second)
+
+	if err != nil {
+		logger.Panic(err)
+	}
+
 	logger.Print("Starting Docker Scaler")
 	scaler := service.NewScalerService(
 		client, spec.MinScaleLabel, spec.MaxScaleLabel,
@@ -66,6 +82,6 @@ func main() {
 		spec.DefaultMaxReplicas,
 		spec.DefaultScaleServiceDownBy,
 		spec.DefaultScaleServiceUpBy)
-	s := server.NewServer(scaler, alerter, nodeScaler, logger)
+	s := server.NewServer(scaler, alerter, nodeScaler, rescheduler, logger)
 	s.Run(8080)
 }

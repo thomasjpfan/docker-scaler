@@ -20,7 +20,8 @@ docker run --rm \
 --network test_alert \
 -v "/var/run/docker.sock:/var/run/docker.sock" \
 -e "SCALER_IP=scaler" \
--e "TARGET_SERVICE=test_web" \
+-e "TARGET_SERVICE=test_web1" \
+-e "FALSE_RESCHEDULE_SERVICE=test_web2" \
 -e "ALERTMANAGER_ADDRESS=http://alertmanager:9093" \
 golang:1.9.0-alpine3.6 \
 go test github.com/thomasjpfan/docker-scaler/integration -v
