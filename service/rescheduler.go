@@ -16,7 +16,7 @@ import (
 // ReschedulerServicer is an interface for rescheduling services
 type ReschedulerServicer interface {
 	RescheduleService(serviceID, value string) error
-	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string) error
+	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error)
 	RescheduleAll(value string) error
 }
 
@@ -93,17 +93,19 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 	return nil
 }
 
-func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string) error {
+func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error) {
 
 	tickerChan := time.NewTicker(r.tickerInterval).C
 	timerChan := time.NewTimer(r.timeOut).C
 
 	for {
 		select {
-		case <-tickerChan:
+		case tc := <-tickerChan:
+			tickerC <- tc
 			equalTarget, err := r.equalTargetCount(targetNodeCnt, manager)
 			if err != nil {
-				return err
+				errorC <- err
+				return
 			}
 			if !equalTarget {
 				continue
@@ -111,11 +113,13 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 
 			err = r.RescheduleAll(value)
 			if err != nil {
-				return err
+				errorC <- err
 			}
-			return nil
+			errorC <- nil
+			return
 		case <-timerChan:
-			return fmt.Errorf("Waited %f seconds (timeout)", r.timeOut.Seconds())
+			errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
+			return
 
 		}
 	}
@@ -152,8 +156,9 @@ func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (
 	var err error
 	if manager {
 		nodeCnt, err = r.getManagerNodeCount()
+	} else {
+		nodeCnt, err = r.getWorkerNodeCount()
 	}
-	nodeCnt, err = r.getWorkerNodeCount()
 
 	if err != nil {
 		return false, errors.Wrap(err, "Equal target count error")
