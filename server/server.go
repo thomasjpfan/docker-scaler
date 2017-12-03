@@ -138,74 +138,22 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	requestMessage := fmt.Sprintf("Scale service %s: %s", scaleDirection, serviceName)
 	s.logger.Print(requestMessage)
 
-	minReplicas, maxReplicas, err := s.scaler.GetMinMaxReplicas(ctx, serviceName)
-	if err != nil {
-		message := err.Error()
-		respondWithError(w, http.StatusInternalServerError, message)
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
-		return
-	}
-
-	scaleDownBy, scaleUpBy, err := s.scaler.GetDownUpScaleDeltas(ctx, serviceName)
-	if err != nil {
-		message := "Unable to get scaling delta"
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
-	var delta int
+	var message string
 	if scaleDirection == "down" {
-		delta = -1 * int(scaleDownBy)
+		message, err = s.scaler.ScaleDown(ctx, serviceName)
 	} else {
-		delta = int(scaleUpBy)
+		message, err = s.scaler.ScaleUp(ctx, serviceName)
 	}
 
-	replicas, err := s.scaler.GetReplicas(ctx, serviceName)
 	if err != nil {
-		message := err.Error()
+		message = err.Error()
 		respondWithError(w, http.StatusInternalServerError, message)
 		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
 		return
 	}
-	newReplicasInt := int(replicas) + delta
 
-	var newReplicas uint64
-	if newReplicasInt < int(minReplicas) {
-		newReplicas = minReplicas
-	} else if newReplicasInt > int(maxReplicas) {
-		newReplicas = maxReplicas
-	} else {
-		newReplicas = uint64(newReplicasInt)
-	}
-
-	if replicas == maxReplicas && newReplicas == maxReplicas {
-		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
-		respondWithError(w, http.StatusOK, message)
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
-		return
-	} else if replicas == minReplicas && newReplicas == minReplicas {
-		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
-		respondWithError(w, http.StatusOK, message)
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
-		return
-	}
-
-	err = s.scaler.SetReplicas(ctx, serviceName, newReplicas)
-	if err != nil {
-		message := err.Error()
-		respondWithError(w, http.StatusInternalServerError, message)
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", serviceName, requestMessage, "error", message)
-		return
-	}
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceName, replicas, newReplicas)
-	s.logger.Print(message)
+	s.logger.Printf("scale-service success: %s", message)
 	s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
@@ -309,13 +257,17 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	message := fmt.Sprintf("Changing the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
-	s.logger.Print(message)
+	s.logger.Printf("scale-nodes success: %s", message)
 	s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 
 	// Call rescheduler
-	// rightNow := time.Now().UTC()
-	// s.RescheduleServices2(int(nodesNow), isManager, rightNow)
+	rightNow := time.Now().UTC().Format("20060102T150405")
+	reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
+	s.logger.Printf("scale-nodes: %s", reqMsg)
+	s.sendAlert("scale_nodes", "reschedule", "", "success", reqMsg)
+
+	go s.rescheduleServiceWait(isManager, int(nodesNow), rightNow)
 }
 
 func (s *Server) sendAlert(alertName string, serviceName string, request string,
@@ -345,7 +297,7 @@ func (s *Server) RescheduleAllServices(w http.ResponseWriter, r *http.Request) {
 
 	message := "Rescheduled all services"
 	s.logger.Printf("reschedule-services success: %s", message)
-	s.alerter.Send("reschedule_services", "reschedule", requestMessage, "success", message)
+	s.sendAlert("reschedule_services", "reschedule", requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
@@ -370,71 +322,35 @@ func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
 
 	message := fmt.Sprintf("Rescheduled service: %s", service)
 	s.logger.Printf("reschedule_service success: %s", message)
-	s.alerter.Send("reschedule_service", "reschedule", requestMessage, "success", message)
+	s.sendAlert("reschedule_service", "reschedule", requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 
 }
 
-// RescheduleServices2 reschedule services when the number of nodes
-// equal `targetNodeCnt`
-func (s *Server) rescheduleService(serviceName string, targetNodeCnt int, manager bool, rightNow time.Time) {
+func (s *Server) rescheduleServiceWait(isManager bool, targetNodeCnt int, nowStr string) {
 
-	// var typeStr string
-	// if manager {
-	// 	typeStr = "manager"
-	// } else {
-	// 	typeStr = "worker"
-	// }
+	tickerC := make(chan time.Time)
+	errC := make(chan error, 1)
 
-	// requestMessage := fmt.Sprintf("Rescheduling services after scaling %s nodes", typeStr)
-	// errorPrefix := "reschedule-services error"
-	// rightNowStr := rightNow.Format("20060102T150405")
-	// envAdd := fmt.Sprintf("RESCHEDULE_DATE=%s", rightNowStr)
+	go s.rescheduler.RescheduleServicesWaitForNodes(isManager, targetNodeCnt, nowStr, tickerC, errC)
 
-	// err := s.rescheduler.RescheduleServiceWaitForNodes(manager, envAdd)
-	// if err != nil {
-	// 	// Error
-	// }
-	// success
-
-	// for {
-	// 	select {
-	// 	case <-tickerChan:
-	// 		equalTarget, err := s.equalTargetCount(targetNodeCnt, manager)
-	// 		if err != nil {
-	// 			s.logger.Printf("reschedule-services error: %s", err)
-	// 			s.sendAlert("scale_nodes", "rescheduler_services", requestMessage, "error", err.Error())
-	// 			return
-	// 		}
-	// 		if !equalTarget {
-	// 			continue
-	// 		}
-
-	// 		envAdd := fmt.Sprintf("RESCHEDULE_DATE=%s", rightNowStr)
-	// 		errs := s.rescheduler.Reschedule(envAdd)
-	// 		if len(errs) != 0 {
-	// 			errMessages := []string{}
-	// 			for _, err := range errs {
-	// 				errMessages = append(errMessages, err.Error())
-	// 			}
-	// 			errMessage := strings.Join(errMessages, ", ")
-	// 			s.logger.Printf("reschedule-services error: %s", errMessage)
-	// 			s.sendAlert("scale_nodes", "rescheduler_services", requestMessage, "error", errMessage)
-	// 			return
-	// 		}
-
-	// 		// success
-	// 		message := "Rescheduling services successful"
-	// 		s.logger.Printf(message)
-	// 		s.sendAlert("scale_nodes", "reschedule_services",
-	// 			requestMessage, "success", message)
-	// 		return
-	// 	case <-timerChan:
-	// 		errMessage := "reschedule-services error: Time ran ou"
-	// 		s.logger.Print(errMessage)
-	// 		s.sendAlert("scale_nodes", "rescheduler_services",
-	// 			requestMessage, "error", errMessage)
-	// 		return
-	// 	}
-	// }
+	for {
+		select {
+		case t := <-tickerC:
+			msg := fmt.Sprintf("scale-nodes-reschedule waiting for %d nodes to come online: %v", targetNodeCnt, t)
+			s.logger.Print(msg)
+			s.sendAlert("scale_nodes", "reschedule", "", "success", msg)
+		case err := <-errC:
+			close(tickerC)
+			if err != nil {
+				s.logger.Printf("scale-nodes-reschedule error: %s", err)
+				s.sendAlert("scale_nodes", "reschedule", "", "error", err.Error())
+			} else {
+				msg := "scale-nodes-reschedule success"
+				s.logger.Print(msg)
+				s.sendAlert("scale_nodes", "reschedule", "", "success", msg)
+			}
+			return
+		}
+	}
 }

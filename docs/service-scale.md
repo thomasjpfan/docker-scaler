@@ -109,8 +109,9 @@ receivers:
         text: '{{ .CommonAnnotations.summary }}'
   - name: 'slack-scaler'
     slack_configs:
-      - title: 'Docker Scaler triggered {{ .GroupLabels.alertname }}'
-        color: 'good'
+      - title: '{{ .GroupLabels.alertname }}, service: {{.GroupLabels.service }}'
+        pretext: '{{ .commonAnnotations.request }}'
+        color: '{{ if eq .CommonLabels.status "error" }}danger{{ else }}good{{ end }}'
         title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
         text: '{{ .CommonAnnotations.summary }}'
   - name: 'scale'

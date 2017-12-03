@@ -15,7 +15,7 @@ type ReschedulerTestSuite struct {
 	suite.Suite
 	workerNodes        int
 	managerNodes       int
-	reschedulerService reschedulerService
+	reschedulerService *reschedulerService
 	dClient            *client.Client
 	serviceNames       []string
 	envKey             string
@@ -40,12 +40,12 @@ func (s *ReschedulerTestSuite) SetupSuite() {
 		s.T().Skipf("Docker process is not a part of a swarm")
 	}
 
-	s.reschedulerService = reschedulerService{
+	s.reschedulerService = &reschedulerService{
 		c:              client,
 		filterLabel:    "com.df.reschedule=true",
 		envKey:         "RESCHEDULE_DATE",
-		timeOut:        time.Second * 20,
-		tickerInterval: time.Second * 600,
+		timeOut:        time.Second * 2,
+		tickerInterval: time.Second * 1,
 	}
 	s.workerNodes = info.Swarm.Nodes - info.Swarm.Managers
 	s.managerNodes = info.Swarm.Managers
@@ -88,6 +88,18 @@ func (s *ReschedulerTestSuite) Test_GetWorkerNodeCount() {
 	workerNodes, err := s.reschedulerService.getWorkerNodeCount()
 	s.Require().NoError(err)
 	s.Equal(s.workerNodes, workerNodes)
+}
+
+func (s *ReschedulerTestSuite) Test_equalTargetCountManager() {
+	equalTarget, err := s.reschedulerService.equalTargetCount(s.managerNodes, true)
+	s.Require().NoError(err)
+	s.True(equalTarget)
+}
+
+func (s *ReschedulerTestSuite) Test_equalTargetCountWorker() {
+	equalTarget, err := s.reschedulerService.equalTargetCount(s.workerNodes, false)
+	s.Require().NoError(err)
+	s.True(equalTarget)
 }
 
 func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {
@@ -249,4 +261,67 @@ func (s *ReschedulerTestSuite) Test_RescheduleChangesLabelLeavesCurrentOnesAlone
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, envAdd)
 	s.Contains(envLists, "STUFF=web_test2")
+}
+
+func (s *ReschedulerTestSuite) Test_RescheduleWithTrueLabelWaitTicker() {
+	value := "HELLOWORLD"
+	envAdd := fmt.Sprintf("%s=%s", s.envKey, value)
+
+	tickerC := make(chan time.Time)
+	errC := make(chan error, 1)
+
+	go s.reschedulerService.RescheduleServicesWaitForNodes(true, s.managerNodes, value, tickerC, errC)
+
+	ticks := []time.Time{}
+	var err error
+
+L:
+	for {
+		select {
+		case t := <-tickerC:
+			ticks = append(ticks, t)
+		case err = <-errC:
+			close(tickerC)
+			break L
+		}
+	}
+
+	s.Require().NoError(err)
+	s.Len(ticks, 1)
+
+	for _, name := range s.serviceNames {
+
+		service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), name)
+		s.Require().NoError(err)
+
+		envLists := service.Spec.TaskTemplate.ContainerSpec.Env
+		s.Contains(envLists, envAdd)
+	}
+}
+
+func (s *ReschedulerTestSuite) Test_RescheduleWithTrueLabelWaitTimeOut() {
+	value := "HELLOWORLD"
+
+	tickerC := make(chan time.Time)
+	errC := make(chan error, 1)
+
+	go s.reschedulerService.RescheduleServicesWaitForNodes(false, s.managerNodes, value, tickerC, errC)
+
+	ticks := []time.Time{}
+	var err error
+
+L:
+	for {
+		select {
+		case t := <-tickerC:
+			ticks = append(ticks, t)
+		case err = <-errC:
+			close(tickerC)
+			break L
+		}
+	}
+
+	s.Require().Error(err)
+	s.Len(ticks, 2)
+
 }

@@ -12,7 +12,7 @@ import (
 
 type ScalerTestSuite struct {
 	suite.Suite
-	scaler             ScalerServicer
+	scaler             *scalerService
 	ctx                context.Context
 	defaultMax         uint64
 	defaultMin         uint64
@@ -51,13 +51,19 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.replicas = 4
 	s.scaleDownBy = 1
 	s.scaleUpBy = 2
+	s.defaultScaleDownBy = 1
+	s.defaultScaleUpBy = 1
 	s.ctx = context.Background()
-	s.scaler = NewScalerService(
-		client, "com.df.scaleMin", "com.df.scaleMax",
-		"com.df.scaleDownBy", "com.df.scaleUpBy",
-		s.defaultMin, s.defaultMax,
-		s.defaultScaleDownBy,
-		s.defaultScaleUpBy)
+	s.scaler = &scalerService{
+		c:                  client,
+		minLabel:           "com.df.scaleMin",
+		maxLabel:           "com.df.scaleMax",
+		scaleDownByLabel:   "com.df.scaleDownBy",
+		scaleUpByLabel:     "com.df.scaleUpBy",
+		defaultMin:         s.defaultMin,
+		defaultMax:         s.defaultMax,
+		defaultScaleDownBy: s.defaultScaleDownBy,
+		defaultScaleUpBy:   s.defaultScaleUpBy}
 }
 
 func (s *ScalerTestSuite) SetupTest() {
@@ -83,26 +89,26 @@ func (s *ScalerTestSuite) TearDownTest() {
 }
 
 func (s *ScalerTestSuite) Test_GetReplicasServiceDoesNotExist() {
-	_, err := s.scaler.GetReplicas(s.ctx, "BADTEST")
+	_, err := s.scaler.getReplicas(s.ctx, "BADTEST")
 	s.Error(err)
 }
 
 func (s *ScalerTestSuite) Test_GetReplicas() {
-	replicas, err := s.scaler.GetReplicas(s.ctx, "web_test")
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicas, replicas)
 }
 
 func (s *ScalerTestSuite) Test_SetReplicas() {
-	err := s.scaler.SetReplicas(s.ctx, "web_test", 4)
+	err := s.scaler.setReplicas(s.ctx, "web_test", 4)
 	s.Require().NoError(err)
-	replicas, err := s.scaler.GetReplicas(s.ctx, "web_test")
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(uint64(4), replicas)
 }
 
 func (s *ScalerTestSuite) Test_GetMinMaxReplicas() {
-	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
+	min, max, err := s.scaler.getMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.replicaMax, max)
@@ -112,7 +118,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleMax -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
+	min, max, err := s.scaler.getMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.defaultMax, max)
@@ -122,7 +128,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
 	cmd := `docker service update web_test \
 			--label-rm com.df.scaleMin -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
+	min, max, err := s.scaler.getMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.replicaMax, max)
@@ -133,14 +139,14 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 			--label-rm com.df.scaleMin \
 			--label-rm com.df.scaleMax -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetMinMaxReplicas(s.ctx, "web_test")
+	min, max, err := s.scaler.getMinMaxReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.defaultMax, max)
 }
 
 func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
-	scaleDownBy, scaleUpBy, err := s.scaler.GetDownUpScaleDeltas(s.ctx, "web_test")
+	scaleDownBy, scaleUpBy, err := s.scaler.getDownUpScaleDeltas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.scaleDownBy, scaleDownBy)
 	s.Equal(s.scaleUpBy, scaleUpBy)
@@ -151,8 +157,76 @@ func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
 			--label-rm com.df.scaleDownBy \
 			--label-rm com.df.scaleUpBy -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.GetDownUpScaleDeltas(s.ctx, "web_test")
+	min, max, err := s.scaler.getDownUpScaleDeltas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultScaleDownBy, min)
 	s.Equal(s.defaultScaleUpBy, max)
+}
+
+func (s *ScalerTestSuite) Test_AlreadyAtMax() {
+	expMsg := fmt.Sprintf("web_test is already scaled to the maximum number of %d replicas", s.replicaMax)
+
+	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMax)
+	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(expMsg, msg)
+
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(s.replicaMax, replicas)
+}
+
+func (s *ScalerTestSuite) Test_AlreadyAtMin() {
+	expMsg := fmt.Sprintf("web_test is already descaled to the minimum number of %d replicas", s.replicaMin)
+
+	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMin)
+	msg, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(expMsg, msg)
+
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(s.replicaMin, replicas)
+}
+
+func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
+	oldReplicas := s.replicaMax - 1
+	newReplicas := s.replicaMax
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", oldReplicas, newReplicas)
+
+	err := s.scaler.setReplicas(s.ctx, "web_test", oldReplicas)
+	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(expMsg, msg)
+
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(newReplicas, replicas)
+}
+
+func (s *ScalerTestSuite) Test_ScaleUp() {
+	newReplicas := s.replicas + s.scaleUpBy
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", s.replicas, newReplicas)
+
+	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(expMsg, msg)
+
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(newReplicas, replicas)
+}
+
+func (s *ScalerTestSuite) Test_ScaleDown() {
+
+	newReplicas := s.replicas - s.scaleDownBy
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", s.replicas, newReplicas)
+
+	msg, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(expMsg, msg)
+
+	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.Equal(newReplicas, replicas)
 }

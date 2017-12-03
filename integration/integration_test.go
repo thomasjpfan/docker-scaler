@@ -188,11 +188,11 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 
 	resp := s.responseForRequest(req, http.StatusOK)
 	message := fmt.Sprintf("%s is already scaled to the maximum number of 5 replicas", s.targetService)
-	s.Equal("NOK", resp.Status)
+	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
 	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	s.Require().NoError(err)
 	s.Require().Equal(1, len(alerts))
 
@@ -217,11 +217,11 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	s.Require().Equal(2, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("%s is already descaled to the minimum number of 2 replicas", s.targetService)
-	s.Equal("NOK", resp.Status)
+	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
 	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", s.targetService)
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	s.Require().NoError(err)
 	s.Require().Equal(1, len(alerts))
 
