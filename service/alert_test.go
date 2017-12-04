@@ -32,6 +32,10 @@ func (s *AlertTestSuite) SetupSuite() {
 	}
 	s.url = "http://localhost:9093"
 	s.alertService = NewAlertService(s.url)
+	s.alertService = &alertService{
+		url:          s.url,
+		alertTimeout: time.Second * 15,
+	}
 	s.client = client
 }
 
