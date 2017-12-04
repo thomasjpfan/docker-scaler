@@ -15,6 +15,7 @@ type ScalerTestSuite struct {
 	suite.Suite
 	scaler             *scalerService
 	ctx                context.Context
+	client             *client.Client
 	defaultMax         uint64
 	defaultMin         uint64
 	replicaMin         uint64
@@ -54,6 +55,7 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.scaleUpBy = 2
 	s.defaultScaleDownBy = 1
 	s.defaultScaleUpBy = 1
+	s.client = client
 	s.ctx = context.Background()
 	s.scaler = &scalerService{
 		c:                  client,
@@ -82,12 +84,48 @@ func (s *ScalerTestSuite) SetupTest() {
 	if err != nil {
 		s.T().Skipf("Unable to create service: %s", err.Error())
 	}
+
+	tickerC := time.NewTicker(time.Millisecond * 500).C
+	timerC := time.NewTimer(time.Second * 10).C
+
+L:
+	for {
+		select {
+		case <-tickerC:
+			_, _, err = s.client.ServiceInspectWithRaw(s.ctx, "web_test")
+			if err == nil {
+				break L
+			}
+		case <-timerC:
+			break L
+		}
+	}
+
+	if err != nil {
+		s.T().Skipf("Unable to create service: %s", err.Error())
+	}
 }
 
 func (s *ScalerTestSuite) TearDownTest() {
 	cmd := `docker service rm web_test`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	time.Sleep(time.Millisecond * 500)
+
+	tickerC := time.NewTicker(time.Millisecond * 500).C
+	timerC := time.NewTimer(time.Second * 10).C
+
+	var err error
+L:
+	for {
+		select {
+		case <-tickerC:
+			_, _, err = s.client.ServiceInspectWithRaw(s.ctx, "web_test")
+			if err != nil {
+				break L
+			}
+		case <-timerC:
+			break L
+		}
+	}
 }
 
 func (s *ScalerTestSuite) Test_GetReplicasServiceDoesNotExist() {
@@ -169,9 +207,9 @@ func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 	expMsg := fmt.Sprintf("web_test is already scaled to the maximum number of %d replicas", s.replicaMax)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMax)
-	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
-	s.True(isBounded)
+	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -183,9 +221,9 @@ func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 	expMsg := fmt.Sprintf("web_test is already descaled to the minimum number of %d replicas", s.replicaMin)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMin)
-	msg, isBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
 	s.Require().NoError(err)
-	s.True(isBounded)
+	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -199,9 +237,9 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", oldReplicas, newReplicas, s.replicaMax)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", oldReplicas)
-	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
-	s.True(isBounded)
+	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -213,9 +251,9 @@ func (s *ScalerTestSuite) Test_ScaleUp() {
 	newReplicas := s.replicas + s.scaleUpBy
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", s.replicas, newReplicas, s.replicaMax)
 
-	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
-	s.True(isBounded)
+	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -228,9 +266,9 @@ func (s *ScalerTestSuite) Test_ScaleDown() {
 	newReplicas := s.replicas - s.scaleDownBy
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d)", s.replicas, newReplicas, s.replicaMin)
 
-	msg, isBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
 	s.Require().NoError(err)
-	s.False(isBounded)
+	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
