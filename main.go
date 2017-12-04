@@ -61,7 +61,7 @@ func main() {
 	if err != nil {
 		logger.Panic(err)
 	}
-	logger.Printf("Using node-scaling backend: %s", nodeScaler)
+	logger.Printf("Using node-scaling backend: %s", spec.NodeScalerBackend)
 
 	rescheduler, err := service.NewReschedulerService(
 		client,

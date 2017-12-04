@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
@@ -74,6 +75,8 @@ func (a alertService) Send(alertName string, serviceName string, request string,
 
 func generateAlert(alertName string, serviceName string,
 	request string, status string, summary string) *model.Alert {
+	startsAt := time.Now().UTC()
+	endsAt := startsAt.Add(time.Second * 5)
 	return &model.Alert{
 		Labels: model.LabelSet{
 			"alertname": model.LabelValue(alertName),
@@ -85,6 +88,8 @@ func generateAlert(alertName string, serviceName string,
 			"request": model.LabelValue(request),
 		},
 		GeneratorURL: "",
+		StartsAt:     startsAt,
+		EndsAt:       endsAt,
 	}
 }
 
