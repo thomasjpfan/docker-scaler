@@ -12,8 +12,8 @@ import (
 
 // ScalerServicer interface for resizing services
 type ScalerServicer interface {
-	ScaleUp(ctx context.Context, serviceName string) (string, error)
-	ScaleDown(ctx context.Context, serviceName string) (string, error)
+	ScaleUp(ctx context.Context, serviceName string) (string, bool, error)
+	ScaleDown(ctx context.Context, serviceName string) (string, bool, error)
 }
 
 type scalerService struct {
@@ -52,21 +52,21 @@ func NewScalerService(
 	}
 }
 
-func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string, error) {
+func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string, bool, error) {
 
 	_, maxReplicas, err := s.getMinMaxReplicas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	currentReplicas, err := s.getReplicas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	_, scaleUpBy, err := s.getDownUpScaleDeltas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	newReplicasInt := currentReplicas + scaleUpBy
@@ -78,34 +78,36 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		newReplicas = newReplicasInt
 	}
 
+	isBounded := (newReplicas == maxReplicas)
+
 	if currentReplicas == maxReplicas && newReplicas == maxReplicas {
 		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
-		return message, nil
+		return message, isBounded, nil
 	}
 
 	err = s.setReplicas(ctx, serviceName, newReplicas)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceName, currentReplicas, newReplicas)
-	return message, nil
+	message := fmt.Sprintf("Scaling %s from %d to %d replicas (max: %d)", serviceName, currentReplicas, newReplicas, maxReplicas)
+	return message, isBounded, nil
 }
 
-func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (string, error) {
+func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (string, bool, error) {
 	minReplicas, _, err := s.getMinMaxReplicas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	currentReplicas, err := s.getReplicas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	scaleDownBy, _, err := s.getDownUpScaleDeltas(ctx, serviceName)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	newReplicasInt := int(currentReplicas) - int(scaleDownBy)
@@ -117,18 +119,20 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 		newReplicas = uint64(newReplicasInt)
 	}
 
+	isBounded := (newReplicas == minReplicas)
+
 	if currentReplicas == minReplicas && newReplicas == minReplicas {
 		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
-		return message, nil
+		return message, isBounded, nil
 	}
 
 	err = s.setReplicas(ctx, serviceName, newReplicas)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas", serviceName, currentReplicas, newReplicas)
-	return message, nil
+	message := fmt.Sprintf("Scaling %s from %d to %d replicas (min: %d)", serviceName, currentReplicas, newReplicas, minReplicas)
+	return message, isBounded, nil
 }
 
 // getReplicas Gets Replicas

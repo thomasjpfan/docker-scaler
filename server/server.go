@@ -139,10 +139,11 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	s.logger.Print(requestMessage)
 
 	var message string
+	var isBounded bool
 	if scaleDirection == "down" {
-		message, err = s.scaler.ScaleDown(ctx, serviceName)
+		message, isBounded, err = s.scaler.ScaleDown(ctx, serviceName)
 	} else {
-		message, err = s.scaler.ScaleUp(ctx, serviceName)
+		message, isBounded, err = s.scaler.ScaleUp(ctx, serviceName)
 	}
 
 	if err != nil {
@@ -154,7 +155,9 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Printf("scale-service success: %s", message)
-	s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
+	if !isBounded {
+		s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
+	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 }
 
