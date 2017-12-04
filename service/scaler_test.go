@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
@@ -86,6 +87,7 @@ func (s *ScalerTestSuite) SetupTest() {
 func (s *ScalerTestSuite) TearDownTest() {
 	cmd := `docker service rm web_test`
 	exec.Command("/bin/sh", "-c", cmd).Output()
+	time.Sleep(time.Millisecond * 500)
 }
 
 func (s *ScalerTestSuite) Test_GetReplicasServiceDoesNotExist() {
@@ -167,8 +169,9 @@ func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 	expMsg := fmt.Sprintf("web_test is already scaled to the maximum number of %d replicas", s.replicaMax)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMax)
-	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
+	s.True(isBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -180,8 +183,9 @@ func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 	expMsg := fmt.Sprintf("web_test is already descaled to the minimum number of %d replicas", s.replicaMin)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", s.replicaMin)
-	msg, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, isBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
 	s.Require().NoError(err)
+	s.True(isBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -192,11 +196,12 @@ func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	oldReplicas := s.replicaMax - 1
 	newReplicas := s.replicaMax
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", oldReplicas, newReplicas)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", oldReplicas, newReplicas, s.replicaMax)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", oldReplicas)
-	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
+	s.True(isBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -206,10 +211,11 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 
 func (s *ScalerTestSuite) Test_ScaleUp() {
 	newReplicas := s.replicas + s.scaleUpBy
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", s.replicas, newReplicas)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", s.replicas, newReplicas, s.replicaMax)
 
-	msg, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, isBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
+	s.True(isBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
@@ -220,10 +226,11 @@ func (s *ScalerTestSuite) Test_ScaleUp() {
 func (s *ScalerTestSuite) Test_ScaleDown() {
 
 	newReplicas := s.replicas - s.scaleDownBy
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas", s.replicas, newReplicas)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d)", s.replicas, newReplicas, s.replicaMin)
 
-	msg, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, isBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
 	s.Require().NoError(err)
+	s.False(isBounded)
 	s.Equal(expMsg, msg)
 
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
