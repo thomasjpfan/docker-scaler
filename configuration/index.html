@@ -308,6 +308,19 @@
     AWS Node Scaling Envronment Variables
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-secrets-file" title="AWS Secrets file" class="md-nav__link">
+    AWS Secrets file
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -412,6 +425,19 @@
     AWS Node Scaling Envronment Variables
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-secrets-file" title="AWS Secrets file" class="md-nav__link">
+    AWS Secrets file
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -488,6 +514,26 @@
 <td>ALERTMANAGER_ADDRESS</td>
 <td>Address for alertmanager.<br><strong>Default:</strong> <code>http://alertmanager:9093</code></td>
 </tr>
+<tr>
+<td>ALERT_TIMEOUT</td>
+<td>Alert timeout duration (seconds).<br><strong>Default:</strong> 15</td>
+</tr>
+<tr>
+<td>RESCHEDULE_FILTER_LABEL</td>
+<td>Services with this label will be rescheduled after node scaling.<br><strong>Default:</strong> <code>com.df.reschedule=true&quot;</code></td>
+</tr>
+<tr>
+<td>RESCHEDULE_TICKER_INTERVAL</td>
+<td>Duration to wait when checking for nodes to come up (seconds).<br><strong>Default:</strong> 20</td>
+</tr>
+<tr>
+<td>RESCHEDULE_TIMEOUT</td>
+<td>Time to wait for nodes to come up during rescheduling (seconds).<br><strong>Default:</strong> 1000</td>
+</tr>
+<tr>
+<td>RESCHEDULE_ENV_KEY</td>
+<td>Key for env variable when rescheduling services.<br><strong>Default:</strong> <code>RESCHEDULE_DATE</code></td>
+</tr>
 </tbody>
 </table>
 <h2 id="node-scaling-environment-variables">Node Scaling Environment Variables<a class="headerlink" href="#node-scaling-environment-variables" title="Permanent link">&para;</a></h2>
@@ -500,9 +546,15 @@
 <h3 id="aws-node-scaling-envronment-variables">AWS Node Scaling Envronment Variables<a class="headerlink" href="#aws-node-scaling-envronment-variables" title="Permanent link">&para;</a></h3>
 <p>The following environment variables can be used to configure the <em>Docker Scaler</em> relating to AWS node scaling.</p>
 <p>| AWS_ENV_FILE | Location of AWS env file used when <code>NODE_SCALER_BACKEND</code> is sent to <code>aws</code>.<br><strong>Default:</strong> <code>/run/secrets/aws</code> |
-| AWS_DEFAULT_REGION | Default AWS region.<br><strong>Default:</strong> us-east-1 |
+| AWS_DEFAULT_REGION | Default AWS region.<br><strong>Default:</strong> <code>us-east-1</code> |
 | AWS_MANAGER_GROUP_NAME | AWS group name for manager nodes. |
 | AWS_WORKER_GROUP_NAME | AWS group name for worker nodes.</p>
+<h4 id="aws-secrets-file">AWS Secrets file<a class="headerlink" href="#aws-secrets-file" title="Permanent link">&para;</a></h4>
+<p>AWS secret file defines the necessary environment variables to authenticate with AWS.</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s1">&#39;export AWS_ACCESS_KEY_ID=xxxx</span>
+<span class="s1">export AWS_SECRET_ACCESS_KEY=xxxx</span>
+<span class="s1">&#39;</span> <span class="p">|</span> docker secret create aws -
+</pre></div>
                 
                   
                 

@@ -557,18 +557,18 @@ docker stack deploy <span class="se">\</span>
 <p><div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
 <span class="s2">  slack_api_url: &#39;https://hooks.slack.com/services/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&#39;</span>
 <span class="s2">route:</span>
-<span class="s2">  group_by: [service, scale, type]</span>
-<span class="s2">  repeat_interval: 5m</span>
-<span class="s2">  group_interval: 5m</span>
+<span class="s2">  group_interval: 10s</span>
+<span class="s2">  repeat_interval: 30s</span>
+<span class="s2">  group_wait: 5s</span>
 <span class="s2">  receiver: &#39;slack&#39;</span>
 <span class="s2">  routes:</span>
 <span class="s2">  - match_re:</span>
-<span class="s2">      scale: ^(up|down)</span>$<span class="s2"></span>
-<span class="s2">      type: ^service</span>$<span class="s2"></span>
+<span class="s2">      scale: up|down</span>
+<span class="s2">      type: service</span>
 <span class="s2">    receiver: &#39;scale&#39;</span>
-<span class="s2">  - match:</span>
-<span class="s2">      alertname: scale_service</span>
-<span class="s2">    group_by: [alertname, service]</span>
+<span class="s2">    group_by: [service, scale, type]</span>
+<span class="s2">  - match_re:</span>
+<span class="s2">      alertname: scale_service|reschedule_service|scale_nodes</span>
 <span class="s2">    receiver: &#39;slack-scaler&#39;</span>
 
 <span class="s2">receivers:</span>
@@ -580,8 +580,8 @@ docker stack deploy <span class="se">\</span>
 <span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
 <span class="s2">  - name: &#39;slack-scaler&#39;</span>
 <span class="s2">    slack_configs:</span>
-<span class="s2">      - title: &#39;Docker Scaler triggered {{ .GroupLabels.alertname }}&#39;</span>
-<span class="s2">        color: &#39;good&#39;</span>
+<span class="s2">      - title: &#39;{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}&#39;</span>
+<span class="s2">        color: &#39;{{ if eq .CommonLabels.status \&quot;error\&quot; }}danger{{ else }}good{{ end }}&#39;</span>
 <span class="s2">        title_link: &#39;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&#39;</span>
 <span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
 <span class="s2">  - name: &#39;scale&#39;</span>
@@ -685,7 +685,7 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 <div class="codehilite"><pre><span></span>docker service logs scaler_scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 2 replicas</strong>. We can check that this happened:</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 2 replicas (min: 2)</strong>. We can check that this happened:</p>
 <div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>go-demo_main
 </pre></div>
 
@@ -694,7 +694,7 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 go-demo_main        replicated          2/2                 vfarcic/go-demo:latest
 </pre></div>
 
-<p>Please visit the <strong>#df-monitor-tests</strong> channel inside <a href="https://devops20.slack.com/">devops20.slack.com</a> and you should see a Slack notification stating that <strong>go-demo_main could not be scaled</strong>. If this is your first visit to <strong>devops20</strong> on Slack, you'll have to register through <a href="http://slack.devops20toolkit.com/">slack.devops20toolkit.com</a>.</p>
+<p>Please visit the <strong>#df-monitor-tests</strong> channel inside <a href="https://devops20.slack.com/">devops20.slack.com</a> and you should see a Slack notification. If this is your first visit to <strong>devops20</strong> on Slack, you'll have to register through <a href="http://slack.devops20toolkit.com/">slack.devops20toolkit.com</a>.</p>
 <p>Let's see what happens when response times of the service becomes too high by sending requests that will result in high response times:</p>
 <div class="codehilite"><pre><span></span><span class="k">for</span> i in <span class="o">{</span><span class="m">1</span>..30<span class="o">}</span><span class="p">;</span> <span class="k">do</span>
     <span class="nv">DELAY</span><span class="o">=</span>$<span class="o">[</span> <span class="nv">$RANDOM</span> % <span class="m">6000</span> <span class="o">]</span>
@@ -710,7 +710,7 @@ go-demo_main        replicated          2/2                 vfarcic/go-demo:late
 <div class="codehilite"><pre><span></span>docker service logs scaler_docker-scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>Scaling go-demo_main from 2 to 4 replicas</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 2 to 4 replicas (min: 2)</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
 <p>We can confirm that the number of replicas indeed scaled to three by querying the stack processes:</p>
 <div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>go-demo_main
 </pre></div>
