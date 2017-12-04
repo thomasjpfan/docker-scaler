@@ -63,7 +63,7 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -83,7 +83,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -103,7 +103,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -123,7 +123,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	s.Equal(0, len(alert.Annotations["request"]))
@@ -143,7 +143,7 @@ func (s *IntegrationTestSuite) Test_ServiceDoesNotExist() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "BAD")
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	request := "Scale service up: BAD"
@@ -168,7 +168,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service up: %s", s.targetService)
@@ -191,11 +191,6 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
-	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
-	s.Require().NoError(err)
-	s.Require().Len(alerts, 0)
-
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
@@ -214,11 +209,6 @@ func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {
 	message := fmt.Sprintf("%s is already descaled to the minimum number of 2 replicas", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
-
-	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
-	s.Require().NoError(err)
-	s.Require().Len(alerts, 0)
 }
 
 func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
@@ -241,7 +231,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service up: %s", s.targetService)
@@ -269,7 +259,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	// Check alert
 	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(alerts))
+	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
 	request := fmt.Sprintf("Scale service down: %s", s.targetService)

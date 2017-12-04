@@ -78,11 +78,9 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		newReplicas = newReplicasInt
 	}
 
-	isBounded := (newReplicas == maxReplicas)
-
 	if currentReplicas == maxReplicas && newReplicas == maxReplicas {
 		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
-		return message, isBounded, nil
+		return message, true, nil
 	}
 
 	err = s.setReplicas(ctx, serviceName, newReplicas)
@@ -91,7 +89,7 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 	}
 
 	message := fmt.Sprintf("Scaling %s from %d to %d replicas (max: %d)", serviceName, currentReplicas, newReplicas, maxReplicas)
-	return message, isBounded, nil
+	return message, false, nil
 }
 
 func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (string, bool, error) {
@@ -119,11 +117,9 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 		newReplicas = uint64(newReplicasInt)
 	}
 
-	isBounded := (newReplicas == minReplicas)
-
 	if currentReplicas == minReplicas && newReplicas == minReplicas {
 		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
-		return message, isBounded, nil
+		return message, true, nil
 	}
 
 	err = s.setReplicas(ctx, serviceName, newReplicas)
@@ -132,7 +128,7 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 	}
 
 	message := fmt.Sprintf("Scaling %s from %d to %d replicas (min: %d)", serviceName, currentReplicas, newReplicas, minReplicas)
-	return message, isBounded, nil
+	return message, false, nil
 }
 
 // getReplicas Gets Replicas
