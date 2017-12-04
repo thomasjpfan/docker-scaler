@@ -25,6 +25,32 @@ This request queries docker service labels: `com.df.scaleMin`, `com.df.scaleMax`
 
 The `service` value is the name of the service to scale. The `scale` value accepts `up` for scaling up and `down` for scaling down.
 
+## Rescheduling All Services
+
+This request only reschedule services with label: `com.df.reschedule=true`. See [Configuration](configuration.md) to change this default.
+
+- **URL:**
+    `/v1/reschedule-services`
+
+- **Method:**
+    `POST`
+
+## Rescheduling One Service
+
+This request only reschedule target service with label: `com.df.reschedule=true`. See [Configuration](configuration.md) to change this default.
+
+- **URL:**
+    `/v1/reschedule-service`
+
+- **Method:**
+    `POST`
+
+- **Query Parameters:**
+
+| Query   | Description                   | Required |
+|---------|-------------------------------|----------|
+| service | Name of service to reschedule | yes      |
+
 ## Scaling Nodes
 
 - **URL:**

@@ -27,20 +27,25 @@ git clone https://github.com/thomasjpfan/docker-scaler
 ### Unit Testing
 
 ```bash
-go test ./... --run UnitTest -v
+make unit_test
 ```
 
 ### Build
 
 ```bash
-docker image build -t thomasjpfan/docker-scaler:beta .
+make build
 ```
 
 ### Test
 
-``` bash
-export TRAVIS_COMMIT=beta
-docker stack deploy -c stacks/docker-scaler-test.yml test
+```bash
+make deploy_test
 
-./scripts/integration_test.sh
+make integration_test
+```
+
+## Cleanup
+
+```bash
+make undeploy_test
 ```
