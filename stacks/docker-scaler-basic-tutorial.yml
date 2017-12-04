@@ -16,4 +16,4 @@ services:
 
 networks:
   scaler:
-    external: true
+  external: true

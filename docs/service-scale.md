@@ -86,18 +86,18 @@ The next stack defines the *Docker Flow Monitor* and *Alertmanager* services. Be
 echo "global:
   slack_api_url: 'https://hooks.slack.com/services/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'
 route:
-  group_by: [service, scale, type]
-  repeat_interval: 5m
-  group_interval: 5m
+  group_interval: 10s
+  repeat_interval: 30s
+  group_wait: 5s
   receiver: 'slack'
   routes:
   - match_re:
-      scale: ^(up|down)$
-      type: ^service$
+      scale: up|down
+      type: service
     receiver: 'scale'
-  - match:
-      alertname: scale_service
-    group_by: [alertname, service]
+    group_by: [service, scale, type]
+  - match_re:
+      alertname: scale_service|reschedule_service|scale_nodes
     receiver: 'slack-scaler'
 
 receivers:
@@ -109,9 +109,8 @@ receivers:
         text: '{{ .CommonAnnotations.summary }}'
   - name: 'slack-scaler'
     slack_configs:
-      - title: '{{ .GroupLabels.alertname }}, service: {{.GroupLabels.service }}'
-        pretext: '{{ .commonAnnotations.request }}'
-        color: '{{ if eq .CommonLabels.status "error" }}danger{{ else }}good{{ end }}'
+      - title: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}'
+        color: '{{ if eq .CommonLabels.status \"error\" }}danger{{ else }}good{{ end }}'
         title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
         text: '{{ .CommonAnnotations.summary }}'
   - name: 'scale'
@@ -248,7 +247,7 @@ Let's look at the logs of `docker-scaler`:
 docker service logs scaler_scaler
 ```
 
-There should be a log message that states **Scaling go-demo_main from 3 to 2 replicas**. We can check that this happened:
+There should be a log message that states **Scaling go-demo_main from 3 to 2 replicas (min: 2)**. We can check that this happened:
 
 ```bash
 docker service ls -f name=go-demo_main
@@ -261,7 +260,7 @@ NAME                MODE                REPLICAS            IMAGE               
 go-demo_main        replicated          2/2                 vfarcic/go-demo:latest
 ```
 
-Please visit the **#df-monitor-tests** channel inside [devops20.slack.com](https://devops20.slack.com/) and you should see a Slack notification stating that **go-demo_main could not be scaled**. If this is your first visit to **devops20** on Slack, you'll have to register through [slack.devops20toolkit.com](http://slack.devops20toolkit.com/).
+Please visit the **#df-monitor-tests** channel inside [devops20.slack.com](https://devops20.slack.com/) and you should see a Slack notification. If this is your first visit to **devops20** on Slack, you'll have to register through [slack.devops20toolkit.com](http://slack.devops20toolkit.com/).
 
 Let's see what happens when response times of the service becomes too high by sending requests that will result in high response times:
 
@@ -284,7 +283,7 @@ The `godemo_main_resp_time_above` turned red indicating that the threshold is re
 docker service logs scaler_docker-scaler
 ```
 
-There should be a log message that states **Scaling go-demo_main from 2 to 4 replicas**. This message is also sent through Slack to notify us of this scaling event.
+There should be a log message that states **Scaling go-demo_main from 2 to 4 replicas (min: 2)**. This message is also sent through Slack to notify us of this scaling event.
 
 We can confirm that the number of replicas indeed scaled to three by querying the stack processes:
 

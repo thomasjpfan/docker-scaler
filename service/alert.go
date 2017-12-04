@@ -34,19 +34,21 @@ func NewSilentAlertService() AlertServicer {
 
 // AlertService sends alerts to an alertmanager
 type alertService struct {
-	url string
+	url          string
+	alertTimeout time.Duration
 }
 
 // NewAlertService creates new AlertService
-func NewAlertService(url string) AlertServicer {
+func NewAlertService(url string, alertTimeout time.Duration) AlertServicer {
 	return &alertService{
-		url: url,
+		url:          url,
+		alertTimeout: alertTimeout,
 	}
 }
 
 // Send sends alert to alert service
 func (a alertService) Send(alertName string, serviceName string, request string, status string, message string) error {
-	alert := generateAlert(alertName, serviceName, request, status, message)
+	alert := generateAlert(alertName, serviceName, request, status, message, a.alertTimeout)
 	alerts := []*model.Alert{alert}
 	alertsJSON, _ := json.Marshal(alerts)
 	r := bytes.NewReader(alertsJSON)
@@ -74,9 +76,9 @@ func (a alertService) Send(alertName string, serviceName string, request string,
 }
 
 func generateAlert(alertName string, serviceName string,
-	request string, status string, summary string) *model.Alert {
+	request string, status string, summary string, timeout time.Duration) *model.Alert {
 	startsAt := time.Now().UTC()
-	endsAt := startsAt.Add(time.Second * 5)
+	endsAt := startsAt.Add(timeout)
 	return &model.Alert{
 		Labels: model.LabelSet{
 			"alertname": model.LabelValue(alertName),

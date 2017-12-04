@@ -23,6 +23,7 @@ type specification struct {
 	DefaultScaleServiceDownBy uint64 `envconfig:"DEFAULT_SCALE_SERVICE_DOWN_BY"`
 	DefaultScaleServiceUpBy   uint64 `envconfig:"DEFAULT_SCALE_SERVICE_UP_BY"`
 	AlertmanagerAddress       string `envconfig:"ALERTMANAGER_ADDRESS"`
+	AlertTimeout              int64  `envconfig:"ALERT_TIMEOUT"`
 	RescheduleFilterLabel     string `envconfig:"RESCHEDULE_FILTER_LABEL"`
 	RescheduleTickerInterval  int64  `envconfig:"RESCHEDULE_TICKER_INTERVAL"`
 	RescheduleTimeOut         int64  `envconfig:"RESCHEDULE_TIMEOUT"`
@@ -50,7 +51,9 @@ func main() {
 	var alerter service.AlertServicer
 	if len(spec.AlertmanagerAddress) != 0 {
 		url := spec.AlertmanagerAddress
-		alerter = service.NewAlertService(url)
+		alerter = service.NewAlertService(
+			url,
+			time.Duration(spec.AlertTimeout)*time.Second)
 		logger.Printf("Using alertmanager at: %s", url)
 	} else {
 		alerter = service.NewSilentAlertService()
