@@ -11,6 +11,7 @@ The following environment variables can be used to configure the *Docker Scaler*
 
 |Variable           |Description                                               |
 |-------------------|----------------------------------------------------------|
+| SERVER_PREFIX     | Custom prefix for REST endpoint.<br>**Default:** `/`     |
 | MIN_SCALE_LABEL   | Service label key with value representing the minimum number of replicas.<br>**Default:** `com.df.scaleMin` |
 | MAX_SCALE_LABEL   | Service label key with value representing the maximum number of replicas.<br>**Default:** `com.df.scaleMax` |
 | SCALE_DOWN_BY_LABEL | Service label key with value representing the number of replicas to scale down by.<br>**Default:** `com.df.scaleDownBy` |
@@ -42,8 +43,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 
 | AWS_ENV_FILE | Location of AWS env file used when `NODE_SCALER_BACKEND` is sent to `aws`.<br>**Default:** `/run/secrets/aws` |
 | AWS_DEFAULT_REGION | Default AWS region.<br>**Default:** `us-east-1` |
-| AWS_MANAGER_GROUP_NAME | AWS group name for manager nodes. |
-| AWS_WORKER_GROUP_NAME | AWS group name for worker nodes.
+| AWS_MANAGER_ASG | AWS autoscaling group name for manager nodes.<br>**Default:** 0 |
+| AWS_WORKER_ASG | AWS autoscaling group name for worker nodes.<br>**Default:** 5 |
 
 #### AWS Secrets file
 

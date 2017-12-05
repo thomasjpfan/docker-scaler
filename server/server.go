@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path"
 	"strconv"
 	"time"
 
@@ -41,9 +42,10 @@ func NewServer(
 }
 
 // MakeRouter routes url paths to handlers
-func (s *Server) MakeRouter() *mux.Router {
+func (s *Server) MakeRouter(prefix string) *mux.Router {
 	router := mux.NewRouter()
-	v1Router := router.PathPrefix("/v1").Subrouter()
+	rootPrefix := path.Join(prefix, "/v1")
+	v1Router := router.PathPrefix(rootPrefix).Subrouter()
 	v1Router.Path("/scale-service").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
@@ -66,9 +68,9 @@ func (s *Server) MakeRouter() *mux.Router {
 }
 
 // Run starts server
-func (s *Server) Run(port uint16) {
+func (s *Server) Run(port uint16, prefix string) {
 	address := fmt.Sprintf(":%d", port)
-	m := s.MakeRouter()
+	m := s.MakeRouter(prefix)
 	h := handler.RecoveryHandler(s.logger)
 	log.Fatal(http.ListenAndServe(address, h(m)))
 }
