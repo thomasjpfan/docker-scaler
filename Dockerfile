@@ -9,7 +9,7 @@ RUN apk add --no-cache tini ca-certificates
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
 
-ENV SERVER_PREFIX="\\" \
+ENV SERVER_PREFIX="/" \
     MIN_SCALE_LABEL="com.df.scaleMin" \
     MAX_SCALE_LABEL="com.df.scaleMax" \
     SCALE_DOWN_BY_LABEL="com.df.scaleDownBy" \
