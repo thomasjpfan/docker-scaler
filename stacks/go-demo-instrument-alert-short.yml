@@ -10,7 +10,7 @@ services:
       - proxy
       - monitor
     deploy:
-      replicas: 3
+      replicas: 4
       update_config:
         parallelism: 1
         delay: 10s
@@ -20,17 +20,14 @@ services:
         - com.df.servicePath=/demo
         - com.df.port=8080
         - com.df.scaleMin=2
-        - com.df.scaleMax=4
+        - com.df.scaleMax=7
         - com.df.scaleDownBy=1
         - com.df.scaleUpBy=2
         - com.df.scrapePort=8080
-        - com.df.alertName.1=mem_limit
-        - com.df.alertIf.1=@service_mem_limit:0.8
-        - com.df.alertFor.1=5m
-        - com.df.alertName.2=resptimeabove
-        - com.df.alertIf.2=@resp_time_above:0.1,5m,0.99
-        - com.df.alertName.3=resptimebelow
-        - com.df.alertIf.3=@resp_time_below:0.025,5m,0.75
+        - com.df.alertName.1=resptimeabove
+        - com.df.alertIf.1=@resp_time_above:0.1,5m,0.99
+        - com.df.alertName.2=resptimebelow
+        - com.df.alertIf.2=@resp_time_below:0.025,5m,0.75
       resources:
         reservations:
           memory: 5M
