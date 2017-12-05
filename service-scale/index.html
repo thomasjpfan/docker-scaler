@@ -1,4 +1,7 @@
 
+
+
+
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <head>
@@ -12,9 +15,24 @@
         <meta name="author" content="Thomas Fan">
       
       
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      
         <link rel="shortcut icon" href="../assets/images/favicon.png">
       
-      <meta name="generator" content="mkdocs-0.16.3, mkdocs-material-1.10.3">
+      <meta name="generator" content="mkdocs-0.17.1, mkdocs-material-2.0.1">
     
     
       
@@ -25,16 +43,11 @@
       <script src="../assets/javascripts/modernizr-e826f8942a.js"></script>
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application-9011e2d3f8.css">
-      
-        <link rel="stylesheet" href="../assets/stylesheets/application-23f75ab9c7.palette.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application-462a8722ef.css">
       
     
     
       
-        
-        
-        
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
         <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
       
@@ -44,10 +57,7 @@
     
   </head>
   
-  
-  
-  
-    <body data-md-color-primary="blue" data-md-color-accent="light-blue">
+    <body>
   
     <svg class="md-svg">
       <defs>
@@ -67,7 +77,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a href=".." title="Docker Scaler" class="md-header-nav__button md-logo">
           
-            <i class="md-icon md-icon--home"></i>
+            <i class="md-icon">school</i>
           
         </a>
       </div>
@@ -90,8 +100,9 @@
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
         
-          <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
           
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
 <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="search"></label>
   <div class="md-search__inner">
@@ -102,8 +113,8 @@
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result" data-md-lang-search="" data-md-lang-tokenizer="[\s\-]+">
-          <div class="md-search-result__meta" data-md-lang-result-none="No matching documents" data-md-lang-result-one="1 matching document" data-md-lang-result-other="# matching documents">
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
             Type to start searching
           </div>
           <ol class="md-search-result__list"></ol>
@@ -112,6 +123,7 @@
     </div>
   </div>
 </div>
+          
         
       </div>
       
@@ -123,7 +135,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -145,8 +157,6 @@
     
     <div class="md-container">
       
-      
-      
       <main class="md-main">
         <div class="md-main__inner md-grid" data-md-component="container">
           
@@ -156,11 +166,11 @@
                   <div class="md-sidebar__inner">
                     <nav class="md-nav md-nav--primary" data-md-level="0">
   <label class="md-nav__title md-nav__title--site" for="drawer">
-    <div class="md-nav__button md-logo">
+    <span class="md-nav__button md-logo">
       
-        <i class="md-icon md-icon--home"></i>
+        <i class="md-icon">school</i>
       
-    </div>
+    </span>
     Docker Scaler
   </label>
   
@@ -171,7 +181,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -557,18 +567,25 @@ docker stack deploy <span class="se">\</span>
 <p><div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
 <span class="s2">  slack_api_url: &#39;https://hooks.slack.com/services/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&#39;</span>
 <span class="s2">route:</span>
-<span class="s2">  group_interval: 10s</span>
-<span class="s2">  repeat_interval: 30s</span>
-<span class="s2">  group_wait: 5s</span>
 <span class="s2">  receiver: &#39;slack&#39;</span>
+<span class="s2">  group_wait: 5s</span>
+<span class="s2">  group_interval: 15s</span>
 <span class="s2">  routes:</span>
-<span class="s2">  - match_re:</span>
-<span class="s2">      scale: up|down</span>
+<span class="s2">  - match:</span>
+<span class="s2">      scale: up</span>
 <span class="s2">      type: service</span>
-<span class="s2">    receiver: &#39;scale&#39;</span>
 <span class="s2">    group_by: [service, scale, type]</span>
+<span class="s2">    repeat_interval: 1m</span>
+<span class="s2">    receiver: &#39;scale&#39;</span>
+<span class="s2">  - match:</span>
+<span class="s2">      scale: down</span>
+<span class="s2">      type: service</span>
+<span class="s2">    group_by: [service, scale, type]</span>
+<span class="s2">    repeat_interval: 4m</span>
+<span class="s2">    receiver: &#39;scale&#39;</span>
 <span class="s2">  - match_re:</span>
 <span class="s2">      alertname: scale_service|reschedule_service|scale_nodes</span>
+<span class="s2">    group_by: [alertname]</span>
 <span class="s2">    receiver: &#39;slack-scaler&#39;</span>
 
 <span class="s2">receivers:</span>
@@ -590,8 +607,7 @@ docker stack deploy <span class="se">\</span>
 <span class="s2">        url: &#39;http://scaler:8080/v1/scale-service&#39;</span>
 <span class="s2">&quot;</span> <span class="p">|</span> docker secret create alert_manager_config -
 </pre></div>
-This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver.</p>
-<p>Now we can deploy the monitor <code>monitor</code> stack.</p>
+This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. The <code>repeat_interval</code> is set to one minute for the <code>scale up</code> route and four minutes for the <code>scale down</code> route. This allows for the service to scale up quickly when the response time is high and scale down slowly when the response time drops back down.</p>
 <div class="codehilite"><pre><span></span>docker network create -d overlay monitor
 
 <span class="nv">DOMAIN</span><span class="o">=</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span> <span class="se">\</span>
@@ -634,16 +650,14 @@ This configuration groups alerts by their <code>service</code>, <code>scale</cod
     <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
       <span class="l l-Scalar l-Scalar-Plain">...</span>
       <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleMin=2</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleMax=5</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleMax=7</span>
       <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleDownBy=1</span>
       <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleUpBy=2</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.1=mem_limit</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.1=@service_mem_limit:0.8</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertFor.1=5m</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.2=resp_time_above</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.2=@resp_time_above:0.1,5m,0.99</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.3=resp_time_below</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.3=@resp_time_below:0.025,5m,0.75</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.scrapePort=8080</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.1=resptimeabove</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.1=@resp_time_above:0.1,5m,0.99</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.2=resptimebelow</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.2=@resp_time_below:0.025,5m,0.75</span>
     <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docker Scaler</em> to bound the number replicas for the <code>go-main_main</code> service. The <code>alertName</code>, <code>alertIf</code> and <code>alertFor</code> labels uses the <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating full Prometheus expressions that translate into alerts. We can view the alerts generated by these labels:</p>
@@ -680,18 +694,18 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 <div class="codehilite"><pre><span></span>open <span class="s2">&quot;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&quot;</span>
 </pre></div>
 
-<p>By this time, the <code>godemo_main_resp_time_below</code> alert should be red since the <code>go-demo_main</code> service has a response faster than twenty-five milliseconds limit we set. The Alertmanager recieves this alert and sends a <code>POST</code> request to the <code>docker-scaler</code> service to scale down <code>go-demo</code>. The label <code>com.df.scaleDownBy</code> on <code>go-demo_main</code> is set to 1 thus the number of replicas goes from 3 to 2.</p>
+<p>By this time, the <code>godemo_main_resp_time_below</code> alert should be red since the <code>go-demo_main</code> service has a response faster than twenty-five milliseconds limit we set. The Alertmanager recieves this alert and sends a <code>POST</code> request to the <code>docker-scaler</code> service to scale down <code>go-demo</code>. The label <code>com.df.scaleDownBy</code> on <code>go-demo_main</code> is set to 1 thus the number of replicas goes from 4 to 3.</p>
 <p>Let's look at the logs of <code>docker-scaler</code>:</p>
 <div class="codehilite"><pre><span></span>docker service logs scaler_scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 2 replicas (min: 2)</strong>. We can check that this happened:</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 4 to 3 replicas (min: 2)</strong>. We can check that this happened:</p>
 <div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>go-demo_main
 </pre></div>
 
 <p>The output should be similar to the following:</p>
 <div class="codehilite"><pre><span></span>NAME                MODE                REPLICAS            IMAGE                    PORTS
-go-demo_main        replicated          2/2                 vfarcic/go-demo:latest
+go-demo_main        replicated          3/3                 vfarcic/go-demo:latest
 </pre></div>
 
 <p>Please visit the <strong>#df-monitor-tests</strong> channel inside <a href="https://devops20.slack.com/">devops20.slack.com</a> and you should see a Slack notification. If this is your first visit to <strong>devops20</strong> on Slack, you'll have to register through <a href="http://slack.devops20toolkit.com/">slack.devops20toolkit.com</a>.</p>
@@ -710,14 +724,14 @@ go-demo_main        replicated          2/2                 vfarcic/go-demo:late
 <div class="codehilite"><pre><span></span>docker service logs scaler_docker-scaler
 </pre></div>
 
-<p>There should be a log message that states <strong>Scaling go-demo_main from 2 to 4 replicas (min: 2)</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
+<p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 5 replicas (max: 7)</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
 <p>We can confirm that the number of replicas indeed scaled to three by querying the stack processes:</p>
 <div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>go-demo_main
 </pre></div>
 
 <p>The output should look similar to the following:</p>
 <div class="codehilite"><pre><span></span>NAME                MODE                REPLICAS            IMAGE                    PORTS
-go-demo_main        replicated          4/4                 vfarcic/go-demo:latest
+go-demo_main        replicated          5/5                 vfarcic/go-demo:latest
 </pre></div>
 
 <h2 id="what-now">What Now?<a class="headerlink" href="#what-now" title="Permanent link">&para;</a></h2>
@@ -798,10 +812,9 @@ go-demo_main        replicated          4/4                 vfarcic/go-demo:late
       
     </div>
     
-      <script src="../assets/javascripts/application-f3ab9e5ff8.js"></script>
+      <script src="../assets/javascripts/application-84693e5e49.js"></script>
       
-      
-      <script>app.initialize({url:{base:".."}})</script>
+      <script>app.initialize({version:"0.17.1",url:{base:".."}})</script>
       
     
     
