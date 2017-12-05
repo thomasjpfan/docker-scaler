@@ -20,8 +20,8 @@ type awsScaler struct {
 
 // AWSSpec defaults the specification for aws node scaling
 type AWSSpec struct {
-	ManagerGroupName       string `envconfig:"AWS_MANAGER_GROUP_NAME"`
-	WorkerGroupName        string `envconfig:"AWS_WORKER_GROUP_NAME"`
+	ManagerASG             string `envconfig:"AWS_MANAGER_ASG"`
+	WorkerASG              string `envconfig:"AWS_WORKER_ASG"`
 	DefaultMinManagerNodes uint64 `envconfig:"DEFAULT_MIN_MANAGER_NODES"`
 	DefaultMaxManagerNodes uint64 `envconfig:"DEFAULT_MAX_MANAGER_NODES"`
 	DefaultMinWorkerNodes  uint64 `envconfig:"DEFAULT_MIN_WORKER_NODES"`
@@ -44,11 +44,11 @@ func NewAWSScalerFromEnv() (NodeScaler, error) {
 		return nil, errors.Wrap(err, "Unable to get process env vars")
 	}
 
-	if len(spec.ManagerGroupName) == 0 {
+	if len(spec.ManagerASG) == 0 {
 		return nil, fmt.Errorf("AWS Scaling requires AWS_MANAGER_GROUP_NAME")
 	}
 
-	if len(spec.WorkerGroupName) == 0 {
+	if len(spec.WorkerASG) == 0 {
 		return nil, fmt.Errorf("AWS Scaling requires AWS_WORKER_GROUP_NAME")
 	}
 
@@ -67,13 +67,13 @@ func NewAWSScalerFromEnv() (NodeScaler, error) {
 
 // ScaleWorkerByDelta scales aws worker nodes by delta
 func (s *awsScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	return s.scaleNodes(ctx, delta, s.spec.WorkerGroupName, int64(s.spec.DefaultMinWorkerNodes),
+	return s.scaleNodes(ctx, delta, s.spec.WorkerASG, int64(s.spec.DefaultMinWorkerNodes),
 		int64(s.spec.DefaultMaxWorkerNodes))
 }
 
 // ScaleManagerByDelta scales aws manager nodes by delta
 func (s *awsScaler) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	return s.scaleNodes(ctx, delta, s.spec.ManagerGroupName, int64(s.spec.DefaultMinManagerNodes),
+	return s.scaleNodes(ctx, delta, s.spec.ManagerASG, int64(s.spec.DefaultMinManagerNodes),
 		int64(s.spec.DefaultMaxManagerNodes))
 }
 
