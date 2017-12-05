@@ -102,7 +102,7 @@ func (s *ServerTestSuite) SetupTest() {
 	s.l = log.New(s.b, "", 0)
 	s.s = NewServer(s.m, s.am,
 		s.nsm, s.rsm, s.l)
-	s.r = s.s.MakeRouter()
+	s.r = s.s.MakeRouter("/")
 }
 
 func (s *ServerTestSuite) Test_ScaleService_NoBody() {

@@ -67,7 +67,7 @@ scale_service  2017-11-18 17:46:39 UTC  Scaling example_web from 3 to 5 replicas
 ```
 To scale `example_web` down by one, send the following request:
 ```bash
-$ curl -X POST localhost:8080/v1/scale-service -X POST -d \
+$ curl -X POST localhost:8080/v1/scale-service -d \
 '{"groupLabels": {"scale": "down", "service": "example_web"}}'
 ```
 `example_web` will scale down by `com.df.scaleDownBy` label, in this case the number of replicas will go from 5 to 4. Running the `amtool` query again will display:

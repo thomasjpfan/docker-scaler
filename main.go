@@ -14,6 +14,7 @@ import (
 )
 
 type specification struct {
+	ServerPrefix              string `envconfig:"SERVER_PREFIX"`
 	MinScaleLabel             string `envconfig:"MIN_SCALE_LABEL"`
 	MaxScaleLabel             string `envconfig:"MAX_SCALE_LABEL"`
 	DefaultMinReplicas        uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
@@ -86,5 +87,5 @@ func main() {
 		spec.DefaultScaleServiceDownBy,
 		spec.DefaultScaleServiceUpBy)
 	s := server.NewServer(scaler, alerter, nodeScaler, rescheduler, logger)
-	s.Run(8080)
+	s.Run(8080, spec.ServerPrefix)
 }
