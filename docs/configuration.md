@@ -20,7 +20,7 @@ The following environment variables can be used to configure the *Docker Scaler*
 | DEFAULT_SCALE_SERVICE_DOWN_BY | Default number of replicas to scale service down by.<br>**Default:** 1 |
 | DEFAULT_SCALE_SERVICE_UP_BY | Default number of replicas to scale service up by.<br>**Default:** 1 |
 | ALERTMANAGER_ADDRESS | Address for alertmanager.<br>**Default:** `http://alertmanager:9093` |
-| ALERT_TIMEOUT | Alert timeout duration (seconds).<br>**Default:** 15 |
+| ALERT_TIMEOUT | Alert timeout duration (seconds).<br>**Default:** 10 |
 | RESCHEDULE_FILTER_LABEL | Services with this label will be rescheduled after node scaling.<br>**Default:** `com.df.reschedule=true"`|
 | RESCHEDULE_TICKER_INTERVAL | Duration to wait when checking for nodes to come up (seconds).<br>**Default:** 20|
 | RESCHEDULE_TIMEOUT | Time to wait for nodes to come up during rescheduling (seconds).<br>**Default:** 1000|
