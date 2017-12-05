@@ -45,11 +45,11 @@ func NewAWSScalerFromEnv() (NodeScaler, error) {
 	}
 
 	if len(spec.ManagerASG) == 0 {
-		return nil, fmt.Errorf("AWS Scaling requires AWS_MANAGER_GROUP_NAME")
+		return nil, fmt.Errorf("AWS Scaling requires AWS_MANAGER_ASG")
 	}
 
 	if len(spec.WorkerASG) == 0 {
-		return nil, fmt.Errorf("AWS Scaling requires AWS_WORKER_GROUP_NAME")
+		return nil, fmt.Errorf("AWS Scaling requires AWS_WORKER_ASG")
 	}
 
 	sess, err := session.NewSessionWithOptions(

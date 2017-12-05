@@ -30,8 +30,8 @@ ENV MIN_SCALE_LABEL="com.df.scaleMin" \
     DEFAULT_MAX_WORKER_NODES="5" \
     AWS_ENV_FILE="/run/secrets/aws" \
     AWS_DEFAULT_REGION="us-east-1" \
-    AWS_MANAGER_GROUP_NAME="stack-NodeManagerConfig" \
-    AWS_WORKER_GROUP_NAME="stack-NodeWorkerConfig"
+    AWS_MANAGER_ASG="stack-NodeManagerConfig" \
+    AWS_WORKER_ASG="stack-NodeWorkerConfig"
 
 EXPOSE 8080
 

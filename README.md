@@ -88,7 +88,7 @@ echo 'export AWS_ACCESS_KEY_ID=xxxx
 export AWS_SECRET_ACCESS_KEY=xxxx
 ' | docker secret create aws -
 ```
-In `scripts/docker-scaler-aws.yml`, overwrite `AWS_MANAGER_GROUP_NAME` and `AWS_WORKER_GROUP_NAME`
+In `scripts/docker-scaler-aws.yml`, overwrite `AWS_MANAGER_ASG` and `AWS_WORKER_ASG`
 with your autoscaling group names. Then deploy it as a stack:
 ```bash
 $ docker stack deploy -c scripts/docker-scaler-aws.yml aws
