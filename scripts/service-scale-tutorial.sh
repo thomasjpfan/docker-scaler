@@ -23,23 +23,30 @@ docker stack deploy \
     -c stacks/docker-scaler-basic-tutorial.yml \
     scaler
 
-## Deploying Docker Flow Monitor and Alertmanager
 
+## Deploying Docker Flow Monitor and Alertmanager
 echo "global:
   slack_api_url: 'https://hooks.slack.com/services/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'
 route:
-  group_interval: 10s
-  repeat_interval: 30s
-  group_wait: 5s
   receiver: 'slack'
+  group_wait: 5s
+  group_interval: 15s
   routes:
-  - match_re:
-      scale: up|down
+  - match:
+      scale: up
       type: service
-    receiver: 'scale'
     group_by: [service, scale, type]
+    repeat_interval: 1m
+    receiver: 'scale'
+  - match:
+      scale: down
+      type: service
+    group_by: [service, scale, type]
+    repeat_interval: 2m
+    receiver: 'scale'
   - match_re:
       alertname: scale_service|reschedule_service|scale_nodes
+    group_by: [alertname]
     receiver: 'slack-scaler'
 
 receivers:
