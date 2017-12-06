@@ -408,16 +408,11 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	message := "Changing the number of manager nodes on mock from 3 to 2"
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
 	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
-	rescheduleMsg := "Waiting for manager nodes to scale from 3 to 2 for rescheduling"
-	logMessage2 := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
 	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
 	s.am.
-		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-		On("Send", "scale_nodes", "reschedule", "", "success", rescheduleMsg).Return(nil)
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("ScaleManagerByDelta", -1).Return(uint64(3), uint64(2), nil)
-	s.rsm.On("RescheduleServicesWaitForNodes", true, 2, mock.AnythingOfType("string"),
-		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error")).Return()
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -425,7 +420,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	s.Equal(http.StatusOK, rec.Code)
 
 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
-	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg, logMessage2)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
 }
