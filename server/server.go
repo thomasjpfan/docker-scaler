@@ -266,13 +266,16 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 
-	// Call rescheduler
-	rightNow := time.Now().UTC().Format("20060102T150405")
-	reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
-	s.logger.Printf("scale-nodes: %s", reqMsg)
-	s.sendAlert("scale_nodes", "reschedule", "", "success", reqMsg)
+	// Call rescheduler if nodesNow is greater than nodesBefore
 
-	go s.rescheduleServiceWait(isManager, int(nodesNow), rightNow)
+	if nodesNow > nodesBefore {
+		rightNow := time.Now().UTC().Format("20060102T150405")
+		reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
+		s.logger.Printf("scale-nodes: %s", reqMsg)
+		s.sendAlert("scale_nodes", "reschedule", "", "success", reqMsg)
+
+		go s.rescheduleServiceWait(isManager, int(nodesNow), rightNow)
+	}
 }
 
 func (s *Server) sendAlert(alertName string, serviceName string, request string,
