@@ -813,8 +813,8 @@ docker node ps $NEW_NODE
 </pre></div>
 
 <p>These labels use <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating Prometheus expressions that firing alerts.</p>
-<p>The <code>node-exporter-manager</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code>, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the <code>alertLabels</code> to <code>scale=no</code> prevents autoscaling and send a notification to Slack. The <code>node-exproter-worker</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code> which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the <code>node_mem_limit_total_below:0.01</code> fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.</p>
-<p>For example, we will trigger alert 1 on <code>node-exporter-manager</code> by changing its alert label:</p>
+<p>The <code>node-exporter-manager</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code>, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the <code>alertLabels</code> to <code>scale=no</code> prevents autoscaling and sends a notification to Slack. The <code>node-exproter-worker</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code> which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the <code>node_mem_limit_total_below:0.01</code> fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.</p>
+<p>For example, we trigger alert 1 on <code>node-exporter-manager</code> by changing its alert label:</p>
 <div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.05&quot;</span> <span class="se">\</span>
   exporter_node-exporter-manager
@@ -837,14 +837,13 @@ docker node ps $NEW_NODE
 <div class="codehilite"><pre><span></span>docker node ls
 </pre></div>
 
-<p>After the node comes up, <code>scaler</code> will also reschedule services with label, <code>com.df.reschedule=true</code>. While all this is going on, <em>Slack</em> notifications will be sent, so we can monitor the process.</p>
-<p>We return the alert back to before:</p>
+<p>After the node comes up, <code>scaler</code> will also reschedule services with label, <code>com.df.reschedule=true</code>. During this process, <em>Slack</em> notifications were sent to inform us of each step. Before triggering the alert 2, we return alert 1 back to before:</p>
 <div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.95&quot;</span> <span class="se">\</span>
   exporter_node-exporter-manager
 </pre></div>
 
-<p>We will now trigger the condition for scaling down a node by setting <code>node_mem_limit_total_below</code> limit to 95%:</p>
+<p>We trigger the condition for scaling down a node by setting <code>node_mem_limit_total_below</code> limit to 95%:</p>
 <div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.2=@node_mem_limit_total_below:0.95&quot;</span> <span class="se">\</span>
   exporter_node-exporter-manager
