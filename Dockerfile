@@ -14,6 +14,7 @@ ENV SERVER_PREFIX="/" \
     MAX_SCALE_LABEL="com.df.scaleMax" \
     SCALE_DOWN_BY_LABEL="com.df.scaleDownBy" \
     SCALE_UP_BY_LABEL="com.df.scaleUpBy" \
+    ALERT_SCALE_MAX="true" \
     DEFAULT_MIN_REPLICAS="1" \
     DEFAULT_MAX_REPLICAS="5" \
     DEFAULT_SCALE_SERVICE_DOWN_BY="1" \

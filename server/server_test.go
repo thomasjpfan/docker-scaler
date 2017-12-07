@@ -101,7 +101,7 @@ func (s *ServerTestSuite) SetupTest() {
 	s.b = new(bytes.Buffer)
 	s.l = log.New(s.b, "", 0)
 	s.s = NewServer(s.m, s.am,
-		s.nsm, s.rsm, s.l)
+		s.nsm, s.rsm, true, s.l)
 	s.r = s.s.MakeRouter("/")
 }
 
@@ -191,6 +191,50 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp() {
 	s.m.AssertExpectations(s.T())
 }
 
+func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded() {
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
+	requestMessage := "Scale service up: web"
+	expMsg := "web is already scaled to the maximum number of 5 replicas"
+	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
+	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+	url := "/v1/scale-service"
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertExpectations(s.T())
+	s.m.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxFalse() {
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
+	requestMessage := "Scale service up: web"
+	expMsg := "web is already scaled to the maximum number of 5 replicas"
+	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+
+	url := "/v1/scale-service"
+	ser := NewServer(s.m, s.am,
+		s.nsm, s.rsm, false, s.l)
+	serRouter := ser.MakeRouter("/")
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+
+	serRouter.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertNotCalled(s.T(), "Send", "scale_service", "web", requestMessage, "success", expMsg)
+	s.m.AssertExpectations(s.T())
+}
+
 func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Error() {
 	expErr := fmt.Errorf("Unable to scale service: web")
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
@@ -235,7 +279,6 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
 	requestMessage := "Scale service down: web"
 	expMsg := "Scaled down service: web"
-	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
 	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
@@ -247,6 +290,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded() {
 	s.Require().Equal(http.StatusOK, rec.Code)
 	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertNotCalled(s.T(), "Send", "scale_service", "web", requestMessage, "success", expMsg)
 	s.m.AssertExpectations(s.T())
 	s.Len(s.am.Calls, 0)
 }
