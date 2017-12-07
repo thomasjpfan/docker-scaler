@@ -48,8 +48,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 |-------------------|----------------------------------------------------------|
 | AWS_ENV_FILE | Location of AWS env file used when `NODE_SCALER_BACKEND` is sent to `aws`.<br>**Default:** `/run/secrets/aws` |
 | AWS_DEFAULT_REGION | Default AWS region.<br>**Default:** `us-east-1` |
-| AWS_MANAGER_ASG | AWS autoscaling group name for manager nodes.<br>**Default:** 0 |
-| AWS_WORKER_ASG | AWS autoscaling group name for worker nodes.<br>**Default:** 5 |
+| AWS_MANAGER_ASG | AWS autoscaling group name for manager nodes. |
+| AWS_WORKER_ASG | AWS autoscaling group name for worker nodes. |
 
 #### AWS Secrets file
 

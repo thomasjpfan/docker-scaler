@@ -31,9 +31,7 @@ ENV SERVER_PREFIX="/" \
     DEFAULT_MIN_WORKER_NODES="0" \
     DEFAULT_MAX_WORKER_NODES="5" \
     AWS_ENV_FILE="/run/secrets/aws" \
-    AWS_DEFAULT_REGION="us-east-1" \
-    AWS_MANAGER_ASG="stack-NodeManagerConfig" \
-    AWS_WORKER_ASG="stack-NodeWorkerConfig"
+    AWS_DEFAULT_REGION="us-east-1"
 
 EXPOSE 8080
 
