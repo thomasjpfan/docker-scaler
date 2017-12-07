@@ -351,9 +351,9 @@ services:
 
 These labels use [AlertIf Parameter Shortcuts](http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts) for creating Prometheus expressions that firing alerts.
 
-The `node-exporter-manager` has an `alertIf` label of `node_mem_limit_total_above:0.95`, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the `alertLabels` to `scale=no` prevents autoscaling and send a notification to Slack. The `node-exproter-worker` has an `alertIf` label of `node_mem_limit_total_above:0.95` which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the `node_mem_limit_total_below:0.01` fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.
+The `node-exporter-manager` has an `alertIf` label of `node_mem_limit_total_above:0.95`, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the `alertLabels` to `scale=no` prevents autoscaling and sends a notification to Slack. The `node-exproter-worker` has an `alertIf` label of `node_mem_limit_total_above:0.95` which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the `node_mem_limit_total_below:0.01` fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.
 
-For example, we will trigger alert 1 on `node-exporter-manager` by changing its alert label:
+For example, we trigger alert 1 on `node-exporter-manager` by changing its alert label:
 
 ```bash
 docker service update \
@@ -385,9 +385,7 @@ After a few moments, the alert will fire and trigger `scaler` to scale worker no
 docker node ls
 ```
 
-After the node comes up, `scaler` will also reschedule services with label, `com.df.reschedule=true`. While all this is going on, *Slack* notifications will be sent, so we can monitor the process.
-
-We return the alert back to before:
+After the node comes up, `scaler` will also reschedule services with label, `com.df.reschedule=true`. During this process, *Slack* notifications were sent to inform us of each step. Before triggering the alert 2, we return alert 1 back to before:
 
 ```bash
 docker service update \
@@ -395,7 +393,7 @@ docker service update \
   exporter_node-exporter-manager
 ```
 
-We will now trigger the condition for scaling down a node by setting `node_mem_limit_total_below` limit to 95%:
+We trigger the condition for scaling down a node by setting `node_mem_limit_total_below` limit to 95%:
 
 ```bash
 docker service update \
