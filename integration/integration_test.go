@@ -191,6 +191,15 @@ func (s *IntegrationTestSuite) Test_ServiceScaledToMax() {
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
 }
 
 func (s *IntegrationTestSuite) Test_ServiceDescaledToMin() {

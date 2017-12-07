@@ -18,11 +18,12 @@ import (
 
 // Server runs service that scales docker services
 type Server struct {
-	scaler      service.ScalerServicer
-	alerter     service.AlertServicer
-	nodeScaler  service.NodeScaler
-	rescheduler service.ReschedulerServicer
-	logger      *log.Logger
+	scaler        service.ScalerServicer
+	alerter       service.AlertServicer
+	nodeScaler    service.NodeScaler
+	rescheduler   service.ReschedulerServicer
+	alertScaleMax bool
+	logger        *log.Logger
 }
 
 // NewServer creates Server
@@ -31,13 +32,15 @@ func NewServer(
 	alerter service.AlertServicer,
 	nodeScaler service.NodeScaler,
 	rescheduler service.ReschedulerServicer,
+	alertScaleMax bool,
 	logger *log.Logger) *Server {
 	return &Server{
-		scaler:      scaler,
-		alerter:     alerter,
-		nodeScaler:  nodeScaler,
-		rescheduler: rescheduler,
-		logger:      logger,
+		scaler:        scaler,
+		alerter:       alerter,
+		nodeScaler:    nodeScaler,
+		rescheduler:   rescheduler,
+		alertScaleMax: alertScaleMax,
+		logger:        logger,
 	}
 }
 
@@ -165,7 +168,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Printf("scale-service success: %s", message)
-	if !isBounded {
+	if !isBounded || scaleDirection == "up" && s.alertScaleMax {
 		s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
 	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
