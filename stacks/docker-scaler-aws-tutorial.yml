@@ -1,0 +1,39 @@
+version: "3.1"
+
+services:
+
+  scaler:
+    image: thomasjpfan/docker-scaler
+    environment:
+      - ALERTMANAGER_ADDRESS=http://alert-manager:9093
+      - NODE_SCALER_BACKEND=aws
+      - AWS_MANAGER_ASG=${MANAGER_ASG}
+      - AWS_WORKER_ASG=${WORKER_ASG}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - SERVER_PREFIX=/scaler
+    secrets:
+      - aws
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - scaler
+      - proxy
+    deploy:
+      replicas: 1
+      labels:
+        - com.df.notify=true
+        - com.df.distribute=true
+        - com.df.servicePath=/scaler
+        - com.df.port=8080
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  scaler:
+    external: true
+  proxy:
+    external: true
+
+secrets:
+  aws:
+    external: true
