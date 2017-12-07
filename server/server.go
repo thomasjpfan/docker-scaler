@@ -44,27 +44,35 @@ func NewServer(
 // MakeRouter routes url paths to handlers
 func (s *Server) MakeRouter(prefix string) *mux.Router {
 	router := mux.NewRouter()
-	rootPrefix := path.Join(prefix, "/v1")
-	v1Router := router.PathPrefix(rootPrefix).Subrouter()
-	v1Router.Path("/scale-service").
+	v1router := router.PathPrefix("/v1").Subrouter()
+	s.addRoutes(v1router)
+	if prefix != "/" {
+		rootPrefix := path.Join(prefix, "/v1")
+		v1prefixRouter := router.PathPrefix(rootPrefix).Subrouter()
+		s.addRoutes(v1prefixRouter)
+	}
+	return router
+}
+
+func (s *Server) addRoutes(router *mux.Router) {
+	router.Path("/scale-service").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
-	v1Router.Path("/scale-nodes").
+	router.Path("/scale-nodes").
 		Queries("type", "{type}", "by", "{by}").
 		Methods("POST").
 		HandlerFunc(s.ScaleNodes).
 		Name("ScaleNode")
-	v1Router.Path("/reschedule-services").
+	router.Path("/reschedule-services").
 		Methods("POST").
 		HandlerFunc(s.RescheduleAllServices).
 		Name("RescheduleAllServices")
-	v1Router.Path("/reschedule-service").
+	router.Path("/reschedule-service").
 		Methods("POST").
 		Queries("service", "{service}").
 		HandlerFunc(s.RescheduleOneService).
 		Name("RescheduleOneService")
-	return router
 }
 
 // Run starts server
