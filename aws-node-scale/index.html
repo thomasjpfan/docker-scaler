@@ -1,7 +1,4 @@
 
-
-
-
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <head>
@@ -15,24 +12,9 @@
         <meta name="author" content="Thomas Fan">
       
       
-        <meta name="lang:clipboard.copy" content="Copy to clipboard">
-      
-        <meta name="lang:clipboard.copied" content="Copied to clipboard">
-      
-        <meta name="lang:search.language" content="en">
-      
-        <meta name="lang:search.result.none" content="No matching documents">
-      
-        <meta name="lang:search.result.one" content="1 matching document">
-      
-        <meta name="lang:search.result.other" content="# matching documents">
-      
-        <meta name="lang:search.tokenizer" content="[\s\-]+">
-      
-      
         <link rel="shortcut icon" href="../assets/images/favicon.png">
       
-      <meta name="generator" content="mkdocs-0.17.1, mkdocs-material-2.0.1">
+      <meta name="generator" content="mkdocs-0.16.3, mkdocs-material-1.10.3">
     
     
       
@@ -43,11 +25,16 @@
       <script src="../assets/javascripts/modernizr-e826f8942a.js"></script>
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application-462a8722ef.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application-9011e2d3f8.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-23f75ab9c7.palette.css">
       
     
     
       
+        
+        
+        
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
         <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
       
@@ -57,7 +44,10 @@
     
   </head>
   
-    <body>
+  
+  
+  
+    <body data-md-color-primary="blue" data-md-color-accent="light-blue">
   
     <svg class="md-svg">
       <defs>
@@ -77,7 +67,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a href=".." title="Docker Scaler" class="md-header-nav__button md-logo">
           
-            <i class="md-icon">school</i>
+            <i class="md-icon md-icon--home"></i>
           
         </a>
       </div>
@@ -100,9 +90,8 @@
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
         
+          <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
           
-            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
-            
 <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="search"></label>
   <div class="md-search__inner">
@@ -113,8 +102,8 @@
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result">
-          <div class="md-search-result__meta">
+        <div class="md-search-result" data-md-component="result" data-md-lang-search="" data-md-lang-tokenizer="[\s\-]+">
+          <div class="md-search-result__meta" data-md-lang-result-none="No matching documents" data-md-lang-result-one="1 matching document" data-md-lang-result-other="# matching documents">
             Type to start searching
           </div>
           <ol class="md-search-result__list"></ol>
@@ -123,7 +112,6 @@
     </div>
   </div>
 </div>
-          
         
       </div>
       
@@ -135,7 +123,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -157,6 +145,8 @@
     
     <div class="md-container">
       
+      
+      
       <main class="md-main">
         <div class="md-main__inner md-grid" data-md-component="container">
           
@@ -166,11 +156,11 @@
                   <div class="md-sidebar__inner">
                     <nav class="md-nav md-nav--primary" data-md-level="0">
   <label class="md-nav__title md-nav__title--site" for="drawer">
-    <span class="md-nav__button md-logo">
+    <div class="md-nav__button md-logo">
       
-        <i class="md-icon">school</i>
+        <i class="md-icon md-icon--home"></i>
       
-    </span>
+    </div>
     Docker Scaler
   </label>
   
@@ -181,7 +171,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -276,8 +266,22 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#setting-up-current-environment" title="Setting up Current Environment" class="md-nav__link">
+    Setting up Current Environment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#setting-up-an-aws-cluster" title="Setting Up An AWS Cluster" class="md-nav__link">
     Setting Up An AWS Cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-the-aws-environment" title="Setting up the AWS Environment" class="md-nav__link">
+    Setting up the AWS Environment
   </a>
   
 </li>
@@ -290,6 +294,20 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deploying-docker-scaler" title="Deploying Docker Scaler" class="md-nav__link">
+    Deploying Docker Scaler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
+    Manually Scaling Nodes
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
     Deploying Docker Flow Monitor and Alertmanager
   </a>
@@ -297,15 +315,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-instrumented-service" title="Deploying Instrumented Service" class="md-nav__link">
-    Deploying Instrumented Service
+  <a href="#deploying-node-exporters" title="Deploying Node Exporters" class="md-nav__link">
+    Deploying Node Exporters
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#automatically-scaling-nodes" title="Automatically Scaling Nodes" class="md-nav__link">
-    Automatically Scaling Nodes
+  <a href="#automaticall-scaling-nodes" title="Automaticall Scaling Nodes" class="md-nav__link">
+    Automaticall Scaling Nodes
   </a>
   
 </li>
@@ -424,8 +442,22 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#setting-up-current-environment" title="Setting up Current Environment" class="md-nav__link">
+    Setting up Current Environment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#setting-up-an-aws-cluster" title="Setting Up An AWS Cluster" class="md-nav__link">
     Setting Up An AWS Cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-the-aws-environment" title="Setting up the AWS Environment" class="md-nav__link">
+    Setting up the AWS Environment
   </a>
   
 </li>
@@ -438,6 +470,20 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deploying-docker-scaler" title="Deploying Docker Scaler" class="md-nav__link">
+    Deploying Docker Scaler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
+    Manually Scaling Nodes
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
     Deploying Docker Flow Monitor and Alertmanager
   </a>
@@ -445,15 +491,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-instrumented-service" title="Deploying Instrumented Service" class="md-nav__link">
-    Deploying Instrumented Service
+  <a href="#deploying-node-exporters" title="Deploying Node Exporters" class="md-nav__link">
+    Deploying Node Exporters
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#automatically-scaling-nodes" title="Automatically Scaling Nodes" class="md-nav__link">
-    Automatically Scaling Nodes
+  <a href="#automaticall-scaling-nodes" title="Automaticall Scaling Nodes" class="md-nav__link">
+    Automaticall Scaling Nodes
   </a>
   
 </li>
@@ -483,13 +529,339 @@
                 
                 
                 <h1 id="aws-node-scaling">AWS Node Scaling<a class="headerlink" href="#aws-node-scaling" title="Permanent link">&para;</a></h1>
-<p>Work in progress.</p>
+<p><em>Docker Scaler</em> includes endpoints to scale nodes on AWS. In this tutorial, we will construct a system that will scale up worker nodes based on memory usage. This tutorial uses <a href="https://aws.amazon.com/cli/">AWS CLI</a> to communicate with AWS and <a href="https://stedolan.github.io/jq/download/">jq</a> to parse json responses from the CLI.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>If you are a Windows user, please run all the examples from <em>Git Bash</em> (installed through <em>Docker for Windows</em>). Also, make sure that your Git client is configured to check out the code <em>AS-IS</em>. Otherwise, Windows might change carriage returns to the Windows format.</p>
+</div>
+<h2 id="setting-up-current-environment">Setting up Current Environment<a class="headerlink" href="#setting-up-current-environment" title="Permanent link">&para;</a></h2>
+<p>We will be using <em>Slack</em> webhooks to notify us. First, we create a <em>Slack</em> workspace and setup a webhook by consulting <em>Slack's</em> <a href="https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack">Incoming Webhook</a> page. After obtaining a webhook URL set it as an environment variable:</p>
+<div class="codehilite"><pre><span></span><span class="nb">export</span> <span class="nv">SLACK_WEBHOOK_URL</span><span class="o">=[</span>...<span class="o">]</span>
+</pre></div>
+
+<p>The AWS CLI is configured by setting the following environment variables:</p>
+<div class="codehilite"><pre><span></span><span class="nb">export</span> <span class="nv">AWS_ACCESS_KEY_ID</span><span class="o">=[</span>...<span class="o">]</span>
+<span class="nb">export</span> <span class="nv">AWS_SECRET_ACCESS_KEY</span><span class="o">=[</span>...<span class="o">]</span>
+<span class="nb">export</span> <span class="nv">AWS_DEFAULT_REGION</span><span class="o">=</span>us-east-1
+</pre></div>
+
+<p>The <em>IAM Policies</em> required for this tutorial are <code>cloudformation:*</code>, <code>sqs:*</code>, <code>iam:*</code>, <code>ec2:*</code>, <code>lambda:*</code>, <code>dynamodb:*</code>, <code>&quot;autoscaling:*</code>, and <code>elasticfilesystem:*</code>.</p>
+<p>For convenience, we define the <code>STACK_NAME</code> to be the name of our AWS stack, <code>KEY_FILE</code> to be the path to the ssh AWS identity file, and <code>KEY_NAME</code> as the key's name on AWS.</p>
+<div class="codehilite"><pre><span></span><span class="nb">export</span> <span class="nv">STACK_NAME</span><span class="o">=</span>devops22
+<span class="nb">export</span> <span class="nv">KEY_FILE</span><span class="o">=</span>devops22.pem <span class="c1"># Location of pem file</span>
+<span class="nb">export</span> <span class="nv">KEY_NAME</span><span class="o">=</span>devops22
+</pre></div>
+
 <h2 id="setting-up-an-aws-cluster">Setting Up An AWS Cluster<a class="headerlink" href="#setting-up-an-aws-cluster" title="Permanent link">&para;</a></h2>
+<p>Using AWS Cloudformation, we will create a cluster of three master ndoes:</p>
+<div class="codehilite"><pre><span></span>aws cloudformation create-stack <span class="se">\</span>
+    --template-url https://editions-us-east-1.s3.amazonaws.com/aws/stable/Docker.tmpl <span class="se">\</span>
+    --capabilities CAPABILITY_IAM <span class="se">\</span>
+    --stack-name <span class="nv">$STACK_NAME</span> <span class="se">\</span>
+    --parameters <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>ManagerSize,ParameterValue<span class="o">=</span><span class="m">3</span> <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>ClusterSize,ParameterValue<span class="o">=</span><span class="m">0</span> <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>KeyName,ParameterValue<span class="o">=</span><span class="nv">$KEY_NAME</span> <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>EnableSystemPrune,ParameterValue<span class="o">=</span>yes <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>EnableCloudWatchLogs,ParameterValue<span class="o">=</span>no <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>EnableCloudStorEfs,ParameterValue<span class="o">=</span>yes <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>ManagerInstanceType,ParameterValue<span class="o">=</span>t2.micro <span class="se">\</span>
+    <span class="nv">ParameterKey</span><span class="o">=</span>InstanceType,ParameterValue<span class="o">=</span>t2.micro
+</pre></div>
+
+<p>We can check if the cluster came online by running:</p>
+<div class="codehilite"><pre><span></span>aws cloudformation describe-stacks <span class="se">\</span>
+    --stack-name <span class="nv">$STACK_NAME</span> <span class="p">|</span> <span class="se">\</span>
+    jq -r <span class="s2">&quot;.Stacks[0].StackStatus&quot;</span>
+</pre></div>
+
+<p>Please wait till the output of this command is <code>CREATE_COMPLETE</code> before continuing.</p>
+<h2 id="setting-up-the-aws-environment">Setting up the AWS Environment<a class="headerlink" href="#setting-up-the-aws-environment" title="Permanent link">&para;</a></h2>
+<p>We need to log into a manager node to issue Docker commands and interact with our Docker swarm. To setup the manager shell environmental, we will define variables in our current shell and transfer them to the manager node.</p>
+<p>We save the cluster dns to an environment variable <code>CLUSTER_DNS</code>:</p>
+<div class="codehilite"><pre><span></span><span class="nv">CLUSTER_DNS</span><span class="o">=</span><span class="k">$(</span>aws cloudformation <span class="se">\</span>
+    describe-stacks <span class="se">\</span>
+    --stack-name <span class="nv">$STACK_NAME</span> <span class="p">|</span> <span class="se">\</span>
+    jq -r <span class="s2">&quot;.Stacks[0].Outputs[] | \</span>
+<span class="s2">    select(.OutputKey==\&quot;DefaultDNSTarget\&quot;)\</span>
+<span class="s2">    .OutputValue&quot;</span><span class="k">)</span>
+</pre></div>
+
+<p>We set the environment variable <code>CLUSTER_IP</code> to the public ip of one of the manager nodes:</p>
+<div class="codehilite"><pre><span></span><span class="nv">CLUSTER_IP</span><span class="o">=</span><span class="k">$(</span>aws ec2 describe-instances <span class="se">\</span>
+    <span class="p">|</span> jq -r <span class="s2">&quot;.Reservations[] \</span>
+<span class="s2">    .Instances[] \</span>
+<span class="s2">    | select(.SecurityGroups[].GroupName \</span>
+<span class="s2">    | contains(\&quot;</span><span class="nv">$STACK_NAME</span><span class="s2">-ManagerVpcSG\&quot;))\</span>
+<span class="s2">    .PublicIpAddress&quot;</span> <span class="se">\</span>
+    <span class="p">|</span> tail -n <span class="m">1</span><span class="k">)</span>
+</pre></div>
+
+<p>We save the the manager and worker autoscaling group names:</p>
+<div class="codehilite"><pre><span></span><span class="nv">WORKER_ASG</span><span class="o">=</span><span class="k">$(</span>aws autoscaling <span class="se">\</span>
+    describe-auto-scaling-groups <span class="se">\</span>
+    <span class="p">|</span> jq -r <span class="s2">&quot;.AutoScalingGroups[] \</span>
+<span class="s2">    | select(.AutoScalingGroupName \</span>
+<span class="s2">    | startswith(\&quot;</span><span class="nv">$STACK_NAME</span><span class="s2">-NodeAsg-\&quot;))\</span>
+<span class="s2">    .AutoScalingGroupName&quot;</span><span class="k">)</span>
+
+<span class="nv">MANAGER_ASG</span><span class="o">=</span><span class="k">$(</span>aws autoscaling <span class="se">\</span>
+    describe-auto-scaling-groups <span class="se">\</span>
+    <span class="p">|</span> jq -r <span class="s2">&quot;.AutoScalingGroups[] \</span>
+<span class="s2">    | select(.AutoScalingGroupName \</span>
+<span class="s2">    | startswith(\&quot;</span><span class="nv">$STACK_NAME</span><span class="s2">-ManagerAsg-\&quot;))\</span>
+<span class="s2">    .AutoScalingGroupName&quot;</span><span class="k">)</span>
+</pre></div>
+
+<p>We clone the <em>Docker Scaler</em> repo and transfer the stacks folder</p>
+<div class="codehilite"><pre><span></span>git clone https://github.com/thomasjpfan/docker-scaler.git
+
+scp -i <span class="nv">$KEY_FILE</span> -rp docker-scaler/stacks docker@<span class="nv">$CLUSTER_IP</span>:~
+</pre></div>
+
+<p>Using ssh, we can transfer the environment variables into a file on the manager node:</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;</span>
+<span class="s2">export CLUSTER_DNS=</span><span class="nv">$CLUSTER_DNS</span><span class="s2"></span>
+<span class="s2">export AWS_ACCESS_KEY_ID=</span><span class="nv">$AWS_ACCESS_KEY_ID</span><span class="s2"></span>
+<span class="s2">export AWS_SECRET_ACCESS_KEY=</span><span class="nv">$AWS_SECRET_ACCESS_KEY</span><span class="s2"></span>
+<span class="s2">export AWS_DEFAULT_REGION=</span><span class="nv">$AWS_DEFAULT_REGION</span><span class="s2"></span>
+<span class="s2">export WORKER_ASG=</span><span class="nv">$WORKER_ASG</span><span class="s2"></span>
+<span class="s2">export MANAGER_ASG=</span><span class="nv">$MANAGER_ASG</span><span class="s2"></span>
+<span class="s2">export SLACK_WEBHOOK_URL=</span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="s2"></span>
+<span class="s2">&quot;</span> <span class="p">|</span> ssh -i <span class="nv">$KEY_FILE</span> docker@<span class="nv">$CLUSTER_IP</span> <span class="s2">&quot;cat &gt; env&quot;</span>
+</pre></div>
+
+<p>Finally, we can log into the manager node and source the environment variables:</p>
+<div class="codehilite"><pre><span></span>ssh -i <span class="nv">$KEY_FILE</span> docker@<span class="nv">$CLUSTER_IP</span>
+
+<span class="nb">source</span> env
+</pre></div>
+
 <h2 id="deploying-docker-flow-proxy-dfp-and-docker-flow-swarm-listener-dfsl">Deploying Docker Flow Proxy (DFP) and Docker Flow Swarm Listener (DFSL)<a class="headerlink" href="#deploying-docker-flow-proxy-dfp-and-docker-flow-swarm-listener-dfsl" title="Permanent link">&para;</a></h2>
+<p>For convenience, we will use <em>Docker Flow Proxy</em> and <em>Docker Flow Swarm Listener</em> to get a single access point to the cluster.</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;admin:admin&quot;</span> <span class="p">|</span> docker secret <span class="se">\</span>
+    create dfp_users_admin -
+
+docker network create -d overlay proxy
+
+docker stack deploy <span class="se">\</span>
+    -c stacks/docker-flow-proxy-aws.yml <span class="se">\</span>
+    proxy
+</pre></div>
+
+<p>Please visit <a href="http://proxy.dockerflow.com">proxy.dockerflow.com</a> and <a href="http://swarmlistener.dockerflow.com/">swarmlistener.dockerflow.com</a> for details on the <em>Docker Flow</em> stack.</p>
+<h2 id="deploying-docker-scaler">Deploying Docker Scaler<a class="headerlink" href="#deploying-docker-scaler" title="Permanent link">&para;</a></h2>
+<p>To allow <em>Docker Scaler</em> to access AWS, the credientials are stored in a Docker secret:</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;</span>
+<span class="s2">export AWS_ACCESS_KEY_ID=</span><span class="nv">$AWS_ACCESS_KEY_ID</span><span class="s2"></span>
+<span class="s2">export AWS_SECRET_ACCESS_KEY=</span><span class="nv">$AWS_SECRET_ACCESS_KEY</span><span class="s2"></span>
+<span class="s2">&quot;</span> <span class="p">|</span> docker secret create aws -
+</pre></div>
+
+<p>We can now deploy the <em>Docker Scaler</em> stack:</p>
+<div class="codehilite"><pre><span></span>docker network create -d overlay scaler
+
+docker stack deploy <span class="se">\</span>
+    -c stacks/scaler-aws-tutorial.yml <span class="se">\</span>
+    scaler
+</pre></div>
+
+<p>This stack defines a single <em>Docker Scaler</em> service. Focusing on the environment variables set by the compose file:</p>
+<div class="codehilite"><pre><span></span><span class="nn">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">scaler</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">thomasjpfan/scaler</span>
+      <span class="l l-Scalar l-Scalar-Plain">environment</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ALERTMANAGER_ADDRESS=http://alert-manager:9093</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">NODE_SCALER_BACKEND=aws</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">AWS_MANAGER_ASG=${MANAGER_ASG}</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">AWS_WORKER_ASG=${WORKER_ASG}</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">SERVER_PREFIX=/scaler</span>
+      <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.notify=true</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.distribute=true</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.servicePath=/scaler</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.port=8080</span>
+      <span class="l l-Scalar l-Scalar-Plain">secrets</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">aws</span>
+<span class="nn">...</span>
+</pre></div>
+
+<p>The <code>NODE_SCALER_BACKEND</code> must be set to <code>aws</code> to configure <em>Docker Scaler</em> to scale nodes on AWS. The label <code>com.df.servicePath=/scaler</code> and environment variable <code>SERVER_PREFIX</code> opens up the <code>scaler</code> service to public REST calls. For this tutorial, we open this path to explore manually scaling nodes.</p>
+<h2 id="manually-scaling-nodes">Manually Scaling Nodes<a class="headerlink" href="#manually-scaling-nodes" title="Permanent link">&para;</a></h2>
+<p>Before node scaling, we will deploy a simple sleeping service:</p>
+<div class="codehilite"><pre><span></span>docker service create -d --replicas <span class="m">6</span> <span class="se">\</span>
+  -l com.df.reschedule<span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+  --name demo <span class="se">\</span>
+  alpine:3.6 sleep <span class="m">100000000000</span>
+</pre></div>
+
+<p>The <code>com.df.reschedule=true</code> label signals to <em>Docker Scaler</em> that this service is allowed for rescheduling after node scaling.</p>
+<p>The original cluster started out with three manager nodes. We now scale up the worker nodes by one be issuing a <code>POST</code> request:</p>
+<div class="codehilite"><pre><span></span>curl -X POST http://<span class="nv">$CLUSTER_DNS</span>/scaler/v1/scale-nodes<span class="se">\?</span>by<span class="se">\=</span><span class="m">1</span><span class="se">\&amp;</span>type<span class="se">\=</span>worker -d <span class="se">\</span>
+<span class="s1">&#39;{&quot;groupLabels&quot;: {&quot;scale&quot;: &quot;up&quot;}}&#39;</span>
+</pre></div>
+
+<p>The parameters <code>by=1</code> and <code>type=worker</code> tell the service to scale worker nodes up by <code>1</code>. Inside the json request body, the <code>scale</code> value is set to <code>up</code> to denote scaling up. To scale nodes down just set the value to <code>down</code>. We can check the number of nodes by running:</p>
+<div class="codehilite"><pre><span></span>docker node ls
+</pre></div>
+
+<p>The output should be similar to the following (node ids are discarded):</p>
+<div class="codehilite"><pre><span></span>HOSTNAME                        STATUS              AVAILABILITY        MANAGER STATUS
+ip-172-31-4-44.ec2.internal     Ready               Active              Reachable
+ip-172-31-17-200.ec2.internal   Ready               Active              Reachable
+ip-172-31-20-95.ec2.internal    Ready               Active
+ip-172-31-44-49.ec2.internal    Ready               Active              Leader
+</pre></div>
+
+<p>If there are still three nodes, wait a few more minutes and try the command again. <em>Docker Scaler</em> waits for the new node to come up and reschedules services that are labeled <code>com.df.reschedule=true</code>. We look at the processes running on the new worker node:</p>
+<div class="codehilite"><pre><span></span>NEW_NODE=$(docker node ls -f role=worker -q)
+
+docker node ps $NEW_NODE
+</pre></div>
+
+<p>The output should include some instances of the <code>demo</code> service, showing that the some of the instances has been place on the new node. We will now move on to implementing a system for automatic scaling!</p>
 <h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
-<h2 id="deploying-instrumented-service">Deploying Instrumented Service<a class="headerlink" href="#deploying-instrumented-service" title="Permanent link">&para;</a></h2>
-<h2 id="automatically-scaling-nodes">Automatically Scaling Nodes<a class="headerlink" href="#automatically-scaling-nodes" title="Permanent link">&para;</a></h2>
+<p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
+<span class="s2">  slack_api_url: &#39;</span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="s2">&#39;</span>
+<span class="s2">route:</span>
+<span class="s2">  group_interval: 30m</span>
+<span class="s2">  repeat_interval: 30m</span>
+<span class="s2">  receiver: slack</span>
+<span class="s2">  group_by: [service, scale, type]</span>
+<span class="s2">  routes:</span>
+<span class="s2">    - match_re:</span>
+<span class="s2">        scale: up|down</span>
+<span class="s2">        type: node</span>
+<span class="s2">      receiver: &#39;scale-nodes&#39;</span>
+<span class="s2">    - match_re:</span>
+<span class="s2">        alertname: scale_service|reschedule_service|scale_nodes</span>
+<span class="s2">      group_by: [alertname]</span>
+<span class="s2">      group_wait: 5s</span>
+<span class="s2">      group_interval: 15s</span>
+<span class="s2">      receiver: slack-scaler</span>
+
+<span class="s2">receivers:</span>
+<span class="s2">  - name: &#39;slack&#39;</span>
+<span class="s2">    slack_configs:</span>
+<span class="s2">      - send_resolved: true</span>
+<span class="s2">        title: &#39;[{{ .Status | toUpper }}] {{ .GroupLabels.service }} service is in danger!&#39;</span>
+<span class="s2">        title_link: &#39;http://</span><span class="nv">$CLUSTER_DNS</span><span class="s2">/monitor/alerts&#39;</span>
+<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
+<span class="s2">  - name: &#39;slack-scaler&#39;</span>
+<span class="s2">    slack_configs:</span>
+<span class="s2">      - title: &#39;{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}&#39;</span>
+<span class="s2">        color: &#39;{{ if eq .CommonLabels.status \&quot;error\&quot; }}danger{{ else }}good{{ end }}&#39;</span>
+<span class="s2">        title_link: &#39;http://</span><span class="nv">$CLUSTER_DNS</span><span class="s2">/monitor/alerts&#39;</span>
+<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
+<span class="s2">  - name: &#39;scale-nodes&#39;</span>
+<span class="s2">    webhook_configs:</span>
+<span class="s2">      - send_resolved: false</span>
+<span class="s2">        url: &#39;http://scaler:8080/v1/scale-nodes?by=1&amp;type=worker&#39;</span>
+<span class="s2">&quot;</span> <span class="p">|</span> docker secret create alert_manager_config -
+</pre></div>
+
+<p>This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale-nodes</code> reciever. The second route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. The <code>scale-nodes</code> receivers <code>url</code> is given parameters <code>by=1</code> to denote how many nodes to scale down or up by, and <code>type=worker</code> to only scale worker nodes.</p>
+<div class="codehilite"><pre><span></span>docker network create -d overlay monitor
+
+<span class="nv">DOMAIN</span><span class="o">=</span><span class="nv">$CLUSTER_DNS</span> <span class="se">\</span>
+    docker stack deploy <span class="se">\</span>
+    -c stacks/docker-flow-monitor-aws.yml <span class="se">\</span>
+    monitor
+</pre></div>
+
+<p>Let us confirm that the <code>monitor</code> stack is up and running:</p>
+<div class="codehilite"><pre><span></span>docker stack ps monitor
+</pre></div>
+
+<p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running, we can move on to deploying node exporters.</p>
+<h2 id="deploying-node-exporters">Deploying Node Exporters<a class="headerlink" href="#deploying-node-exporters" title="Permanent link">&para;</a></h2>
+<p>The node exporters are used to display metrics about each nodes for <em>Docker Flow Monitor</em> to scrap. To deploy the exporters stack run:</p>
+<div class="codehilite"><pre><span></span>docker stack deploy <span class="se">\</span>
+  -c stacks/exporters-aws.yml <span class="se">\</span>
+  exporter
+</pre></div>
+
+<p>We will focus on the service labels for the <code>node-exporter-manager</code> and <code>node-exporter-worker</code> services:</p>
+<div class="codehilite"><pre><span></span><span class="nn">...</span>
+<span class="l l-Scalar l-Scalar-Plain">services</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">node-exporter-manager</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">...</span>
+    <span class="l l-Scalar l-Scalar-Plain">deploy</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">...</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.1=node_mem_limit_total_above</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.1=@node_mem_limit_total_above:0.95</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertLabels.1=receiver=system,scale=no,service=exporter_node-exporter-manager,type=node</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertFor.1=30s</span>
+        <span class="l l-Scalar l-Scalar-Plain">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">node-exporter-worker</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">...</span>
+    <span class="l l-Scalar l-Scalar-Plain">deploy</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">...</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.1=node_mem_limit_total_above</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.1=@node_mem_limit_total_above:0.95</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertFor.1=30s</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.2=node_mem_limit_total_below</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.2=@node_mem_limit_total_below:0.05</span>
+        <span class="l l-Scalar l-Scalar-Plain">- com.df.alertFor.2=30s</span>
+<span class="nn">...</span>
+</pre></div>
+
+<p>These labels use <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating Prometheus expressions that firing alerts.</p>
+<p>The <code>node-exporter-manager</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code>, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the <code>alertLabels</code> to <code>scale=no</code> prevents autoscaling and send a notification to Slack. The <code>node-exproter-worker</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code> which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the <code>node_mem_limit_total_below:0.01</code> fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.</p>
+<p>For example, we will trigger alert 1 on <code>node-exporter-manager</code> by changing its alert label:</p>
+<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+  --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.05&quot;</span> <span class="se">\</span>
+  exporter_node-exporter-manager
+</pre></div>
+
+<p>After the alert is fired, we can see a <em>Slack</em> notification stating <strong>Total memory of the nodes is over 0.05</strong>. Before we continue, we return the alert back to before:</p>
+<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+  --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.95&quot;</span> <span class="se">\</span>
+  exporter_node-exporter-manager
+</pre></div>
+
+<h2 id="automaticall-scaling-nodes">Automaticall Scaling Nodes<a class="headerlink" href="#automaticall-scaling-nodes" title="Permanent link">&para;</a></h2>
+<p>We trigger alert 1 on <code>node-exporter-worker</code> by setting the <code>node_mem_limit_total_above</code> limit to 5%:</p>
+<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+  --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.05&quot;</span> <span class="se">\</span>
+  exporter_node-exporter-manager
+</pre></div>
+
+<p>After a few moments, the alert will fire and trigger <code>scaler</code> to scale worker nodes up by one. We confirm that there is now five nodes by running:</p>
+<div class="codehilite"><pre><span></span>docker node ls
+</pre></div>
+
+<p>After the node comes up, <code>scaler</code> will also reschedule services with label, <code>com.df.reschedule=true</code>. While all this is going on, <em>Slack</em> notifications will be sent, so we can monitor the process.</p>
+<p>We return the alert back to before:</p>
+<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+  --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.95&quot;</span> <span class="se">\</span>
+  exporter_node-exporter-manager
+</pre></div>
+
+<p>We will now trigger the condition for scaling down a node by setting <code>node_mem_limit_total_below</code> limit to 95%:</p>
+<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+  --label-add <span class="s2">&quot;com.df.alertIf.2=@node_mem_limit_total_below:0.95&quot;</span> <span class="se">\</span>
+  exporter_node-exporter-manager
+</pre></div>
+
+<p>After a few moments, the alert will fire and trigger <code>scaler</code> to scale worker nodes down by one. We confirm that there is now four nodes by running:</p>
+<div class="codehilite"><pre><span></span>docker node ls
+</pre></div>
+
 <h2 id="what-now">What Now?<a class="headerlink" href="#what-now" title="Permanent link">&para;</a></h2>
+<p>We just went through a simple example of a system that automatically scales and de-scales nodes. Feel free to add additional metrics and services to this self-adapting system to customize it to your needs.</p>
+<p>Please remove the AWS cluster we created and free your resources:</p>
+<div class="codehilite"><pre><span></span> aws cloudformation delete-stack \
+    --stack-name $STACK_NAME
+</pre></div>
+
+<p>You can navigate to <a href="https://console.aws.amazon.com/cloudformation/home">AWS Cloudformation</a> to confirm that your stack has been removed.</p>
                 
                   
                 
@@ -563,9 +935,10 @@
       
     </div>
     
-      <script src="../assets/javascripts/application-84693e5e49.js"></script>
+      <script src="../assets/javascripts/application-f3ab9e5ff8.js"></script>
       
-      <script>app.initialize({version:"0.17.1",url:{base:".."}})</script>
+      
+      <script>app.initialize({url:{base:".."}})</script>
       
     
     

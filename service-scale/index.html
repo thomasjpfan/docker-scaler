@@ -1,7 +1,4 @@
 
-
-
-
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <head>
@@ -15,24 +12,9 @@
         <meta name="author" content="Thomas Fan">
       
       
-        <meta name="lang:clipboard.copy" content="Copy to clipboard">
-      
-        <meta name="lang:clipboard.copied" content="Copied to clipboard">
-      
-        <meta name="lang:search.language" content="en">
-      
-        <meta name="lang:search.result.none" content="No matching documents">
-      
-        <meta name="lang:search.result.one" content="1 matching document">
-      
-        <meta name="lang:search.result.other" content="# matching documents">
-      
-        <meta name="lang:search.tokenizer" content="[\s\-]+">
-      
-      
         <link rel="shortcut icon" href="../assets/images/favicon.png">
       
-      <meta name="generator" content="mkdocs-0.17.1, mkdocs-material-2.0.1">
+      <meta name="generator" content="mkdocs-0.16.3, mkdocs-material-1.10.3">
     
     
       
@@ -43,11 +25,16 @@
       <script src="../assets/javascripts/modernizr-e826f8942a.js"></script>
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application-462a8722ef.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application-9011e2d3f8.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-23f75ab9c7.palette.css">
       
     
     
       
+        
+        
+        
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
         <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
       
@@ -57,7 +44,10 @@
     
   </head>
   
-    <body>
+  
+  
+  
+    <body data-md-color-primary="blue" data-md-color-accent="light-blue">
   
     <svg class="md-svg">
       <defs>
@@ -77,7 +67,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a href=".." title="Docker Scaler" class="md-header-nav__button md-logo">
           
-            <i class="md-icon">school</i>
+            <i class="md-icon md-icon--home"></i>
           
         </a>
       </div>
@@ -100,9 +90,8 @@
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
         
+          <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
           
-            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
-            
 <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="search"></label>
   <div class="md-search__inner">
@@ -113,8 +102,8 @@
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result">
-          <div class="md-search-result__meta">
+        <div class="md-search-result" data-md-component="result" data-md-lang-search="" data-md-lang-tokenizer="[\s\-]+">
+          <div class="md-search-result__meta" data-md-lang-result-none="No matching documents" data-md-lang-result-one="1 matching document" data-md-lang-result-other="# matching documents">
             Type to start searching
           </div>
           <ol class="md-search-result__list"></ol>
@@ -123,7 +112,6 @@
     </div>
   </div>
 </div>
-          
         
       </div>
       
@@ -135,7 +123,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -157,6 +145,8 @@
     
     <div class="md-container">
       
+      
+      
       <main class="md-main">
         <div class="md-main__inner md-grid" data-md-component="container">
           
@@ -166,11 +156,11 @@
                   <div class="md-sidebar__inner">
                     <nav class="md-nav md-nav--primary" data-md-level="0">
   <label class="md-nav__title md-nav__title--site" for="drawer">
-    <span class="md-nav__button md-logo">
+    <div class="md-nav__button md-logo">
       
-        <i class="md-icon">school</i>
+        <i class="md-icon md-icon--home"></i>
       
-    </span>
+    </div>
     Docker Scaler
   </label>
   
@@ -181,7 +171,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -280,6 +270,13 @@
         <li class="md-nav__item">
   <a href="#deploying-docker-scaler" title="Deploying Docker Scaler" class="md-nav__link">
     Deploying Docker Scaler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
+    Manually Scaling Services
   </a>
   
 </li>
@@ -452,6 +449,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
+    Manually Scaling Services
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
     Deploying Docker Flow Monitor and Alertmanager
   </a>
@@ -497,9 +501,9 @@
                 
                 
                 <h1 id="auto-scaling-with-docker-scaler-and-instrumented-metrics">Auto-Scaling With Docker Scaler And Instrumented Metrics<a class="headerlink" href="#auto-scaling-with-docker-scaler-and-instrumented-metrics" title="Permanent link">&para;</a></h1>
-<p><em>Docker Scaler</em> provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's <a href="http://monitor.dockerflow.com/auto-scaling/">auto-scaling tutorial</a>. In this tutorial, we will construct a system that will scale a service based on response time. The following is an overview of the triggered events in our self-adapting system:</p>
+<p><em>Docker Scaler</em> provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's <a href="http://monitor.dockerflow.com/auto-scaling/">auto-scaling tutorial</a>. In this tutorial, we will construct a system that will scale a service based on response time. Here is an overview of the triggered events in our self-adapting system:</p>
 <ol>
-<li>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service response times becomes too high.</li>
+<li>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service response times becomes high.</li>
 <li><a href="http://monitor.dockerflow.com/">Docker Flow Monitor</a> is querying the services' metrics, notices the high response times, and alerts the <a href="https://prometheus.io/docs/alerting/alertmanager/">Alertmanager</a>.</li>
 <li>The Alertmanager is configured to forward the alert to <em>Docker Scaler</em>.</li>
 <li><em>Docker Scaler</em> scales the service up.</li>
@@ -509,12 +513,16 @@
 <p class="admonition-title">Info</p>
 <p>If you are a Windows user, please run all the examples from <em>Git Bash</em> (installed through <em>Docker for Windows</em>). Also, make sure that your Git client is configured to check out the code <em>AS-IS</em>. Otherwise, Windows might change carriage returns to the Windows format.</p>
 </div>
+<p>We will be using <em>Slack</em> webhooks to notify us. Create a <em>Slack</em> channel and setup a webhook by consulting <em>Slack's</em> <a href="https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack">Incoming Webhook</a> page. After obtaining a webhook URL set it as an environment variable:</p>
+<div class="codehilite"><pre><span></span><span class="nb">export</span> <span class="nv">SLACK_WEBHOOK_URL</span><span class="o">=[</span>...<span class="o">]</span>
+</pre></div>
+
 <h2 id="setting-up-a-cluster">Setting Up A Cluster<a class="headerlink" href="#setting-up-a-cluster" title="Permanent link">&para;</a></h2>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p>Feel free to skip this section if you already have a Swarm cluster that can be used for this tutorial</p>
 </div>
-<p>We'll create a Swarm cluster consisting of three nodes created with Docker Machine.</p>
+<p>We create a Swarm cluster consisting of three nodes created with Docker Machine.</p>
 <div class="codehilite"><pre><span></span>git clone https://github.com/thomasjpfan/docker-scaler.git
 
 <span class="nb">cd</span> docker-scaler
@@ -524,7 +532,7 @@
 <span class="nb">eval</span> <span class="k">$(</span>docker-machine env swarm-1<span class="k">)</span>
 </pre></div>
 
-<p>We cloned the <a href="https://github.com/thomasjpfan/docker-scaler">thomasjpfan/docker-scaler</a> respository. It contains all the scripts and stack files we will use throughout this tutorial. Next, we executed the <code>ds-swarm.sh</code> script that created the cluster. Finally, we used the <code>eval</code> command to tell our local Docker client to use the remote Docker Engine <code>swarm-1</code>.</p>
+<p>The repo contains all the scripts and stack files needed throughout this tutorial. Next, we executed <code>ds-swarm.sh</code> creating the cluster with <code>docker-machine</code>. Finally, we used the <code>eval</code> command to tell our local Docker client to use the remote Docker Engine <code>swarm-1</code>.</p>
 <h2 id="deploying-docker-flow-proxy-dfp-and-docker-flow-swarm-listener-dfsl">Deploying Docker Flow Proxy (DFP) and Docker Flow Swarm Listener (DFSL)<a class="headerlink" href="#deploying-docker-flow-proxy-dfp-and-docker-flow-swarm-listener-dfsl" title="Permanent link">&para;</a></h2>
 <p>For convenience, we will use <em>Docker Flow Proxy</em> and <em>Docker Flow Swarm Listener</em> to get a single access point to the cluster.</p>
 <div class="codehilite"><pre><span></span>docker network create -d overlay proxy
@@ -540,7 +548,7 @@ docker stack deploy <span class="se">\</span>
 <div class="codehilite"><pre><span></span>docker network create -d overlay scaler
 
 docker stack deploy <span class="se">\</span>
-    -c stacks/docker-scaler-basic-tutorial.yml <span class="se">\</span>
+    -c stacks/docker-scaler-service-scale-tutorial.yml <span class="se">\</span>
     scaler
 </pre></div>
 
@@ -551,42 +559,77 @@ docker stack deploy <span class="se">\</span>
       <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">thomasjpfan/docker-scaler</span>
       <span class="l l-Scalar l-Scalar-Plain">environment</span><span class="p p-Indicator">:</span>
         <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ALERTMANAGER_ADDRESS=http://alertmanager:9093</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">SERVER_PREFIX=/scaler</span>
       <span class="l l-Scalar l-Scalar-Plain">volumes</span><span class="p p-Indicator">:</span>
         <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/var/run/docker.sock:/var/run/docker.sock</span>
       <span class="l l-Scalar l-Scalar-Plain">networks</span><span class="p p-Indicator">:</span>
         <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">scaler</span>
       <span class="l l-Scalar l-Scalar-Plain">deploy</span><span class="p p-Indicator">:</span>
+        <span class="l l-Scalar l-Scalar-Plain">replicas</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+        <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.notify=true</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.distribute=true</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.servicePath=/scaler</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">com.df.port=8080</span>
         <span class="l l-Scalar l-Scalar-Plain">placement</span><span class="p p-Indicator">:</span>
             <span class="l l-Scalar l-Scalar-Plain">constraints</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">node.role == manager</span><span class="p p-Indicator">]</span>
 <span class="nn">...</span>
 </pre></div>
 
-<p>This definition constraints <em>Docker Scaler</em> to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster.</p>
+<p>This definition constraints <em>Docker Scaler</em> to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster. The label <code>com.df.servicePath=/scaler</code> and environement variable <code>SERVER_PREFIX=/scaler</code> allows us to interact with the <code>scaler</code> service.</p>
+<h2 id="manually-scaling-services">Manually Scaling Services<a class="headerlink" href="#manually-scaling-services" title="Permanent link">&para;</a></h2>
+<p>For this section, we deploy a simple sleeping service:</p>
+<div class="codehilite"><pre><span></span>docker service create -d --replicas <span class="m">1</span> <span class="se">\</span>
+  --name demo <span class="se">\</span>
+  -l com.df.scaleUpBy<span class="o">=</span><span class="m">3</span> <span class="se">\</span>
+  -l com.df.scaleDownBy<span class="o">=</span><span class="m">2</span> <span class="se">\</span>
+  -l com.df.scaleMin<span class="o">=</span><span class="m">1</span> <span class="se">\</span>
+  -l com.df.scaleMax<span class="o">=</span><span class="m">7</span> <span class="se">\</span>
+  alpine:3.6 sleep <span class="m">100000000000</span>
+</pre></div>
+
+<p>Labels <code>com.df.scaleUpby=3</code> and <code>com.df.scaleDownby=2</code> configures how many replicas to scale up and down by respectively. Labels <code>com.df.scaleMin=1</code> and <code>com.df.scaleMax=7</code> denote the mininum and maximum number of replicas. We manually scale up this service by sending a POST request:</p>
+<div class="codehilite"><pre><span></span>curl -X POST http://<span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span>/scaler/v1/scale-service -d <span class="se">\</span>
+<span class="s1">&#39;{&quot;groupLabels&quot;: {&quot;scale&quot;: &quot;up&quot;, &quot;service&quot;: &quot;demo&quot;}}&#39;</span>
+</pre></div>
+
+<p>We confirm that the <code>demo</code> service have been scaled up by 3 from 1 replica to 4 replicas:</p>
+<div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>demo
+</pre></div>
+
+<p>Similarily, we manually scale down the service by sending:</p>
+<div class="codehilite"><pre><span></span>curl -X POST http://<span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span>/scaler/v1/scale-service -d <span class="se">\</span>
+<span class="s1">&#39;{&quot;groupLabels&quot;: {&quot;scale&quot;: &quot;down&quot;, &quot;service&quot;: &quot;demo&quot;}}&#39;</span>
+</pre></div>
+
+<p>We confirm that the <code>demo</code> service has been scaled down by 2 from 4 replicas to 2 replicas:</p>
+<div class="codehilite"><pre><span></span>docker service ls -f <span class="nv">name</span><span class="o">=</span>demo
+</pre></div>
+
+<p>Before we continuing, remove the <code>demo</code> service:</p>
+<div class="codehilite"><pre><span></span>docker service rm demo
+</pre></div>
+
 <h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
 <p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
 <p><div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
-<span class="s2">  slack_api_url: &#39;https://hooks.slack.com/services/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&#39;</span>
+<span class="s2">  slack_api_url: &#39;</span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="s2">&#39;</span>
 <span class="s2">route:</span>
-<span class="s2">  receiver: &#39;slack&#39;</span>
-<span class="s2">  group_wait: 5s</span>
-<span class="s2">  group_interval: 15s</span>
+<span class="s2">  receiver: slack</span>
+<span class="s2">  group_by: [service, scale, type]</span>
+<span class="s2">  group_interval: 5m</span>
+<span class="s2">  repeat_interval: 5m</span>
 <span class="s2">  routes:</span>
-<span class="s2">  - match:</span>
-<span class="s2">      scale: up</span>
-<span class="s2">      type: service</span>
-<span class="s2">    group_by: [service, scale, type]</span>
-<span class="s2">    repeat_interval: 1m</span>
-<span class="s2">    receiver: &#39;scale&#39;</span>
-<span class="s2">  - match:</span>
-<span class="s2">      scale: down</span>
-<span class="s2">      type: service</span>
-<span class="s2">    group_by: [service, scale, type]</span>
-<span class="s2">    repeat_interval: 4m</span>
-<span class="s2">    receiver: &#39;scale&#39;</span>
 <span class="s2">  - match_re:</span>
-<span class="s2">      alertname: scale_service|reschedule_service|scale_nodes</span>
+<span class="s2">      scale: up|down</span>
+<span class="s2">      type: service</span>
+<span class="s2">    receiver: scale</span>
+<span class="s2">  - match:</span>
+<span class="s2">      alertname: scale_service</span>
 <span class="s2">    group_by: [alertname]</span>
-<span class="s2">    receiver: &#39;slack-scaler&#39;</span>
+<span class="s2">    group_interval: 15s</span>
+<span class="s2">    group_wait: 5s</span>
+<span class="s2">    receiver: slack-scaler</span>
 
 <span class="s2">receivers:</span>
 <span class="s2">  - name: &#39;slack&#39;</span>
@@ -607,7 +650,7 @@ docker stack deploy <span class="se">\</span>
 <span class="s2">        url: &#39;http://scaler:8080/v1/scale-service&#39;</span>
 <span class="s2">&quot;</span> <span class="p">|</span> docker secret create alert_manager_config -
 </pre></div>
-This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. The <code>repeat_interval</code> is set to one minute for the <code>scale up</code> route and four minutes for the <code>scale down</code> route. This allows for the service to scale up quickly when the response time is high and scale down slowly when the response time drops back down.</p>
+This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. Now we deploy the monitor stack:</p>
 <div class="codehilite"><pre><span></span>docker network create -d overlay monitor
 
 <span class="nv">DOMAIN</span><span class="o">=</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span> <span class="se">\</span>
@@ -636,7 +679,7 @@ This configuration groups alerts by their <code>service</code>, <code>scale</cod
 
 <p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running, we can start deploying the <code>go-demo_main</code> service!</p>
 <h2 id="deploying-instrumented-service">Deploying Instrumented Service<a class="headerlink" href="#deploying-instrumented-service" title="Permanent link">&para;</a></h2>
-<p>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service already exposes response time metrics with labels for <em>Docker Flow Monitor</em> to scrape. We can deploy the service to be scaled based on the response time metrics:</p>
+<p>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service already exposes response time metrics with labels for <em>Docker Flow Monitor</em> to scrape. We deploy the service to be scaled based on the response time metrics:</p>
 <div class="codehilite"><pre><span></span>docker stack deploy <span class="se">\</span>
     -c stacks/go-demo-instrument-alert-short.yml <span class="se">\</span>
     go-demo
@@ -649,34 +692,17 @@ This configuration groups alerts by their <code>service</code>, <code>scale</cod
     <span class="l l-Scalar l-Scalar-Plain">...</span>
     <span class="l l-Scalar l-Scalar-Plain">labels</span><span class="p p-Indicator">:</span>
       <span class="l l-Scalar l-Scalar-Plain">...</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleMin=2</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleMax=7</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleDownBy=1</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scaleUpBy=2</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.scrapePort=8080</span>
       <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.1=resptimeabove</span>
       <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.1=@resp_time_above:0.1,5m,0.99</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.2=resptimebelow</span>
-      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.2=@resp_time_below:0.025,5m,0.75</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertName.2=resptimebelow_unless_resptimeabove</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertIf.2=sum(rate(http_server_resp_time_bucket{job=&quot;go-demo_main&quot;,le=&quot;0.025&quot;}[5m])) / sum(rate(http_server_resp_time_count{job=&quot;go-demo_main&quot;}[5m])) &gt; 0.75 unless sum(rate(http_server_resp_time_bucket{job=&quot;go-demo_main&quot;,le=&quot;0.1&quot;}[5m])) / sum(rate(http_server_resp_time_count{job=&quot;go-demo_main&quot;}[5m])) &lt; 0.99</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertLabels.2=receiver=system,service=go-demo_main,scale=down,type=service</span>
+      <span class="l l-Scalar l-Scalar-Plain">- com.df.alertAnnotations.2=summary=Response time of service go-demo_main is below 0.025 and not above 0.1</span>
     <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
-The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docker Scaler</em> to bound the number replicas for the <code>go-main_main</code> service. The <code>alertName</code>, <code>alertIf</code> and <code>alertFor</code> labels uses the <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating full Prometheus expressions that translate into alerts. We can view the alerts generated by these labels:</p>
+The <code>alertName</code>, <code>alertIf</code> and <code>alertFor</code> labels uses the <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating Prometheus expressions that firing alerts. The alert <code>com.df.alertIf.1=@resp_time_above:0.1,5m,0.99</code> fires when the number of responses above 0.1 seconds in the last 5 minutes consist of more than 99% of all responses. The second alert fires when the number of response below 0.025 seconds in the last 5 minutes consist of more than 75% unless alert 1 is firing.</p>
+<p>We can view the alerts generated by these labels:</p>
 <div class="codehilite"><pre><span></span>open <span class="s2">&quot;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&quot;</span>
-</pre></div>
-
-<p>Docker Flow Monitor translates the alert labeled <code>resp_time_above</code> into an alert called <code>godemo_main_resp_time_above</code> with the following definition:</p>
-<div class="codehilite"><pre><span></span>ALERT godemo_main_resp_tim_eabove
-  IF sum(rate(http_server_resp_time_bucket{job=&quot;go-demo_main&quot;,le=&quot;0.1&quot;}[5m])) / sum(rate(http_server_resp_time_count{job=&quot;go-demo_main&quot;}[5m])) &lt; 0.99
-  LABELS {receiver=&quot;system&quot;, scale=&quot;up&quot;, service=&quot;go-demo_main&quot;}
-  ANNOTATIONS {summary=&quot;Response time of the service go-demo_main is above 0.1&quot;}
-</pre></div>
-
-<p>This alert is triggered when the response times of the <code>0.1</code> seconds bucket is above 99% for over five minutes. Notice that the alert is labeled with <code>scale=up</code> to comminucate to the <em>Alertmanager</em> that the <code>go-demo_main</code> service should be scaled up.</p>
-<p>Similiarly, the alert labeled <code>resp_time_below</code> is translated into an alert called <code>godemo_main_resp_time_below</code>. It is labeled with <code>scale=down</code> to trigger a de-scaling event:</p>
-<div class="codehilite"><pre><span></span>ALERT godemo_main_resp_time_below
-  IF sum(rate(http_server_resp_time_bucket{job=&quot;go-demo_main&quot;,le=&quot;0.025&quot;}[5m])) / sum(rate(http_server_resp_time_count{job=&quot;go-demo_main&quot;}[5m])) &gt; 0.75
-  LABELS {receiver=&quot;system&quot;, scale=&quot;down&quot;, service=&quot;go-demo_main&quot;}
-  ANNOTATIONS {summary=&quot;Response time of the service go-demo_main is below 0.025&quot;}
 </pre></div>
 
 <p>Let's confirm that the go-demo stack is up-and-running:</p>
@@ -694,8 +720,8 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 <div class="codehilite"><pre><span></span>open <span class="s2">&quot;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&quot;</span>
 </pre></div>
 
-<p>By this time, the <code>godemo_main_resp_time_below</code> alert should be red since the <code>go-demo_main</code> service has a response faster than twenty-five milliseconds limit we set. The Alertmanager recieves this alert and sends a <code>POST</code> request to the <code>docker-scaler</code> service to scale down <code>go-demo</code>. The label <code>com.df.scaleDownBy</code> on <code>go-demo_main</code> is set to 1 thus the number of replicas goes from 4 to 3.</p>
-<p>Let's look at the logs of <code>docker-scaler</code>:</p>
+<p>By this time, the <code>godemo_main_resptimebelow_unless_resptimeabove</code> alert should be red due to having no requests sent to <code>go-demo</code>. The Alertmanager recieves this alert and sends a <code>POST</code> request to the <code>scaler</code> service to scale down <code>go-demo</code>. The label <code>com.df.scaleDownBy</code> on <code>go-demo_main</code> is set to 1 thus the number of replicas goes from 4 to 3.</p>
+<p>Let's look at the logs of <code>scaler</code>:</p>
 <div class="codehilite"><pre><span></span>docker service logs scaler_scaler
 </pre></div>
 
@@ -705,11 +731,11 @@ The <code>scaleMin</code> and <code>scaleMax</code> labels are used by <em>Docke
 
 <p>The output should be similar to the following:</p>
 <div class="codehilite"><pre><span></span>NAME                MODE                REPLICAS            IMAGE                    PORTS
-go-demo_main        replicated          3/3                 vfarcic/go-demo:latest
+go-demo_main        replicated          <span class="m">3</span>/3                 vfarcic/go-demo:latest
 </pre></div>
 
-<p>Please visit the <strong>#df-monitor-tests</strong> channel inside <a href="https://devops20.slack.com/">devops20.slack.com</a> and you should see a Slack notification. If this is your first visit to <strong>devops20</strong> on Slack, you'll have to register through <a href="http://slack.devops20toolkit.com/">slack.devops20toolkit.com</a>.</p>
-<p>Let's see what happens when response times of the service becomes too high by sending requests that will result in high response times:</p>
+<p>Please visit your channel and you should see a Slack notification stating that <code>go-demo_main</code> has scaled from 4 to 3 replicas.</p>
+<p>Let's see what happens when response times of the service becomes high by sending requests that will result in high response times:</p>
 <div class="codehilite"><pre><span></span><span class="k">for</span> i in <span class="o">{</span><span class="m">1</span>..30<span class="o">}</span><span class="p">;</span> <span class="k">do</span>
     <span class="nv">DELAY</span><span class="o">=</span>$<span class="o">[</span> <span class="nv">$RANDOM</span> % <span class="m">6000</span> <span class="o">]</span>
     curl <span class="s2">&quot;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/demo/hello?delay=</span><span class="nv">$DELAY</span><span class="s2">&quot;</span>
@@ -720,8 +746,8 @@ go-demo_main        replicated          3/3                 vfarcic/go-demo:late
 <div class="codehilite"><pre><span></span>open <span class="s2">&quot;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&quot;</span>
 </pre></div>
 
-<p>The <code>godemo_main_resp_time_above</code> turned red indicating that the threshold is reached. <em>Alertmanager</em> receives the alert, sends a <code>POST</code> request to the <code>docker-scaler</code> service, and <code>docker-scaler</code> scales <code>go-demo_main</code> up by the value of <code>com.df.scaleUpBy</code>. In this case, the value of <code>com.df.scaleUpBy</code> is two. Let's look at the logs of <code>docker-scaler</code>:</p>
-<div class="codehilite"><pre><span></span>docker service logs scaler_docker-scaler
+<p>The <code>godemo_main_resptimeabove</code> turned red indicating that the threshold is reached. <em>Alertmanager</em> receives the alert, sends a <code>POST</code> request to the <code>scaler</code> service, and <code>docker-scaler</code> scales <code>go-demo_main</code> up by the value of <code>com.df.scaleUpBy</code>. In this case, the value of <code>com.df.scaleUpBy</code> is two. Let's look at the logs of <code>docker-scaler</code>:</p>
+<div class="codehilite"><pre><span></span>docker service logs scaler_scaler
 </pre></div>
 
 <p>There should be a log message that states <strong>Scaling go-demo_main from 3 to 5 replicas (max: 7)</strong>. This message is also sent through Slack to notify us of this scaling event.</p>
@@ -735,7 +761,7 @@ go-demo_main        replicated          5/5                 vfarcic/go-demo:late
 </pre></div>
 
 <h2 id="what-now">What Now?<a class="headerlink" href="#what-now" title="Permanent link">&para;</a></h2>
-<p>You saw a simple example of a system that automatically scales and de-scales services. Feel free to add additional metrics and services to this self-adapting system to customize it to your needs.</p>
+<p>We just went through a simple example of a system that automatically scales and de-scales services. Feel free to add additional metrics and services to this self-adapting system to customize it to your needs.</p>
 <p>Please remove the demo cluster we created and free your resources:</p>
 <div class="codehilite"><pre><span></span>docker-machine rm -f swarm-1 swarm-2 swarm-3
 </pre></div>
@@ -812,9 +838,10 @@ go-demo_main        replicated          5/5                 vfarcic/go-demo:late
       
     </div>
     
-      <script src="../assets/javascripts/application-84693e5e49.js"></script>
+      <script src="../assets/javascripts/application-f3ab9e5ff8.js"></script>
       
-      <script>app.initialize({version:"0.17.1",url:{base:".."}})</script>
+      
+      <script>app.initialize({url:{base:".."}})</script>
       
     
     
