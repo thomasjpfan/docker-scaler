@@ -32,6 +32,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 
 The following environment variables can be used to configure the *Docker Scaler* relating to node scaling.
 
+|Variable           |Description                                               |
+|-------------------|----------------------------------------------------------|
 | NODE_SCALER_BACKEND | Backend of node backend.<br>**Accepted Values:** [none, aws]<br>**Default:** none |
 | DEFAULT_MIN_MANAGER_NODES | Miniumum number of manager nodes.<br>**Default:** 3 |
 | DEFAULT_MAX_MANAGER_NODES | Maximum number of manager nodes.<br>**Default:** 7 |
@@ -42,6 +44,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 
 The following environment variables can be used to configure the *Docker Scaler* relating to AWS node scaling.
 
+|Variable           |Description                                               |
+|-------------------|----------------------------------------------------------|
 | AWS_ENV_FILE | Location of AWS env file used when `NODE_SCALER_BACKEND` is sent to `aws`.<br>**Default:** `/run/secrets/aws` |
 | AWS_DEFAULT_REGION | Default AWS region.<br>**Default:** `us-east-1` |
 | AWS_MANAGER_ASG | AWS autoscaling group name for manager nodes.<br>**Default:** 0 |
