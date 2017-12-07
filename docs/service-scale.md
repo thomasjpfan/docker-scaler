@@ -1,8 +1,8 @@
 # Auto-Scaling With Docker Scaler And Instrumented Metrics
 
-*Docker Scaler* provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's [auto-scaling tutorial](http://monitor.dockerflow.com/auto-scaling/). In this tutorial, we will construct a system that will scale a service based on response time. The following is an overview of the triggered events in our self-adapting system:
+*Docker Scaler* provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's [auto-scaling tutorial](http://monitor.dockerflow.com/auto-scaling/). In this tutorial, we will construct a system that will scale a service based on response time. Here is an overview of the triggered events in our self-adapting system:
 
-1. The [go-demo](https://github.com/vfarcic/go-demo) service response times becomes too high.
+1. The [go-demo](https://github.com/vfarcic/go-demo) service response times becomes high.
 2. [Docker Flow Monitor](http://monitor.dockerflow.com/) is querying the services' metrics, notices the high response times, and alerts the [Alertmanager](https://prometheus.io/docs/alerting/alertmanager/).
 3. The Alertmanager is configured to forward the alert to *Docker Scaler*.
 4. *Docker Scaler* scales the service up.
@@ -12,12 +12,18 @@ This tutorial assumes you have Docker Machine version v0.8+ that includes Docker
 !!! info
 	If you are a Windows user, please run all the examples from *Git Bash* (installed through *Docker for Windows*). Also, make sure that your Git client is configured to check out the code *AS-IS*. Otherwise, Windows might change carriage returns to the Windows format.
 
+We will be using *Slack* webhooks to notify us. Create a *Slack* channel and setup a webhook by consulting *Slack's* [Incoming Webhook](https://get.slack.help/hc/en-us/articles/115005265063-Incoming-WebHooks-for-Slack) page. After obtaining a webhook URL set it as an environment variable:
+
+```bash
+export SLACK_WEBHOOK_URL=[...]
+```
+
 ## Setting Up A Cluster
 
 !!! info
     Feel free to skip this section if you already have a Swarm cluster that can be used for this tutorial
 
-We'll create a Swarm cluster consisting of three nodes created with Docker Machine.
+We create a Swarm cluster consisting of three nodes created with Docker Machine.
 
 ```bash
 git clone https://github.com/thomasjpfan/docker-scaler.git
@@ -29,7 +35,7 @@ cd docker-scaler
 eval $(docker-machine env swarm-1)
 ```
 
-We cloned the [thomasjpfan/docker-scaler](https://github.com/thomasjpfan/docker-scaler) respository. It contains all the scripts and stack files we will use throughout this tutorial. Next, we executed the `ds-swarm.sh` script that created the cluster. Finally, we used the `eval` command to tell our local Docker client to use the remote Docker Engine `swarm-1`.
+The repo contains all the scripts and stack files needed throughout this tutorial. Next, we executed `ds-swarm.sh` creating the cluster with `docker-machine`. Finally, we used the `eval` command to tell our local Docker client to use the remote Docker Engine `swarm-1`.
 
 ## Deploying Docker Flow Proxy (DFP) and Docker Flow Swarm Listener (DFSL)
 
@@ -53,7 +59,7 @@ We can now deploy the *Docker Scaler* stack:
 docker network create -d overlay scaler
 
 docker stack deploy \
-    -c stacks/docker-scaler-basic-tutorial.yml \
+    -c stacks/docker-scaler-service-scale-tutorial.yml \
     scaler
 ```
 
@@ -66,17 +72,70 @@ This stack defines a single *Docker Scaler* service:
       image: thomasjpfan/docker-scaler
       environment:
         - ALERTMANAGER_ADDRESS=http://alertmanager:9093
+        - SERVER_PREFIX=/scaler
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
       networks:
         - scaler
       deploy:
+        replicas: 1
+        labels:
+          - com.df.notify=true
+          - com.df.distribute=true
+          - com.df.servicePath=/scaler
+          - com.df.port=8080
         placement:
             constraints: [node.role == manager]
 ...
 ```
 
-This definition constraints *Docker Scaler* to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster.
+This definition constraints *Docker Scaler* to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster. The label `com.df.servicePath=/scaler` and environement variable `SERVER_PREFIX=/scaler` allows us to interact with the `scaler` service.
+
+## Manually Scaling Services
+
+For this section, we deploy a simple sleeping service:
+
+```bash
+docker service create -d --replicas 1 \
+  --name demo \
+  -l com.df.scaleUpBy=3 \
+  -l com.df.scaleDownBy=2 \
+  -l com.df.scaleMin=1 \
+  -l com.df.scaleMax=7 \
+  alpine:3.6 sleep 100000000000
+```
+
+Labels `com.df.scaleUpby=3` and `com.df.scaleDownby=2` configures how many replicas to scale up and down by respectively. Labels `com.df.scaleMin=1` and `com.df.scaleMax=7` denote the mininum and maximum number of replicas. We manually scale up this service by sending a POST request:
+
+```bash
+curl -X POST http://$(docker-machine ip swarm-1)/scaler/v1/scale-service -d \
+'{"groupLabels": {"scale": "up", "service": "demo"}}'
+```
+
+We confirm that the `demo` service have been scaled up by 3 from 1 replica to 4 replicas:
+
+```bash
+docker service ls -f name=demo
+```
+
+Similarily, we manually scale down the service by sending:
+
+```bash
+curl -X POST http://$(docker-machine ip swarm-1)/scaler/v1/scale-service -d \
+'{"groupLabels": {"scale": "down", "service": "demo"}}'
+```
+
+We confirm that the `demo` service has been scaled down by 2 from 4 replicas to 2 replicas:
+
+```bash
+docker service ls -f name=demo
+```
+
+Before we continuing, remove the `demo` service:
+
+```bash
+docker service rm demo
+```
 
 ## Deploying Docker Flow Monitor and Alertmanager
 
@@ -84,28 +143,23 @@ The next stack defines the *Docker Flow Monitor* and *Alertmanager* services. Be
 
 ```bash
 echo "global:
-  slack_api_url: 'https://hooks.slack.com/services/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'
+  slack_api_url: '$SLACK_WEBHOOK_URL'
 route:
-  receiver: 'slack'
-  group_wait: 5s
-  group_interval: 15s
+  receiver: slack
+  group_by: [service, scale, type]
+  group_interval: 5m
+  repeat_interval: 5m
   routes:
-  - match:
-      scale: up
-      type: service
-    group_by: [service, scale, type]
-    repeat_interval: 1m
-    receiver: 'scale'
-  - match:
-      scale: down
-      type: service
-    group_by: [service, scale, type]
-    repeat_interval: 4m
-    receiver: 'scale'
   - match_re:
-      alertname: scale_service|reschedule_service|scale_nodes
+      scale: up|down
+      type: service
+    receiver: scale
+  - match:
+      alertname: scale_service
     group_by: [alertname]
-    receiver: 'slack-scaler'
+    group_interval: 15s
+    group_wait: 5s
+    receiver: slack-scaler
 
 receivers:
   - name: 'slack'
@@ -126,7 +180,7 @@ receivers:
         url: 'http://scaler:8080/v1/scale-service'
 " | docker secret create alert_manager_config -
 ```
-This configuration groups alerts by their `service`, `scale`, and `type` labels. The `routes` section defines a `match_re` entry, that directs scale alerts to the `scale` reciever. Another route is configured to direct alerts from the `scaler` service to the `slack-scaler` receiver. The `repeat_interval` is set to one minute for the `scale up` route and four minutes for the `scale down` route. This allows for the service to scale up quickly when the response time is high and scale down slowly when the response time drops back down.
+This configuration groups alerts by their `service`, `scale`, and `type` labels. The `routes` section defines a `match_re` entry, that directs scale alerts to the `scale` reciever. Another route is configured to direct alerts from the `scaler` service to the `slack-scaler` receiver. Now we deploy the monitor stack:
 
 ```bash
 docker network create -d overlay monitor
@@ -164,7 +218,7 @@ Please wait a few moments for all the replicas to have the status `running`. Aft
 
 ## Deploying Instrumented Service
 
-The [go-demo](https://github.com/vfarcic/go-demo) service already exposes response time metrics with labels for *Docker Flow Monitor* to scrape. We can deploy the service to be scaled based on the response time metrics:
+The [go-demo](https://github.com/vfarcic/go-demo) service already exposes response time metrics with labels for *Docker Flow Monitor* to scrape. We deploy the service to be scaled based on the response time metrics:
 
 ```bash
 docker stack deploy \
@@ -181,41 +235,20 @@ main:
     ...
     labels:
       ...
-      - com.df.scaleMin=2
-      - com.df.scaleMax=7
-      - com.df.scaleDownBy=1
-      - com.df.scaleUpBy=2
-      - com.df.scrapePort=8080
       - com.df.alertName.1=resptimeabove
       - com.df.alertIf.1=@resp_time_above:0.1,5m,0.99
-      - com.df.alertName.2=resptimebelow
-      - com.df.alertIf.2=@resp_time_below:0.025,5m,0.75
+      - com.df.alertName.2=resptimebelow_unless_resptimeabove
+      - com.df.alertIf.2=sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.025"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) > 0.75 unless sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.1"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) < 0.99
+      - com.df.alertLabels.2=receiver=system,service=go-demo_main,scale=down,type=service
+      - com.df.alertAnnotations.2=summary=Response time of service go-demo_main is below 0.025 and not above 0.1
     ...
 ```
-The `scaleMin` and `scaleMax` labels are used by *Docker Scaler* to bound the number replicas for the `go-main_main` service. The `alertName`, `alertIf` and `alertFor` labels uses the [AlertIf Parameter Shortcuts](http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts) for creating full Prometheus expressions that translate into alerts. We can view the alerts generated by these labels:
+The `alertName`, `alertIf` and `alertFor` labels uses the [AlertIf Parameter Shortcuts](http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts) for creating Prometheus expressions that firing alerts. The alert `com.df.alertIf.1=@resp_time_above:0.1,5m,0.99` fires when the number of responses above 0.1 seconds in the last 5 minutes consist of more than 99% of all responses. The second alert fires when the number of response below 0.025 seconds in the last 5 minutes consist of more than 75% unless alert 1 is firing.
+
+We can view the alerts generated by these labels:
 
 ```bash
 open "http://$(docker-machine ip swarm-1)/monitor/alerts"
-```
-
-Docker Flow Monitor translates the alert labeled `resp_time_above` into an alert called `godemo_main_resp_time_above` with the following definition:
-
-```
-ALERT godemo_main_resp_tim_eabove
-  IF sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.1"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) < 0.99
-  LABELS {receiver="system", scale="up", service="go-demo_main"}
-  ANNOTATIONS {summary="Response time of the service go-demo_main is above 0.1"}
-```
-
-This alert is triggered when the response times of the `0.1` seconds bucket is above 99% for over five minutes. Notice that the alert is labeled with `scale=up` to comminucate to the *Alertmanager* that the `go-demo_main` service should be scaled up.
-
-Similiarly, the alert labeled `resp_time_below` is translated into an alert called `godemo_main_resp_time_below`. It is labeled with `scale=down` to trigger a de-scaling event:
-
-```
-ALERT godemo_main_resp_time_below
-  IF sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.025"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) > 0.75
-  LABELS {receiver="system", scale="down", service="go-demo_main"}
-  ANNOTATIONS {summary="Response time of the service go-demo_main is below 0.025"}
 ```
 
 Let's confirm that the go-demo stack is up-and-running:
@@ -242,9 +275,9 @@ Let's go back to the Prometheus' alert screen:
 open "http://$(docker-machine ip swarm-1)/monitor/alerts"
 ```
 
-By this time, the `godemo_main_resp_time_below` alert should be red since the `go-demo_main` service has a response faster than twenty-five milliseconds limit we set. The Alertmanager recieves this alert and sends a `POST` request to the `docker-scaler` service to scale down `go-demo`. The label `com.df.scaleDownBy` on `go-demo_main` is set to 1 thus the number of replicas goes from 4 to 3.
+By this time, the `godemo_main_resptimebelow_unless_resptimeabove` alert should be red due to having no requests sent to `go-demo`. The Alertmanager recieves this alert and sends a `POST` request to the `scaler` service to scale down `go-demo`. The label `com.df.scaleDownBy` on `go-demo_main` is set to 1 thus the number of replicas goes from 4 to 3.
 
-Let's look at the logs of `docker-scaler`:
+Let's look at the logs of `scaler`:
 
 ```bash
 docker service logs scaler_scaler
@@ -258,14 +291,14 @@ docker service ls -f name=go-demo_main
 
 The output should be similar to the following:
 
-```
+```bash
 NAME                MODE                REPLICAS            IMAGE                    PORTS
 go-demo_main        replicated          3/3                 vfarcic/go-demo:latest
 ```
 
-Please visit the **#df-monitor-tests** channel inside [devops20.slack.com](https://devops20.slack.com/) and you should see a Slack notification. If this is your first visit to **devops20** on Slack, you'll have to register through [slack.devops20toolkit.com](http://slack.devops20toolkit.com/).
+Please visit your channel and you should see a Slack notification stating that `go-demo_main` has scaled from 4 to 3 replicas.
 
-Let's see what happens when response times of the service becomes too high by sending requests that will result in high response times:
+Let's see what happens when response times of the service becomes high by sending requests that will result in high response times:
 
 ```bash
 for i in {1..30}; do
@@ -280,10 +313,10 @@ Let's look at the alerts:
 open "http://$(docker-machine ip swarm-1)/monitor/alerts"
 ```
 
-The `godemo_main_resp_time_above` turned red indicating that the threshold is reached. *Alertmanager* receives the alert, sends a `POST` request to the `docker-scaler` service, and `docker-scaler` scales `go-demo_main` up by the value of `com.df.scaleUpBy`. In this case, the value of `com.df.scaleUpBy` is two. Let's look at the logs of `docker-scaler`:
+The `godemo_main_resptimeabove` turned red indicating that the threshold is reached. *Alertmanager* receives the alert, sends a `POST` request to the `scaler` service, and `docker-scaler` scales `go-demo_main` up by the value of `com.df.scaleUpBy`. In this case, the value of `com.df.scaleUpBy` is two. Let's look at the logs of `docker-scaler`:
 
 ```bash
-docker service logs scaler_docker-scaler
+docker service logs scaler_scaler
 ```
 
 There should be a log message that states **Scaling go-demo_main from 3 to 5 replicas (max: 7)**. This message is also sent through Slack to notify us of this scaling event.
@@ -303,7 +336,7 @@ go-demo_main        replicated          5/5                 vfarcic/go-demo:late
 
 ## What Now?
 
-You saw a simple example of a system that automatically scales and de-scales services. Feel free to add additional metrics and services to this self-adapting system to customize it to your needs.
+We just went through a simple example of a system that automatically scales and de-scales services. Feel free to add additional metrics and services to this self-adapting system to customize it to your needs.
 
 Please remove the demo cluster we created and free your resources:
 

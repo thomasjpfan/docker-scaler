@@ -16,6 +16,7 @@ The following environment variables can be used to configure the *Docker Scaler*
 | MAX_SCALE_LABEL   | Service label key with value representing the maximum number of replicas.<br>**Default:** `com.df.scaleMax` |
 | SCALE_DOWN_BY_LABEL | Service label key with value representing the number of replicas to scale down by.<br>**Default:** `com.df.scaleDownBy` |
 | SCALE_UP_BY_LABEL | Service label key with value representing the number of replicas to scale up by.<br>**Default:** `com.df.scaleUpBy` |
+| ALERT_SCALE_MAX | Send alert to alertmanager when trying to scale up service already at max replicas.<br>**Default:** true |
 | DEFAULT_MIN_REPLICAS | Default minimum number of replicas for a service.<br>**Default:** 1 |
 | DEFAULT_MAX_REPLICAS | Default maximum number of replicas for a service.<br>**Default:** 5 |
 | DEFAULT_SCALE_SERVICE_DOWN_BY | Default number of replicas to scale service down by.<br>**Default:** 1 |
