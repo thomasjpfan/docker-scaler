@@ -67,7 +67,7 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(requestMsg, alert.Annotations["request"])
+	s.Equal(requestMsg, string(alert.Annotations["request"]))
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -88,7 +88,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(requestMsg, alert.Annotations["request"])
+	s.Equal(requestMsg, string(alert.Annotations["request"]))
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -109,7 +109,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(requestMsg, alert.Annotations["request"])
+	s.Equal(requestMsg, string(alert.Annotations["request"]))
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -130,7 +130,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(requestMsg, alert.Annotations["request"])
+	s.Equal(requestMsg, string(alert.Annotations["request"]))
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
