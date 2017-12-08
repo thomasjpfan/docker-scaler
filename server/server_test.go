@@ -428,7 +428,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-		On("Send", "scale_nodes", "reschedule", "", "success", rescheduleMsg).Return(nil)
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil)
 
 	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
 	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
