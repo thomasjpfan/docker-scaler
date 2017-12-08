@@ -285,7 +285,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		s.logger.Printf("scale-nodes: %s", reqMsg)
 		s.sendAlert("scale_nodes", "reschedule", "Wait to reschedule", "success", reqMsg)
 
-		go s.rescheduleServiceWait(isManager, typeStr, int(nodesNow), rightNow)
+		go s.rescheduleServiceWait(isManager, typeStr, int(nodesBefore), int(nodesNow), rightNow)
 	}
 }
 
@@ -346,7 +346,7 @@ func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, targetNodeCnt int, nowStr string) {
+func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousNodeCnt int, targetNodeCnt int, nowStr string) {
 
 	tickerC := make(chan time.Time)
 	errC := make(chan error, 1)
@@ -354,11 +354,12 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, targetNod
 	go s.rescheduler.RescheduleServicesWaitForNodes(isManager, targetNodeCnt, nowStr, tickerC, errC)
 
 	requestMsg := "Waiting for nodes to scale up"
+	deltaCnt := targetNodeCnt - previousNodeCnt
 
 	for {
 		select {
 		case t := <-tickerC:
-			msg := fmt.Sprintf("Waiting for %d %s nodes to come online: %s", targetNodeCnt, typeStr, t.Format(time.RFC3339))
+			msg := fmt.Sprintf("Waiting for %d %s nodes to come online: %s", deltaCnt, typeStr, t.Format(time.RFC3339))
 			s.logger.Printf("scale-nodes-reschedule: %s", msg)
 			s.sendAlert("scale_nodes", "reschedule", requestMsg, "success", msg)
 		case err := <-errC:
@@ -367,7 +368,7 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, targetNod
 				s.logger.Printf("scale-nodes-reschedule error: %s", err)
 				s.sendAlert("scale_nodes", "reschedule", requestMsg, "error", err.Error())
 			} else {
-				msg := "scale-nodes-reschedule success"
+				msg := fmt.Sprintf("%d %s nodes are online and services are rescheduled", targetNodeCnt, typeStr)
 				s.logger.Print(msg)
 				s.sendAlert("scale_nodes", "reschedule", requestMsg, "success", msg)
 			}
