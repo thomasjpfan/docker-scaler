@@ -57,6 +57,7 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
 	message := "Unable to recognize POST body"
+	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -66,7 +67,7 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(0, len(alert.Annotations["request"]))
+	s.Equal(requestMsg, alert.Annotations["request"])
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -77,6 +78,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
 	message := "No service name in request body"
+	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -86,7 +88,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(0, len(alert.Annotations["request"]))
+	s.Equal(requestMsg, alert.Annotations["request"])
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -97,6 +99,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
 	message := "No scale direction in request body"
+	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -106,7 +109,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(0, len(alert.Annotations["request"]))
+	s.Equal(requestMsg, alert.Annotations["request"])
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
@@ -117,6 +120,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
 	message := "Incorrect scale direction in request body"
+	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -126,7 +130,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	s.Require().Len(alerts, 1)
 
 	alert := alerts[0]
-	s.Equal(0, len(alert.Annotations["request"]))
+	s.Equal(requestMsg, alert.Annotations["request"])
 	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
 }
 
