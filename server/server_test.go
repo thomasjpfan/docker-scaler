@@ -109,7 +109,7 @@ func (s *ServerTestSuite) Test_ScaleService_NoBody() {
 	errorMessage := "No POST body"
 	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
 	url := "/v1/scale-service"
-	s.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 
@@ -126,7 +126,7 @@ func (s *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"scale": "up"}}`
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
-	s.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	rec := httptest.NewRecorder()
@@ -141,7 +141,7 @@ func (s *ServerTestSuite) Test_ScaleService_NoScaleDirectionInBody() {
 	errorMessage := "No scale direction in request body"
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"service": "web"}}`
-	s.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -158,7 +158,7 @@ func (s *ServerTestSuite) Test_ScaleService_NoScaleDirectionInBody() {
 func (s *ServerTestSuite) Test_ScaleService_IncorrectScaleName() {
 	errorMessage := "Incorrect scale direction in request body"
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "boo"}}`
-	s.am.On("Send", "scale_service", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
 	url := "/v1/scale-service"
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -364,7 +364,7 @@ func (s *ServerTestSuite) Test_ScaleNode_NoPOSTBody() {
 	errorMessage := "No POST body"
 	logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
 	url := "/v1/scale-nodes?by=1&type=worker"
-	s.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 
@@ -381,7 +381,7 @@ func (s *ServerTestSuite) Test_ScaleNode_NoScaleDirectionInBody() {
 	url := "/v1/scale-nodes?by=1&type=worker"
 	jsonStr := `{"groupLabels":{}}`
 	logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
-	s.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	rec := httptest.NewRecorder()
@@ -401,7 +401,7 @@ func (s *ServerTestSuite) Test_ScaleNode_InvalidScaleValue() {
 		url := "/v1/scale-nodes?by=1&type=worker"
 		jsonStr := fmt.Sprintf(`{"groupLabels":{"scale":"%s"}}`, deltaStr)
 		logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
-		s.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+		s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 		rec := httptest.NewRecorder()
@@ -424,7 +424,7 @@ func (s *ServerTestSuite) Test_ScaleNode_NonIntegerByQuery() {
 		url := fmt.Sprintf("/v1/scale-nodes?by=%s&type=worker", byStr)
 		jsonStr := `{"groupLabels":{"scale":"up"}}`
 		logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
-		s.am.On("Send", "scale_nodes", "bad_request", "", "error", errorMessage).Return(nil)
+		s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 		rec := httptest.NewRecorder()

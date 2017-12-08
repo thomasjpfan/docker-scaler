@@ -103,7 +103,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		message := "No POST body"
 		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -114,7 +114,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Unable to decode POST body"
 		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -125,7 +125,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Unable to recognize POST body"
 		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -136,7 +136,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if len(serviceName) == 0 {
 		message := "No service name in request body"
 		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -144,7 +144,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if len(scaleDirection) == 0 {
 		message := "No scale direction in request body"
 		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -152,7 +152,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	if scaleDirection != "up" && scaleDirection != "down" {
 		message := "Incorrect scale direction in request body"
 		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "", "error", message)
+		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -197,7 +197,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		message := "No POST body"
 		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -207,7 +207,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := fmt.Sprintf("Non integer by query parameter: %s", byStr)
 		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -218,7 +218,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Unable to decode POST body"
 		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -229,7 +229,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		message := "Unable to recognize POST body"
 		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -239,7 +239,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if len(scaleDirection) == 0 {
 		message := "No scale direction in request body"
 		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
@@ -247,7 +247,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	if scaleDirection != "up" && scaleDirection != "down" {
 		message := "Incorrect scale direction in request body"
 		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
-		s.sendAlert("scale_nodes", "bad_request", "", "error", message)
+		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
