@@ -305,7 +305,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
 	if nodesNow > nodesBefore {
 		rightNow := time.Now().UTC().Format("20060102T150405")
-		reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
+		reqMsg := fmt.Sprintf("Waiting seconds for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
 		s.logger.Printf("scale-nodes: %s", reqMsg)
 		s.sendAlert("scale_nodes", "reschedule", "Wait to reschedule", "success", reqMsg)
 
@@ -385,7 +385,7 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousN
 	for {
 		select {
 		case t := <-tickerC:
-			msg := fmt.Sprintf("Waiting %f seconds for %d %s nodes to come online", t.Sub(timeStart).Seconds(), deltaCnt, typeStr)
+			msg := fmt.Sprintf("Waited %d seconds for %d %s nodes to come online", int(t.Sub(timeStart).Seconds()), deltaCnt, typeStr)
 			s.logger.Printf("scale-nodes-reschedule: %s", msg)
 			s.sendAlert("reschedule_service", "reschedule", requestMsg, "success", msg)
 		case err := <-errC:
