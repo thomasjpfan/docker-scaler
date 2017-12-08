@@ -2,8 +2,8 @@ site_name: Docker Scaler
 pages:
   - Home: index.md
   - Tutorial:
-    - Service Scaling: service-scale.md
-    - AWS Node Scaling: aws-node-scale.md
+    - Auto-Scaling Services With Instrumented Metrics: service-scale.md
+    - Auto-Scaling Nodes On Amazon Web Services: aws-node-scale.md
   - Usage: usage.md
   - Configuration: configuration.md
   - About:

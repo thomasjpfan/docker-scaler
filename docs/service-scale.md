@@ -1,4 +1,4 @@
-# Auto-Scaling With Docker Scaler And Instrumented Metrics
+# Auto-Scaling Services With Instrumented Metrics
 
 *Docker Scaler* provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's [auto-scaling tutorial](http://monitor.dockerflow.com/auto-scaling/). In this tutorial, we will construct a system that will scale a service based on response time. Here is an overview of the triggered events in our self-adapting system:
 
@@ -91,6 +91,87 @@ This stack defines a single *Docker Scaler* service:
 
 This definition constraints *Docker Scaler* to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster. The label `com.df.servicePath=/scaler` and environement variable `SERVER_PREFIX=/scaler` allows us to interact with the `scaler` service.
 
+
+## Deploying Docker Flow Monitor and Alertmanager
+
+The next stack defines the *Docker Flow Monitor* and *Alertmanager* services. Before we deploy the stack, we defined our *Alertmanager* configuration as a Docker secret:
+
+```bash
+echo "global:
+  slack_api_url: '$SLACK_WEBHOOK_URL'
+route:
+  receiver: 'slack'
+  group_by: [service, scale, type]
+  group_interval: 5m
+  repeat_interval: 5m
+  routes:
+  - match_re:
+      scale: up|down
+      type: service
+    receiver: 'scale'
+  - match:
+      alertname: scale_service
+    group_by: [alertname, service]
+    group_interval: 15s
+    group_wait: 5s
+    receiver: 'slack-scaler'
+
+receivers:
+  - name: 'slack'
+    slack_configs:
+      - send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .GroupLabels.service }} service is in danger!'
+        title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
+        text: '{{ .CommonAnnotations.summary }}'
+  - name: 'slack-scaler'
+    slack_configs:
+      - title: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}'
+        color: '{{ if eq .CommonLabels.status \"error\" }}danger{{ else }}good{{ end }}'
+        title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
+        text: '{{ .CommonAnnotations.summary }}'
+  - name: 'scale'
+    webhook_configs:
+      - send_resolved: false
+        url: 'http://scaler:8080/v1/scale-service'
+" | docker secret create alert_manager_config -
+```
+
+This configuration groups alerts by their `service`, `scale`, and `type` labels. The `routes` section defines a `match_re` entry, that directs scale alerts to the `scale` reciever. Another route is configured to direct alerts from the `scaler` service to the `slack-scaler` receiver. Now we deploy the monitor stack:
+
+```bash
+docker network create -d overlay monitor
+
+DOMAIN=$(docker-machine ip swarm-1) \
+    docker stack deploy \
+    -c stacks/docker-flow-monitor-slack.yml \
+    monitor
+```
+
+The `alert-manager` service is configured to read the `alert_manager_config` secret in the stack definition as follows:
+
+```yaml
+...
+  alert-manager:
+    image: prom/alertmanager
+    networks:
+      - monitor
+      - scaler
+    secrets:
+      - alert_manager_config
+    command: -config.file=/run/secrets/alert_manager_config -storage.path=/alertmanager
+...
+```
+
+With access to the `scaler` network, `alert-manager` can send scaling requests to the `scaler` service. For information about the Docker Flow Monitor stack can be found in its [documentation](http://monitor.dockerflow.com).
+
+Let us confirm that the `monitor` stack is up and running:
+
+```bash
+docker stack ps monitor
+```
+
+Please wait a few moments for all the replicas to have the status `running`. After the `monitor` stack is up and running.
+
 ## Manually Scaling Services
 
 For this section, we deploy a simple sleeping service:
@@ -136,85 +217,6 @@ Before we continuing, remove the `demo` service:
 ```bash
 docker service rm demo
 ```
-
-## Deploying Docker Flow Monitor and Alertmanager
-
-The next stack defines the *Docker Flow Monitor* and *Alertmanager* services. Before we deploy the stack, we defined our *Alertmanager* configuration as a Docker secret:
-
-```bash
-echo "global:
-  slack_api_url: '$SLACK_WEBHOOK_URL'
-route:
-  receiver: slack
-  group_by: [service, scale, type]
-  group_interval: 5m
-  repeat_interval: 5m
-  routes:
-  - match_re:
-      scale: up|down
-      type: service
-    receiver: scale
-  - match:
-      alertname: scale_service
-    group_by: [alertname]
-    group_interval: 15s
-    group_wait: 5s
-    receiver: slack-scaler
-
-receivers:
-  - name: 'slack'
-    slack_configs:
-      - send_resolved: true
-        title: '[{{ .Status | toUpper }}] {{ .GroupLabels.service }} service is in danger!'
-        title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
-        text: '{{ .CommonAnnotations.summary }}'
-  - name: 'slack-scaler'
-    slack_configs:
-      - title: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}'
-        color: '{{ if eq .CommonLabels.status \"error\" }}danger{{ else }}good{{ end }}'
-        title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
-        text: '{{ .CommonAnnotations.summary }}'
-  - name: 'scale'
-    webhook_configs:
-      - send_resolved: false
-        url: 'http://scaler:8080/v1/scale-service'
-" | docker secret create alert_manager_config -
-```
-This configuration groups alerts by their `service`, `scale`, and `type` labels. The `routes` section defines a `match_re` entry, that directs scale alerts to the `scale` reciever. Another route is configured to direct alerts from the `scaler` service to the `slack-scaler` receiver. Now we deploy the monitor stack:
-
-```bash
-docker network create -d overlay monitor
-
-DOMAIN=$(docker-machine ip swarm-1) \
-    docker stack deploy \
-    -c stacks/docker-flow-monitor-slack.yml \
-    monitor
-```
-
-The `alert-manager` service is configured to read the `alert_manager_config` secret in the stack definition as follows:
-
-```yaml
-...
-  alert-manager:
-    image: prom/alertmanager
-    networks:
-      - monitor
-      - scaler
-    secrets:
-      - alert_manager_config
-    command: -config.file=/run/secrets/alert_manager_config -storage.path=/alertmanager
-...
-```
-
-With access to the `scaler` network, `alert-manager` can send scaling requests to the `scaler` service. For information about the Docker Flow Monitor stack can be found in its [documentation](http://monitor.dockerflow.com).
-
-Let us confirm that the `monitor` stack is up and running:
-
-```bash
-docker stack ps monitor
-```
-
-Please wait a few moments for all the replicas to have the status `running`. After the `monitor` stack is up and running, we can start deploying the `go-demo_main` service!
 
 ## Deploying Instrumented Service
 

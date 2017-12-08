@@ -16,7 +16,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 | MAX_SCALE_LABEL   | Service label key with value representing the maximum number of replicas.<br>**Default:** `com.df.scaleMax` |
 | SCALE_DOWN_BY_LABEL | Service label key with value representing the number of replicas to scale down by.<br>**Default:** `com.df.scaleDownBy` |
 | SCALE_UP_BY_LABEL | Service label key with value representing the number of replicas to scale up by.<br>**Default:** `com.df.scaleUpBy` |
-| ALERT_SCALE_MAX | Send alert to alertmanager when trying to scale up service already at max replicas.<br>**Default:** true |
+| ALERT_SCALE_MIN | Send alert to alertmanager when trying to scale up service already at minimum replicas.<br>**Default:** false |
+| ALERT_SCALE_MAX | Send alert to alertmanager when trying to scale up service already at maximum replicas.<br>**Default:** true |
 | DEFAULT_MIN_REPLICAS | Default minimum number of replicas for a service.<br>**Default:** 1 |
 | DEFAULT_MAX_REPLICAS | Default maximum number of replicas for a service.<br>**Default:** 5 |
 | DEFAULT_SCALE_SERVICE_DOWN_BY | Default number of replicas to scale service down by.<br>**Default:** 1 |
@@ -24,7 +25,7 @@ The following environment variables can be used to configure the *Docker Scaler*
 | ALERTMANAGER_ADDRESS | Address for alertmanager.<br>**Default:** `http://alertmanager:9093` |
 | ALERT_TIMEOUT | Alert timeout duration (seconds).<br>**Default:** 10 |
 | RESCHEDULE_FILTER_LABEL | Services with this label will be rescheduled after node scaling.<br>**Default:** `com.df.reschedule=true"`|
-| RESCHEDULE_TICKER_INTERVAL | Duration to wait when checking for nodes to come up (seconds).<br>**Default:** 20|
+| RESCHEDULE_TICKER_INTERVAL | Duration to wait when checking for nodes to come up (seconds).<br>**Default:** 60|
 | RESCHEDULE_TIMEOUT | Time to wait for nodes to come up during rescheduling (seconds).<br>**Default:** 1000|
 | RESCHEDULE_ENV_KEY | Key for env variable when rescheduling services.<br>**Default:** `RESCHEDULE_DATE`|
 
@@ -39,6 +40,8 @@ The following environment variables can be used to configure the *Docker Scaler*
 | DEFAULT_MAX_MANAGER_NODES | Maximum number of manager nodes.<br>**Default:** 7 |
 | DEFAULT_MIN_WORKER_NODES | Miniumum number of worker nodes.<br>**Default:** 1 |
 | DEFAULT_MAX_WORKER_NODES | Maximum number of worker nodes.<br>**Default:** 5 |
+| ALERT_NODE_MIN | Send alert to alertmanager when trying to scale up nodes already at minimum nodes.<br>**Default:** true |
+| ALERT_NODE_MAX | Send alert to alertmanager when trying to scale up nodes already at maximum nodes.<br>**Default:** true |
 
 ### AWS Node Scaling Envronment Variables
 
