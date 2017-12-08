@@ -18,7 +18,7 @@
     
     
       
-        <title>Service Scaling - Docker Scaler</title>
+        <title>Auto-Scaling Services With Instrumented Metrics - Docker Scaler</title>
       
     
     
@@ -84,7 +84,7 @@
                 </span>
               
             
-            Service Scaling
+            Auto-Scaling Services With Instrumented Metrics
           
         </span>
       </div>
@@ -236,11 +236,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="toc">
-        Service Scaling
+        Auto-Scaling Services With Instrumented Metrics
       </label>
     
-    <a href="./" title="Service Scaling" class="md-nav__link md-nav__link--active">
-      Service Scaling
+    <a href="./" title="Auto-Scaling Services With Instrumented Metrics" class="md-nav__link md-nav__link--active">
+      Auto-Scaling Services With Instrumented Metrics
     </a>
     
       
@@ -275,15 +275,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
-    Manually Scaling Services
+  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
+    Deploying Docker Flow Monitor and Alertmanager
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
-    Deploying Docker Flow Monitor and Alertmanager
+  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
+    Manually Scaling Services
   </a>
   
 </li>
@@ -324,8 +324,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../aws-node-scale/" title="AWS Node Scaling" class="md-nav__link">
-      AWS Node Scaling
+    <a href="../aws-node-scale/" title="Auto-Scaling Nodes On Amazon Web Services" class="md-nav__link">
+      Auto-Scaling Nodes On Amazon Web Services
     </a>
   </li>
 
@@ -449,15 +449,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
-    Manually Scaling Services
+  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
+    Deploying Docker Flow Monitor and Alertmanager
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
-    Deploying Docker Flow Monitor and Alertmanager
+  <a href="#manually-scaling-services" title="Manually Scaling Services" class="md-nav__link">
+    Manually Scaling Services
   </a>
   
 </li>
@@ -500,7 +500,7 @@
                   <a href="https://github.com/thomasjpfan/docker-scaler/edit/master/docs/service-scale.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="auto-scaling-with-docker-scaler-and-instrumented-metrics">Auto-Scaling With Docker Scaler And Instrumented Metrics<a class="headerlink" href="#auto-scaling-with-docker-scaler-and-instrumented-metrics" title="Permanent link">&para;</a></h1>
+                <h1 id="auto-scaling-services-with-instrumented-metrics">Auto-Scaling Services With Instrumented Metrics<a class="headerlink" href="#auto-scaling-services-with-instrumented-metrics" title="Permanent link">&para;</a></h1>
 <p><em>Docker Scaler</em> provides an alternative to using Jenkins for service scaling shown in Docker Flow Monitor's <a href="http://monitor.dockerflow.com/auto-scaling/">auto-scaling tutorial</a>. In this tutorial, we will construct a system that will scale a service based on response time. Here is an overview of the triggered events in our self-adapting system:</p>
 <ol>
 <li>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service response times becomes high.</li>
@@ -577,6 +577,75 @@ docker stack deploy <span class="se">\</span>
 </pre></div>
 
 <p>This definition constraints <em>Docker Scaler</em> to run on manager nodes and gives it access to the Docker socket, so that it can scale services in the cluster. The label <code>com.df.servicePath=/scaler</code> and environement variable <code>SERVER_PREFIX=/scaler</code> allows us to interact with the <code>scaler</code> service.</p>
+<h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
+<p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
+<div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
+<span class="s2">  slack_api_url: &#39;</span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="s2">&#39;</span>
+<span class="s2">route:</span>
+<span class="s2">  receiver: &#39;slack&#39;</span>
+<span class="s2">  group_by: [service, scale, type]</span>
+<span class="s2">  group_interval: 5m</span>
+<span class="s2">  repeat_interval: 5m</span>
+<span class="s2">  routes:</span>
+<span class="s2">  - match_re:</span>
+<span class="s2">      scale: up|down</span>
+<span class="s2">      type: service</span>
+<span class="s2">    receiver: &#39;scale&#39;</span>
+<span class="s2">  - match:</span>
+<span class="s2">      alertname: scale_service</span>
+<span class="s2">    group_by: [alertname, service]</span>
+<span class="s2">    group_interval: 15s</span>
+<span class="s2">    group_wait: 5s</span>
+<span class="s2">    receiver: &#39;slack-scaler&#39;</span>
+
+<span class="s2">receivers:</span>
+<span class="s2">  - name: &#39;slack&#39;</span>
+<span class="s2">    slack_configs:</span>
+<span class="s2">      - send_resolved: true</span>
+<span class="s2">        title: &#39;[{{ .Status | toUpper }}] {{ .GroupLabels.service }} service is in danger!&#39;</span>
+<span class="s2">        title_link: &#39;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&#39;</span>
+<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
+<span class="s2">  - name: &#39;slack-scaler&#39;</span>
+<span class="s2">    slack_configs:</span>
+<span class="s2">      - title: &#39;{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}&#39;</span>
+<span class="s2">        color: &#39;{{ if eq .CommonLabels.status \&quot;error\&quot; }}danger{{ else }}good{{ end }}&#39;</span>
+<span class="s2">        title_link: &#39;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&#39;</span>
+<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
+<span class="s2">  - name: &#39;scale&#39;</span>
+<span class="s2">    webhook_configs:</span>
+<span class="s2">      - send_resolved: false</span>
+<span class="s2">        url: &#39;http://scaler:8080/v1/scale-service&#39;</span>
+<span class="s2">&quot;</span> <span class="p">|</span> docker secret create alert_manager_config -
+</pre></div>
+
+<p>This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. Now we deploy the monitor stack:</p>
+<div class="codehilite"><pre><span></span>docker network create -d overlay monitor
+
+<span class="nv">DOMAIN</span><span class="o">=</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span> <span class="se">\</span>
+    docker stack deploy <span class="se">\</span>
+    -c stacks/docker-flow-monitor-slack.yml <span class="se">\</span>
+    monitor
+</pre></div>
+
+<p>The <code>alert-manager</code> service is configured to read the <code>alert_manager_config</code> secret in the stack definition as follows:</p>
+<div class="codehilite"><pre><span></span><span class="nn">...</span>
+  <span class="l l-Scalar l-Scalar-Plain">alert-manager</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">prom/alertmanager</span>
+    <span class="l l-Scalar l-Scalar-Plain">networks</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">monitor</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">scaler</span>
+    <span class="l l-Scalar l-Scalar-Plain">secrets</span><span class="p p-Indicator">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">alert_manager_config</span>
+    <span class="l l-Scalar l-Scalar-Plain">command</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">-config.file=/run/secrets/alert_manager_config -storage.path=/alertmanager</span>
+<span class="nn">...</span>
+</pre></div>
+
+<p>With access to the <code>scaler</code> network, <code>alert-manager</code> can send scaling requests to the <code>scaler</code> service. For information about the Docker Flow Monitor stack can be found in its <a href="http://monitor.dockerflow.com">documentation</a>.</p>
+<p>Let us confirm that the <code>monitor</code> stack is up and running:</p>
+<div class="codehilite"><pre><span></span>docker stack ps monitor
+</pre></div>
+
+<p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running.</p>
 <h2 id="manually-scaling-services">Manually Scaling Services<a class="headerlink" href="#manually-scaling-services" title="Permanent link">&para;</a></h2>
 <p>For this section, we deploy a simple sleeping service:</p>
 <div class="codehilite"><pre><span></span>docker service create -d --replicas <span class="m">1</span> <span class="se">\</span>
@@ -610,74 +679,6 @@ docker stack deploy <span class="se">\</span>
 <div class="codehilite"><pre><span></span>docker service rm demo
 </pre></div>
 
-<h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
-<p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
-<p><div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
-<span class="s2">  slack_api_url: &#39;</span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="s2">&#39;</span>
-<span class="s2">route:</span>
-<span class="s2">  receiver: slack</span>
-<span class="s2">  group_by: [service, scale, type]</span>
-<span class="s2">  group_interval: 5m</span>
-<span class="s2">  repeat_interval: 5m</span>
-<span class="s2">  routes:</span>
-<span class="s2">  - match_re:</span>
-<span class="s2">      scale: up|down</span>
-<span class="s2">      type: service</span>
-<span class="s2">    receiver: scale</span>
-<span class="s2">  - match:</span>
-<span class="s2">      alertname: scale_service</span>
-<span class="s2">    group_by: [alertname]</span>
-<span class="s2">    group_interval: 15s</span>
-<span class="s2">    group_wait: 5s</span>
-<span class="s2">    receiver: slack-scaler</span>
-
-<span class="s2">receivers:</span>
-<span class="s2">  - name: &#39;slack&#39;</span>
-<span class="s2">    slack_configs:</span>
-<span class="s2">      - send_resolved: true</span>
-<span class="s2">        title: &#39;[{{ .Status | toUpper }}] {{ .GroupLabels.service }} service is in danger!&#39;</span>
-<span class="s2">        title_link: &#39;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&#39;</span>
-<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
-<span class="s2">  - name: &#39;slack-scaler&#39;</span>
-<span class="s2">    slack_configs:</span>
-<span class="s2">      - title: &#39;{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}&#39;</span>
-<span class="s2">        color: &#39;{{ if eq .CommonLabels.status \&quot;error\&quot; }}danger{{ else }}good{{ end }}&#39;</span>
-<span class="s2">        title_link: &#39;http://</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span><span class="s2">/monitor/alerts&#39;</span>
-<span class="s2">        text: &#39;{{ .CommonAnnotations.summary }}&#39;</span>
-<span class="s2">  - name: &#39;scale&#39;</span>
-<span class="s2">    webhook_configs:</span>
-<span class="s2">      - send_resolved: false</span>
-<span class="s2">        url: &#39;http://scaler:8080/v1/scale-service&#39;</span>
-<span class="s2">&quot;</span> <span class="p">|</span> docker secret create alert_manager_config -
-</pre></div>
-This configuration groups alerts by their <code>service</code>, <code>scale</code>, and <code>type</code> labels. The <code>routes</code> section defines a <code>match_re</code> entry, that directs scale alerts to the <code>scale</code> reciever. Another route is configured to direct alerts from the <code>scaler</code> service to the <code>slack-scaler</code> receiver. Now we deploy the monitor stack:</p>
-<div class="codehilite"><pre><span></span>docker network create -d overlay monitor
-
-<span class="nv">DOMAIN</span><span class="o">=</span><span class="k">$(</span>docker-machine ip swarm-1<span class="k">)</span> <span class="se">\</span>
-    docker stack deploy <span class="se">\</span>
-    -c stacks/docker-flow-monitor-slack.yml <span class="se">\</span>
-    monitor
-</pre></div>
-
-<p>The <code>alert-manager</code> service is configured to read the <code>alert_manager_config</code> secret in the stack definition as follows:</p>
-<div class="codehilite"><pre><span></span><span class="nn">...</span>
-  <span class="l l-Scalar l-Scalar-Plain">alert-manager</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">prom/alertmanager</span>
-    <span class="l l-Scalar l-Scalar-Plain">networks</span><span class="p p-Indicator">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">monitor</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">scaler</span>
-    <span class="l l-Scalar l-Scalar-Plain">secrets</span><span class="p p-Indicator">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">alert_manager_config</span>
-    <span class="l l-Scalar l-Scalar-Plain">command</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">-config.file=/run/secrets/alert_manager_config -storage.path=/alertmanager</span>
-<span class="nn">...</span>
-</pre></div>
-
-<p>With access to the <code>scaler</code> network, <code>alert-manager</code> can send scaling requests to the <code>scaler</code> service. For information about the Docker Flow Monitor stack can be found in its <a href="http://monitor.dockerflow.com">documentation</a>.</p>
-<p>Let us confirm that the <code>monitor</code> stack is up and running:</p>
-<div class="codehilite"><pre><span></span>docker stack ps monitor
-</pre></div>
-
-<p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running, we can start deploying the <code>go-demo_main</code> service!</p>
 <h2 id="deploying-instrumented-service">Deploying Instrumented Service<a class="headerlink" href="#deploying-instrumented-service" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://github.com/vfarcic/go-demo">go-demo</a> service already exposes response time metrics with labels for <em>Docker Flow Monitor</em> to scrape. We deploy the service to be scaled based on the response time metrics:</p>
 <div class="codehilite"><pre><span></span>docker stack deploy <span class="se">\</span>
@@ -798,13 +799,13 @@ go-demo_main        replicated          5/5                 vfarcic/go-demo:late
           </a>
         
         
-          <a href="../aws-node-scale/" title="AWS Node Scaling" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../aws-node-scale/" title="Auto-Scaling Nodes On Amazon Web Services" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                AWS Node Scaling
+                Auto-Scaling Nodes On Amazon Web Services
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">

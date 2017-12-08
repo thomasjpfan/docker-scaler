@@ -18,7 +18,7 @@
     
     
       
-        <title>AWS Node Scaling - Docker Scaler</title>
+        <title>Auto-Scaling Nodes On Amazon Web Services - Docker Scaler</title>
       
     
     
@@ -84,7 +84,7 @@
                 </span>
               
             
-            AWS Node Scaling
+            Auto-Scaling Nodes On Amazon Web Services
           
         </span>
       </div>
@@ -227,8 +227,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../service-scale/" title="Service Scaling" class="md-nav__link">
-      Service Scaling
+    <a href="../service-scale/" title="Auto-Scaling Services With Instrumented Metrics" class="md-nav__link">
+      Auto-Scaling Services With Instrumented Metrics
     </a>
   </li>
 
@@ -248,11 +248,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="toc">
-        AWS Node Scaling
+        Auto-Scaling Nodes On Amazon Web Services
       </label>
     
-    <a href="./" title="AWS Node Scaling" class="md-nav__link md-nav__link--active">
-      AWS Node Scaling
+    <a href="./" title="Auto-Scaling Nodes On Amazon Web Services" class="md-nav__link md-nav__link--active">
+      Auto-Scaling Nodes On Amazon Web Services
     </a>
     
       
@@ -301,15 +301,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
-    Manually Scaling Nodes
+  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
+    Deploying Docker Flow Monitor and Alertmanager
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
-    Deploying Docker Flow Monitor and Alertmanager
+  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
+    Manually Scaling Nodes
   </a>
   
 </li>
@@ -477,15 +477,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
-    Manually Scaling Nodes
+  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
+    Deploying Docker Flow Monitor and Alertmanager
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploying-docker-flow-monitor-and-alertmanager" title="Deploying Docker Flow Monitor and Alertmanager" class="md-nav__link">
-    Deploying Docker Flow Monitor and Alertmanager
+  <a href="#manually-scaling-nodes" title="Manually Scaling Nodes" class="md-nav__link">
+    Manually Scaling Nodes
   </a>
   
 </li>
@@ -528,7 +528,7 @@
                   <a href="https://github.com/thomasjpfan/docker-scaler/edit/master/docs/aws-node-scale.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="aws-node-scaling">AWS Node Scaling<a class="headerlink" href="#aws-node-scaling" title="Permanent link">&para;</a></h1>
+                <h1 id="auto-scaling-nodes-on-amazon-web-services">Auto-Scaling Nodes On Amazon Web Services<a class="headerlink" href="#auto-scaling-nodes-on-amazon-web-services" title="Permanent link">&para;</a></h1>
 <p><em>Docker Scaler</em> includes endpoints to scale nodes on AWS. In this tutorial, we will construct a system that will scale up worker nodes based on memory usage. This tutorial uses <a href="https://aws.amazon.com/cli/">AWS CLI</a> to communicate with AWS and <a href="https://stedolan.github.io/jq/download/">jq</a> to parse json responses from the CLI.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
@@ -662,7 +662,7 @@ docker stack deploy <span class="se">\</span>
 <div class="codehilite"><pre><span></span>docker network create -d overlay scaler
 
 docker stack deploy <span class="se">\</span>
-    -c stacks/scaler-aws-tutorial.yml <span class="se">\</span>
+    -c stacks/docker-scaler-aws-tutorial.yml <span class="se">\</span>
     scaler
 </pre></div>
 
@@ -689,39 +689,6 @@ docker stack deploy <span class="se">\</span>
 </pre></div>
 
 <p>The <code>NODE_SCALER_BACKEND</code> must be set to <code>aws</code> to configure <em>Docker Scaler</em> to scale nodes on AWS. The label <code>com.df.servicePath=/scaler</code> and environment variable <code>SERVER_PREFIX</code> opens up the <code>scaler</code> service to public REST calls. For this tutorial, we open this path to explore manually scaling nodes.</p>
-<h2 id="manually-scaling-nodes">Manually Scaling Nodes<a class="headerlink" href="#manually-scaling-nodes" title="Permanent link">&para;</a></h2>
-<p>Before node scaling, we will deploy a simple sleeping service:</p>
-<div class="codehilite"><pre><span></span>docker service create -d --replicas <span class="m">6</span> <span class="se">\</span>
-  -l com.df.reschedule<span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
-  --name demo <span class="se">\</span>
-  alpine:3.6 sleep <span class="m">100000000000</span>
-</pre></div>
-
-<p>The <code>com.df.reschedule=true</code> label signals to <em>Docker Scaler</em> that this service is allowed for rescheduling after node scaling.</p>
-<p>The original cluster started out with three manager nodes. We now scale up the worker nodes by one be issuing a <code>POST</code> request:</p>
-<div class="codehilite"><pre><span></span>curl -X POST http://<span class="nv">$CLUSTER_DNS</span>/scaler/v1/scale-nodes<span class="se">\?</span>by<span class="se">\=</span><span class="m">1</span><span class="se">\&amp;</span>type<span class="se">\=</span>worker -d <span class="se">\</span>
-<span class="s1">&#39;{&quot;groupLabels&quot;: {&quot;scale&quot;: &quot;up&quot;}}&#39;</span>
-</pre></div>
-
-<p>The parameters <code>by=1</code> and <code>type=worker</code> tell the service to scale worker nodes up by <code>1</code>. Inside the json request body, the <code>scale</code> value is set to <code>up</code> to denote scaling up. To scale nodes down just set the value to <code>down</code>. We can check the number of nodes by running:</p>
-<div class="codehilite"><pre><span></span>docker node ls
-</pre></div>
-
-<p>The output should be similar to the following (node ids are discarded):</p>
-<div class="codehilite"><pre><span></span>HOSTNAME                        STATUS              AVAILABILITY        MANAGER STATUS
-ip-172-31-4-44.ec2.internal     Ready               Active              Reachable
-ip-172-31-17-200.ec2.internal   Ready               Active              Reachable
-ip-172-31-20-95.ec2.internal    Ready               Active
-ip-172-31-44-49.ec2.internal    Ready               Active              Leader
-</pre></div>
-
-<p>If there are still three nodes, wait a few more minutes and try the command again. <em>Docker Scaler</em> waits for the new node to come up and reschedules services that are labeled <code>com.df.reschedule=true</code>. We look at the processes running on the new worker node:</p>
-<div class="codehilite"><pre><span></span>NEW_NODE=$(docker node ls -f role=worker -q)
-
-docker node ps $NEW_NODE
-</pre></div>
-
-<p>The output should include some instances of the <code>demo</code> service, showing that the some of the instances has been place on the new node. We will now move on to implementing a system for automatic scaling!</p>
 <h2 id="deploying-docker-flow-monitor-and-alertmanager">Deploying Docker Flow Monitor and Alertmanager<a class="headerlink" href="#deploying-docker-flow-monitor-and-alertmanager" title="Permanent link">&para;</a></h2>
 <p>The next stack defines the <em>Docker Flow Monitor</em> and <em>Alertmanager</em> services. Before we deploy the stack, we defined our <em>Alertmanager</em> configuration as a Docker secret:</p>
 <div class="codehilite"><pre><span></span><span class="nb">echo</span> <span class="s2">&quot;global:</span>
@@ -729,7 +696,7 @@ docker node ps $NEW_NODE
 <span class="s2">route:</span>
 <span class="s2">  group_interval: 30m</span>
 <span class="s2">  repeat_interval: 30m</span>
-<span class="s2">  receiver: slack</span>
+<span class="s2">  receiver: &#39;slack&#39;</span>
 <span class="s2">  group_by: [service, scale, type]</span>
 <span class="s2">  routes:</span>
 <span class="s2">    - match_re:</span>
@@ -738,10 +705,10 @@ docker node ps $NEW_NODE
 <span class="s2">      receiver: &#39;scale-nodes&#39;</span>
 <span class="s2">    - match_re:</span>
 <span class="s2">        alertname: scale_service|reschedule_service|scale_nodes</span>
-<span class="s2">      group_by: [alertname]</span>
+<span class="s2">      group_by: [alertname, service]</span>
 <span class="s2">      group_wait: 5s</span>
 <span class="s2">      group_interval: 15s</span>
-<span class="s2">      receiver: slack-scaler</span>
+<span class="s2">      receiver: &#39;slack-scaler&#39;</span>
 
 <span class="s2">receivers:</span>
 <span class="s2">  - name: &#39;slack&#39;</span>
@@ -776,7 +743,38 @@ docker node ps $NEW_NODE
 <div class="codehilite"><pre><span></span>docker stack ps monitor
 </pre></div>
 
-<p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running, we can move on to deploying node exporters.</p>
+<p>Please wait a few moments for all the replicas to have the status <code>running</code>. After the <code>monitor</code> stack is up and running, we can test out manual node scaling!</p>
+<h2 id="manually-scaling-nodes">Manually Scaling Nodes<a class="headerlink" href="#manually-scaling-nodes" title="Permanent link">&para;</a></h2>
+<p>Before node scaling, we will deploy a simple sleeping service:</p>
+<div class="codehilite"><pre><span></span>docker service create -d --replicas <span class="m">6</span> <span class="se">\</span>
+  -l com.df.reschedule<span class="o">=</span><span class="nb">true</span> <span class="se">\</span>
+  --name demo <span class="se">\</span>
+  alpine:3.6 sleep <span class="m">100000000000</span>
+</pre></div>
+
+<p>The <code>com.df.reschedule=true</code> label signals to <em>Docker Scaler</em> that this service is allowed for rescheduling after node scaling.</p>
+<p>The original cluster started out with three manager nodes. We now scale up the worker nodes by one be issuing a <code>POST</code> request:</p>
+<div class="codehilite"><pre><span></span>curl -X POST http://<span class="nv">$CLUSTER_DNS</span>/scaler/v1/scale-nodes<span class="se">\?</span>by<span class="se">\=</span><span class="m">1</span><span class="se">\&amp;</span>type<span class="se">\=</span>worker -d <span class="se">\</span>
+<span class="s1">&#39;{&quot;groupLabels&quot;: {&quot;scale&quot;: &quot;up&quot;}}&#39;</span>
+</pre></div>
+
+<p>The parameters <code>by=1</code> and <code>type=worker</code> tell the service to scale worker nodes up by <code>1</code>. Inside the json request body, the <code>scale</code> value is set to <code>up</code> to denote scaling up. To scale nodes down just set the value to <code>down</code>. We can check the number of nodes by running:</p>
+<div class="codehilite"><pre><span></span>docker node ls
+</pre></div>
+
+<p>The output should be similar to the following (node ids are discarded):</p>
+<div class="codehilite"><pre><span></span>HOSTNAME                        STATUS              AVAILABILITY        MANAGER STATUS
+ip-172-31-4-44.ec2.internal     Ready               Active              Reachable
+ip-172-31-17-200.ec2.internal   Ready               Active              Reachable
+ip-172-31-20-95.ec2.internal    Ready               Active
+ip-172-31-44-49.ec2.internal    Ready               Active              Leader
+</pre></div>
+
+<p>If there are still three nodes, wait a few more minutes and try the command again. <em>Docker Scaler</em> waits for the new node to come up and reschedules services that are labeled <code>com.df.reschedule=true</code>. We look at the processes running on the new worker node:</p>
+<div class="codehilite"><pre><span></span>docker node ps <span class="k">$(</span>docker node ls -f <span class="nv">role</span><span class="o">=</span>worker -q<span class="k">)</span>
+</pre></div>
+
+<p>The output should include some instances of the <code>demo</code> service, showing that the some of the instances has been place on the new node. We will now move on to implementing a system for automatic scaling!</p>
 <h2 id="deploying-node-exporters">Deploying Node Exporters<a class="headerlink" href="#deploying-node-exporters" title="Permanent link">&para;</a></h2>
 <p>The node exporters are used to display metrics about each nodes for <em>Docker Flow Monitor</em> to scrap. To deploy the exporters stack run:</p>
 <div class="codehilite"><pre><span></span>docker stack deploy <span class="se">\</span>
@@ -815,41 +813,41 @@ docker node ps $NEW_NODE
 <p>These labels use <a href="http://monitor.dockerflow.com/usage/#alertif-parameter-shortcuts">AlertIf Parameter Shortcuts</a> for creating Prometheus expressions that firing alerts.</p>
 <p>The <code>node-exporter-manager</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code>, which will fire when the total fractional memory of the all manager nodes is above 95%. Setting one of the <code>alertLabels</code> to <code>scale=no</code> prevents autoscaling and sends a notification to Slack. The <code>node-exproter-worker</code> has an <code>alertIf</code> label of <code>node_mem_limit_total_above:0.95</code> which will fire when the total fractional memory of all worker nodes is above 95%. Similiary, the <code>node_mem_limit_total_below:0.01</code> fires when the total fractional memory is below 5%. These values for memory alerts are extreme to prevent the alerts from firing. We will change these labels to explore what happens when they fire.</p>
 <p>For example, we trigger alert 1 on <code>node-exporter-manager</code> by changing its alert label:</p>
-<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+<div class="codehilite"><pre><span></span>docker service update -d <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.05&quot;</span> <span class="se">\</span>
   exporter_node-exporter-manager
 </pre></div>
 
 <p>After the alert is fired, we can see a <em>Slack</em> notification stating <strong>Total memory of the nodes is over 0.05</strong>. Before we continue, we return the alert back to before:</p>
-<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+<div class="codehilite"><pre><span></span>docker service update -d <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.95&quot;</span> <span class="se">\</span>
   exporter_node-exporter-manager
 </pre></div>
 
 <h2 id="automaticall-scaling-nodes">Automaticall Scaling Nodes<a class="headerlink" href="#automaticall-scaling-nodes" title="Permanent link">&para;</a></h2>
 <p>We trigger alert 1 on <code>node-exporter-worker</code> by setting the <code>node_mem_limit_total_above</code> limit to 5%:</p>
-<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+<div class="codehilite"><pre><span></span>docker service update -d <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.05&quot;</span> <span class="se">\</span>
-  exporter_node-exporter-manager
+  exporter_node-exporter-worker
 </pre></div>
 
-<p>After a few moments, the alert will fire and trigger <code>scaler</code> to scale worker nodes up by one. We confirm that there is now five nodes by running:</p>
+<p>After a few minutes, the alert will fire and trigger <code>scaler</code> to scale worker nodes up by one. <em>Slack</em> will send a notification stating: <strong>Changing the number of worker nodes on aws from 1 to 2</strong>. We confirm that there is now five nodes by running:</p>
 <div class="codehilite"><pre><span></span>docker node ls
 </pre></div>
 
 <p>After the node comes up, <code>scaler</code> will also reschedule services with label, <code>com.df.reschedule=true</code>. During this process, <em>Slack</em> notifications were sent to inform us of each step. Before triggering the alert 2, we return alert 1 back to before:</p>
-<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+<div class="codehilite"><pre><span></span>docker service update -d <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.1=@node_mem_limit_total_above:0.95&quot;</span> <span class="se">\</span>
-  exporter_node-exporter-manager
+  exporter_node-exporter-worker
 </pre></div>
 
 <p>We trigger the condition for scaling down a node by setting <code>node_mem_limit_total_below</code> limit to 95%:</p>
-<div class="codehilite"><pre><span></span>docker service update <span class="se">\</span>
+<div class="codehilite"><pre><span></span>docker service update -d <span class="se">\</span>
   --label-add <span class="s2">&quot;com.df.alertIf.2=@node_mem_limit_total_below:0.95&quot;</span> <span class="se">\</span>
-  exporter_node-exporter-manager
+  exporter_node-exporter-worker
 </pre></div>
 
-<p>After a few moments, the alert will fire and trigger <code>scaler</code> to scale worker nodes down by one. We confirm that there is now four nodes by running:</p>
+<p><em>Slack</em> will send a notification stating: <strong>Changing the number of worker nodes on aws from 2 to 1</strong>. After a few minutes, the alert will fire and trigger <code>scaler</code> to scale worker nodes down by one. We confirm that there is now four nodes by running:</p>
 <div class="codehilite"><pre><span></span>docker node ls
 </pre></div>
 
@@ -879,7 +877,7 @@ docker node ps $NEW_NODE
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../service-scale/" title="Service Scaling" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../service-scale/" title="Auto-Scaling Services With Instrumented Metrics" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -888,7 +886,7 @@ docker node ps $NEW_NODE
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Service Scaling
+                Auto-Scaling Services With Instrumented Metrics
               </span>
             </div>
           </a>

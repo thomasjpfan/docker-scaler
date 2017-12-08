@@ -221,8 +221,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../service-scale/" title="Service Scaling" class="md-nav__link">
-      Service Scaling
+    <a href="../service-scale/" title="Auto-Scaling Services With Instrumented Metrics" class="md-nav__link">
+      Auto-Scaling Services With Instrumented Metrics
     </a>
   </li>
 
@@ -233,8 +233,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../aws-node-scale/" title="AWS Node Scaling" class="md-nav__link">
-      AWS Node Scaling
+    <a href="../aws-node-scale/" title="Auto-Scaling Nodes On Amazon Web Services" class="md-nav__link">
+      Auto-Scaling Nodes On Amazon Web Services
     </a>
   </li>
 
@@ -499,8 +499,12 @@
 <td>Service label key with value representing the number of replicas to scale up by.<br><strong>Default:</strong> <code>com.df.scaleUpBy</code></td>
 </tr>
 <tr>
+<td>ALERT_SCALE_MIN</td>
+<td>Send alert to alertmanager when trying to scale up service already at minimum replicas.<br><strong>Default:</strong> false</td>
+</tr>
+<tr>
 <td>ALERT_SCALE_MAX</td>
-<td>Send alert to alertmanager when trying to scale up service already at max replicas.<br><strong>Default:</strong> true</td>
+<td>Send alert to alertmanager when trying to scale up service already at maximum replicas.<br><strong>Default:</strong> true</td>
 </tr>
 <tr>
 <td>DEFAULT_MIN_REPLICAS</td>
@@ -532,7 +536,7 @@
 </tr>
 <tr>
 <td>RESCHEDULE_TICKER_INTERVAL</td>
-<td>Duration to wait when checking for nodes to come up (seconds).<br><strong>Default:</strong> 20</td>
+<td>Duration to wait when checking for nodes to come up (seconds).<br><strong>Default:</strong> 60</td>
 </tr>
 <tr>
 <td>RESCHEDULE_TIMEOUT</td>
@@ -573,6 +577,14 @@
 <tr>
 <td>DEFAULT_MAX_WORKER_NODES</td>
 <td>Maximum number of worker nodes.<br><strong>Default:</strong> 5</td>
+</tr>
+<tr>
+<td>ALERT_NODE_MIN</td>
+<td>Send alert to alertmanager when trying to scale up nodes already at minimum nodes.<br><strong>Default:</strong> true</td>
+</tr>
+<tr>
+<td>ALERT_NODE_MAX</td>
+<td>Send alert to alertmanager when trying to scale up nodes already at maximum nodes.<br><strong>Default:</strong> true</td>
 </tr>
 </tbody>
 </table>
