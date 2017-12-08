@@ -283,9 +283,9 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		rightNow := time.Now().UTC().Format("20060102T150405")
 		reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
 		s.logger.Printf("scale-nodes: %s", reqMsg)
-		s.sendAlert("scale_nodes", "reschedule", "", "success", reqMsg)
+		s.sendAlert("scale_nodes", "reschedule", "Wait to reschedule", "success", reqMsg)
 
-		go s.rescheduleServiceWait(isManager, int(nodesNow), rightNow)
+		go s.rescheduleServiceWait(isManager, typeStr, int(nodesNow), rightNow)
 	}
 }
 
@@ -346,28 +346,30 @@ func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) rescheduleServiceWait(isManager bool, targetNodeCnt int, nowStr string) {
+func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, targetNodeCnt int, nowStr string) {
 
 	tickerC := make(chan time.Time)
 	errC := make(chan error, 1)
 
 	go s.rescheduler.RescheduleServicesWaitForNodes(isManager, targetNodeCnt, nowStr, tickerC, errC)
 
+	requestMsg := "Waiting for nodes to scale up"
+
 	for {
 		select {
 		case t := <-tickerC:
-			msg := fmt.Sprintf("scale-nodes-reschedule waiting for %d nodes to come online: %v", targetNodeCnt, t)
-			s.logger.Print(msg)
-			s.sendAlert("scale_nodes", "reschedule", "", "success", msg)
+			msg := fmt.Sprintf("Waiting for %d %s nodes to come online: %s", targetNodeCnt, typeStr, t.Format(time.RFC3339))
+			s.logger.Printf("scale-nodes-reschedule: %s", msg)
+			s.sendAlert("scale_nodes", "reschedule", requestMsg, "success", msg)
 		case err := <-errC:
 			close(tickerC)
 			if err != nil {
 				s.logger.Printf("scale-nodes-reschedule error: %s", err)
-				s.sendAlert("scale_nodes", "reschedule", "", "error", err.Error())
+				s.sendAlert("scale_nodes", "reschedule", requestMsg, "error", err.Error())
 			} else {
 				msg := "scale-nodes-reschedule success"
 				s.logger.Print(msg)
-				s.sendAlert("scale_nodes", "reschedule", "", "success", msg)
+				s.sendAlert("scale_nodes", "reschedule", requestMsg, "success", msg)
 			}
 			return
 		}
