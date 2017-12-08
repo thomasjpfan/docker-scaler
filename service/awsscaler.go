@@ -67,13 +67,13 @@ func NewAWSScalerFromEnv() (NodeScaler, error) {
 
 // ScaleWorkerByDelta scales aws worker nodes by delta
 func (s *awsScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	return s.scaleNodes(ctx, delta, s.spec.WorkerASG, int64(s.spec.DefaultMinWorkerNodes),
+	return s.scaleNodes(ctx, int64(delta), s.spec.WorkerASG, int64(s.spec.DefaultMinWorkerNodes),
 		int64(s.spec.DefaultMaxWorkerNodes))
 }
 
 // ScaleManagerByDelta scales aws manager nodes by delta
 func (s *awsScaler) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	return s.scaleNodes(ctx, delta, s.spec.ManagerASG, int64(s.spec.DefaultMinManagerNodes),
+	return s.scaleNodes(ctx, int64(delta), s.spec.ManagerASG, int64(s.spec.DefaultMinManagerNodes),
 		int64(s.spec.DefaultMaxManagerNodes))
 }
 
@@ -82,7 +82,7 @@ func (s *awsScaler) String() string {
 	return "aws"
 }
 
-func (s *awsScaler) scaleNodes(ctx context.Context, delta int, groupName string, minSize int64, maxSize int64) (uint64, uint64, error) {
+func (s *awsScaler) scaleNodes(ctx context.Context, delta int64, groupName string, minSize int64, maxSize int64) (uint64, uint64, error) {
 
 	groupsOutput, err := s.svc.DescribeAutoScalingGroupsWithContext(ctx, &autoscaling.DescribeAutoScalingGroupsInput{})
 	if err != nil {
@@ -101,14 +101,15 @@ func (s *awsScaler) scaleNodes(ctx context.Context, delta int, groupName string,
 	}
 
 	currentCapacity := *targetGroup.DesiredCapacity
-	newCapacity := currentCapacity + int64(delta)
-	if newCapacity < 0 {
-		newCapacity = 0
+	newCapacity := currentCapacity + delta
+	if newCapacity < minSize {
+		newCapacity = minSize
+	} else if newCapacity > maxSize {
+		newCapacity = maxSize
 	}
 
-	// Check if newCapacity is in bounds
-	if newCapacity < minSize || newCapacity > maxSize {
-		return 0, 0, fmt.Errorf("New capacity: %d is not in between %d and %d", newCapacity, minSize, maxSize)
+	if newCapacity == currentCapacity {
+		return uint64(currentCapacity), uint64(newCapacity), nil
 	}
 
 	_, err = s.svc.UpdateAutoScalingGroupWithContext(ctx, &autoscaling.UpdateAutoScalingGroupInput{

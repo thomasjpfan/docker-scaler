@@ -22,9 +22,11 @@ type Server struct {
 	alerter       service.AlertServicer
 	nodeScaler    service.NodeScaler
 	rescheduler   service.ReschedulerServicer
-	alertScaleMax bool
-	alertNodeMax  bool
 	logger        *log.Logger
+	alertScaleMin bool
+	alertScaleMax bool
+	alertNodeMin  bool
+	alertNodeMax  bool
 }
 
 // NewServer creates Server
@@ -33,17 +35,21 @@ func NewServer(
 	alerter service.AlertServicer,
 	nodeScaler service.NodeScaler,
 	rescheduler service.ReschedulerServicer,
+	logger *log.Logger,
+	alertScaleMin bool,
 	alertScaleMax bool,
-	alertNodeMax bool,
-	logger *log.Logger) *Server {
+	alertNodeMin bool,
+	alertNodeMax bool) *Server {
 	return &Server{
 		scaler:        scaler,
 		alerter:       alerter,
 		nodeScaler:    nodeScaler,
 		rescheduler:   rescheduler,
-		alertScaleMax: alertScaleMax,
-		alertNodeMax:  alertNodeMax,
 		logger:        logger,
+		alertScaleMin: alertScaleMin,
+		alertScaleMax: alertScaleMax,
+		alertNodeMin:  alertNodeMin,
+		alertNodeMax:  alertNodeMax,
 	}
 }
 
@@ -171,7 +177,9 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Printf("scale-service success: %s", message)
-	if !atBound || scaleDirection == "up" && s.alertScaleMax {
+	if !atBound ||
+		(scaleDirection == "up" && s.alertScaleMax) ||
+		(scaleDirection == "down" && s.alertScaleMin) {
 		s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
 	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
@@ -286,7 +294,9 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Printf("scale-nodes success: %s", message)
 
-	if nodesBefore != nodesNow || scaleDirection == "up" && s.alertNodeMax {
+	if nodesBefore != nodesNow ||
+		(scaleDirection == "up" && s.alertNodeMax) ||
+		(scaleDirection == "down" && s.alertNodeMin) {
 		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
 	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
