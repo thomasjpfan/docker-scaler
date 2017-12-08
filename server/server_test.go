@@ -101,7 +101,7 @@ func (s *ServerTestSuite) SetupTest() {
 	s.b = new(bytes.Buffer)
 	s.l = log.New(s.b, "", 0)
 	s.s = NewServer(s.m, s.am,
-		s.nsm, s.rsm, true, true, s.l)
+		s.nsm, s.rsm, s.l, false, true, false, true)
 	s.r = s.s.MakeRouter("/")
 }
 
@@ -191,7 +191,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp() {
 	s.m.AssertExpectations(s.T())
 }
 
-func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded() {
+func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxTrue() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
 	requestMessage := "Scale service up: web"
 	expMsg := "web is already scaled to the maximum number of 5 replicas"
@@ -221,7 +221,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxFalse() {
 
 	url := "/v1/scale-service"
 	ser := NewServer(s.m, s.am,
-		s.nsm, s.rsm, false, true, s.l)
+		s.nsm, s.rsm, s.l, false, false, false, true)
 	serRouter := ser.MakeRouter("/")
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -233,6 +233,51 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxFalse() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.am.AssertNotCalled(s.T(), "Send", "scale_service", "web", requestMessage, "success", expMsg)
 	s.m.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded_AlertMinTrue() {
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
+	requestMessage := "Scale service down: web"
+	expMsg := "web is already descaled to the minimum number of 1 replicas"
+
+	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+
+	url := "/v1/scale-service"
+	ser := NewServer(s.m, s.am,
+		s.nsm, s.rsm, s.l, true, true, false, true)
+	serRouter := ser.MakeRouter("/")
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+
+	serRouter.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.m.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded_AlertMinFalse() {
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
+	requestMessage := "Scale service down: web"
+	expMsg := "web is already descaled to the minimum number of 1 replicas"
+	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+
+	url := "/v1/scale-service"
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.m.AssertExpectations(s.T())
+	s.am.AssertNotCalled(s.T(), "Send", "scale_service", "web", requestMessage, "success", expMsg)
 }
 
 func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Error() {
@@ -527,7 +572,33 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
 	ser := NewServer(s.m, s.am,
-		s.nsm, s.rsm, true, false, s.l)
+		s.nsm, s.rsm, s.l, false, true, false, false)
+	serRouter := ser.MakeRouter("/")
+
+	serRouter.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertNotCalled(s.T(), "Send", "scale_nodes", "mock", requestMessage, "success", message)
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_MinAlertTrue() {
+	url := "/v1/scale-nodes?type=worker&by=1"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: worker"
+	message := "worker nodes are already descaled to the minimum number of 1 nodes"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+	jsonStr := `{"groupLabels":{"scale":"down"}}`
+
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
+	s.nsm.On("ScaleWorkerByDelta", -1).Return(uint64(1), uint64(1), nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	ser := NewServer(s.m, s.am,
+		s.nsm, s.rsm, s.l, false, true, true, true)
 	serRouter := ser.MakeRouter("/")
 
 	serRouter.ServeHTTP(rec, req)
@@ -537,17 +608,16 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
-	s.am.AssertNotCalled(s.T(), "Send", "scale_nodes", "mock", requestMessage, "success", message)
 }
 
-func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_Min() {
-	url := "/v1/scale-nodes?type=worker&by=1"
-	requestMessage := "Scale nodes down on: mock, by: 1, type: worker"
-	message := "worker nodes are already descaled to the minimum number of 1 nodes"
+func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_MinAlertFalse() {
+	url := "/v1/scale-nodes?type=manager&by=1"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: manager"
+	message := "manager nodes are already descaled to the minimum number of 1 nodes"
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
-	s.nsm.On("ScaleWorkerByDelta", -1).Return(uint64(1), uint64(1), nil)
+	s.nsm.On("ScaleManagerByDelta", -1).Return(uint64(1), uint64(1), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -557,10 +627,8 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_Min() {
 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
-	s.am.AssertExpectations(s.T())
 	s.am.AssertNotCalled(s.T(), "Send", "scale_nodes", "mock", requestMessage, "success", message)
 }
-
 func (s *ServerTestSuite) Test_RescheduleAllServicesError() {
 	url := "/v1/reschedule-services"
 	requestMessage := "Rescheduling all labeled services"

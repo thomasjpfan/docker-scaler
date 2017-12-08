@@ -17,6 +17,7 @@ type specification struct {
 	ServerPrefix              string `envconfig:"SERVER_PREFIX"`
 	MinScaleLabel             string `envconfig:"MIN_SCALE_LABEL"`
 	MaxScaleLabel             string `envconfig:"MAX_SCALE_LABEL"`
+	AlertScaleMin             bool   `envconfig:"ALERT_SCALE_MIN"`
 	AlertScaleMax             bool   `envconfig:"ALERT_SCALE_MAX"`
 	DefaultMinReplicas        uint64 `envconfig:"DEFAULT_MIN_REPLICAS"`
 	DefaultMaxReplicas        uint64 `envconfig:"DEFAULT_MAX_REPLICAS"`
@@ -31,6 +32,8 @@ type specification struct {
 	RescheduleTimeOut         int64  `envconfig:"RESCHEDULE_TIMEOUT"`
 	RescheduleEnvKey          string `envconfig:"RESCHEDULE_ENV_KEY"`
 	NodeScalerBackend         string `envconfig:"NODE_SCALER_BACKEND"`
+	AlertNodeMin              bool   `envconfig:"ALERT_NODE_MIN"`
+	AlertNodeMax              bool   `envconfig:"ALERT_NODE_MAX"`
 }
 
 func main() {
@@ -88,6 +91,8 @@ func main() {
 		spec.DefaultScaleServiceDownBy,
 		spec.DefaultScaleServiceUpBy)
 	s := server.NewServer(scaler, alerter, nodeScaler,
-		rescheduler, spec.AlertScaleMax, logger)
+		rescheduler, logger,
+		spec.AlertScaleMin, spec.AlertScaleMax,
+		spec.AlertNodeMin, spec.AlertNodeMax)
 	s.Run(8080, spec.ServerPrefix)
 }
