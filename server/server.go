@@ -23,6 +23,7 @@ type Server struct {
 	nodeScaler    service.NodeScaler
 	rescheduler   service.ReschedulerServicer
 	alertScaleMax bool
+	alertNodeMax  bool
 	logger        *log.Logger
 }
 
@@ -33,6 +34,7 @@ func NewServer(
 	nodeScaler service.NodeScaler,
 	rescheduler service.ReschedulerServicer,
 	alertScaleMax bool,
+	alertNodeMax bool,
 	logger *log.Logger) *Server {
 	return &Server{
 		scaler:        scaler,
@@ -40,6 +42,7 @@ func NewServer(
 		nodeScaler:    nodeScaler,
 		rescheduler:   rescheduler,
 		alertScaleMax: alertScaleMax,
+		alertNodeMax:  alertNodeMax,
 		logger:        logger,
 	}
 }
@@ -152,11 +155,11 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	s.logger.Print(requestMessage)
 
 	var message string
-	var isBounded bool
+	var atBound bool
 	if scaleDirection == "down" {
-		message, isBounded, err = s.scaler.ScaleDown(ctx, serviceName)
+		message, atBound, err = s.scaler.ScaleDown(ctx, serviceName)
 	} else {
-		message, isBounded, err = s.scaler.ScaleUp(ctx, serviceName)
+		message, atBound, err = s.scaler.ScaleUp(ctx, serviceName)
 	}
 
 	if err != nil {
@@ -168,7 +171,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Printf("scale-service success: %s", message)
-	if !isBounded || scaleDirection == "up" && s.alertScaleMax {
+	if !atBound || scaleDirection == "up" && s.alertScaleMax {
 		s.sendAlert("scale_service", serviceName, requestMessage, "success", message)
 	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
@@ -272,9 +275,20 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := fmt.Sprintf("Changing the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
+	var message string
+	if scaleDirection == "up" && nodesBefore == nodesNow {
+		message = fmt.Sprintf("%s nodes are already scaled to the maximum number of %d nodes", typeStr, nodesNow)
+	} else if scaleDirection == "down" && nodesBefore == nodesNow {
+		message = fmt.Sprintf("%s nodes are already descaled to the minimum number of %d nodes", typeStr, nodesNow)
+	} else {
+		message = fmt.Sprintf("Changing the number of %s nodes on %s from %d to %d", typeStr, s.nodeScaler, nodesBefore, nodesNow)
+	}
+
 	s.logger.Printf("scale-nodes success: %s", message)
-	s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
+
+	if nodesBefore != nodesNow || scaleDirection == "up" && s.alertNodeMax {
+		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "success", message)
+	}
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
 
 	// Call rescheduler if nodesNow is greater than nodesBefore
