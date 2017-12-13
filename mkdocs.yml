@@ -19,6 +19,7 @@ extra:
     primary: 'blue'
     accent: 'light blue'
 markdown_extensions:
+  - toc
   - admonition
   - codehilite(guess_lang=false)
   - toc(permalink=true)
