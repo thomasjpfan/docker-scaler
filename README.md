@@ -7,9 +7,9 @@
 
 Microservice providing a REST API that scales services in Docker Swarm.
 
-Please visit the [documentation](https://thomasjpfan.github.io/docker-scaler/) for configuration and tutorials.
+Please visit the [documentation](http://scaler.dockerflow.com) for configuration, tutorials and advanced usage options.
 
-## Usage
+## Basic Usage
 
 Consider the services defined by the following compose spec:
 
