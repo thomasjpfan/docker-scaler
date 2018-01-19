@@ -152,13 +152,13 @@ The `alert-manager` service is configured to read the `alert_manager_config` sec
 ```yaml
 ...
   alert-manager:
-    image: prom/alertmanager
+    image: prom/alertmanager:v0.13.0
     networks:
       - monitor
       - scaler
     secrets:
       - alert_manager_config
-    command: -config.file=/run/secrets/alert_manager_config -storage.path=/alertmanager
+    command: --config.file=/run/secrets/alert_manager_config --storage.path=/alertmanager
 ...
 ```
 

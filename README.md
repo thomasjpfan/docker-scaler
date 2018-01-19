@@ -39,7 +39,7 @@ services:
         com.df.scaleUpBy: 2
     command: sleep 10000000
   alertmanager:
-    image: prom/alertmanager:v0.8.0
+    image: prom/alertmanager:v0.13.0
     ports:
       - 9093:9093
 
