@@ -44,7 +44,7 @@ func (s *AlertTestSuite) TearDownSuite() {
 
 func (s *AlertTestSuite) SetupTest() {
 	cmd := `docker run --name am9093 -p 9093:9093 \
-			-d prom/alertmanager:v0.8.0`
+			-d prom/alertmanager:v0.13.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))
