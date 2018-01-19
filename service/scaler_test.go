@@ -237,6 +237,7 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", oldReplicas, newReplicas, s.replicaMax)
 
 	err := s.scaler.setReplicas(s.ctx, "web_test", oldReplicas)
+	time.Sleep(time.Second)
 	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
