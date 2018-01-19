@@ -75,6 +75,5 @@ func probeRoutingStack() (int, map[int]*wireFormat) {
 		sysRTM_DELADDR:    ifam,
 		sysRTM_IFINFO:     ifm,
 		sysRTM_IFANNOUNCE: ifanm,
-		sysRTM_DESYNC:     rtm,
 	}
 }

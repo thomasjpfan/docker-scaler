@@ -1,9 +1,9 @@
-FROM golang:1.9.0-alpine3.6 as build
+FROM golang:1.9.2-alpine3.7 as build
 WORKDIR /go/src/github.com/thomasjpfan/docker-scaler
 COPY . .
 RUN go build -o docker-scaler main.go
 
-FROM alpine:3.6
+FROM alpine:3.7
 RUN apk add --no-cache tini ca-certificates
 
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
