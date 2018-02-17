@@ -4,14 +4,40 @@
 [[projects]]
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
-  revision = "3b8b3c98b207f95fe0cd6c7c311a9ac497ba7c0f"
-  version = "v0.3.3"
+  revision = "7da180ee92d8bd8bb8c37fc560e673e6557c392f"
+  version = "v0.4.7"
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/xml/xmlutil","service/autoscaling","service/sts"]
-  revision = "c9b25d6bfa986ab6d195479871a96e81b8882536"
-  version = "v1.12.77"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/sdkrand",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/xml/xmlutil",
+    "service/autoscaling",
+    "service/sts"
+  ]
+  revision = "bff41fb23b7550368282029f6478819d6a99ae0f"
+  version = "v1.12.79"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -21,19 +47,43 @@
 
 [[projects]]
   name = "github.com/docker/distribution"
-  packages = ["digest","reference"]
+  packages = [
+    "digest",
+    "reference"
+  ]
   revision = "48294d928ced5dd9b378f7fd7c6f5da3ff3f2c89"
   version = "v2.6.2"
 
 [[projects]]
   name = "github.com/docker/docker"
-  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/events","api/types/filters","api/types/mount","api/types/network","api/types/reference","api/types/registry","api/types/strslice","api/types/swarm","api/types/time","api/types/versions","api/types/volume","client","pkg/tlsconfig"]
-  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
-  version = "v1.13.1"
+  packages = [
+    "api/types",
+    "api/types/blkiodev",
+    "api/types/container",
+    "api/types/events",
+    "api/types/filters",
+    "api/types/mount",
+    "api/types/network",
+    "api/types/reference",
+    "api/types/registry",
+    "api/types/strslice",
+    "api/types/swarm",
+    "api/types/time",
+    "api/types/versions",
+    "api/types/volume",
+    "client",
+    "pkg/tlsconfig"
+  ]
+  revision = "eef6495eddab52828327aade186443681ed71a4e"
+  version = "v17.03.2-ce-rc1"
 
 [[projects]]
   name = "github.com/docker/go-connections"
-  packages = ["nat","sockets","tlsconfig"]
+  packages = [
+    "nat",
+    "sockets",
+    "tlsconfig"
+  ]
   revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
   version = "v0.3.0"
 
@@ -58,8 +108,8 @@
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "24fca303ac6da784b9e8269f724ddeb0b2eea5e7"
-  version = "v1.5.0"
+  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
+  version = "v1.6.1"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -91,7 +141,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/prometheus/common"
   packages = ["model"]
   revision = "89604d197083d4781071d3c65855d24ecfb0a563"
@@ -104,19 +153,34 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","mock","require","suite"]
+  packages = [
+    "assert",
+    "mock",
+    "require",
+    "suite"
+  ]
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
   version = "v1.2.1"
 
 [[projects]]
-  branch = "release-branch.go1.9"
+  branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","proxy"]
-  revision = "44b7c21cbf19450f38b337eb6b6fe4f6496fb5b3"
+  packages = [
+    "context",
+    "context/ctxhttp",
+    "proxy"
+  ]
+  revision = "136a25c244d3019482a795d728110278d6ba09a4"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["windows"]
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e016d3ca5ad12ec61a05f01e695f185d63abf8d50fdd98243742aeb4dc07be27"
+  inputs-digest = "8daaf8365b9811a4f406dac301adace0f882c3518d790d5eedf9a9b77ede89bf"
   solver-name = "gps-cdcl"
   solver-version = 1
