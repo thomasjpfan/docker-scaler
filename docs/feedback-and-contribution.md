@@ -18,33 +18,37 @@ If an issue is a request for a new feature, please specify the use-case behind i
 
 This project is developed using **Test Driven Development**. When a new feature is added please run through the testing procedure:
 
-### Fork repo
+1. Fork repo
 
 ```bash
 git clone https://github.com/thomasjpfan/docker-scaler
 ```
 
-### Unit Testing
+2. Install [dep](https://github.com/golang/dep).
+
+!!! tip
+    When adding a feature that uses a vendored dependency, you may need to run `dep ensure` to pull in those files. The `Gopkg.toml` file sets `unused-packages = true` which prunes out files from directories that do not appear in the package import graph
+
+3. Unit Testing
 
 ```bash
 make unit_test
 ```
 
-### Build
+4. Build
 
 ```bash
 make build
 ```
 
-### Test
+5. Test
 
 ```bash
 make deploy_test
-
 make integration_test
 ```
 
-## Cleanup
+6. Cleanup
 
 ```bash
 make undeploy_test
