@@ -6,9 +6,8 @@ pages:
     - Auto-Scaling Nodes On Amazon Web Services: aws-node-scale.md
   - Usage: usage.md
   - Configuration: configuration.md
-  - About:
-    - Feedback and Contribution: feedback-and-contribution.md
-    - License: license.md
+  - Feedback and Contribution: feedback-and-contribution.md
+  - License: license.md
 repo_url: https://github.com/thomasjpfan/docker-scaler
 site_author: Thomas Fan
 copyright: Copyright © 2017 Thomas Fan
