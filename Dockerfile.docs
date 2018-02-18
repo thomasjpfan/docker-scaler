@@ -1,4 +1,4 @@
-FROM squidfunk/mkdocs-material:2.2.3 AS build
+FROM squidfunk/mkdocs-material:2.6.2 AS build
 COPY docs /docs/docs
 COPY mkdocs.yml /docs
 RUN mkdocs build --site-dir /site

@@ -17,6 +17,8 @@ extra:
   palette:
     primary: 'blue'
     accent: 'light blue'
+extra_css:
+  - 'stylesheets/custom.css'
 markdown_extensions:
   - toc
   - admonition
