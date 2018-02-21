@@ -134,7 +134,8 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 // getReplicas Gets Replicas
 func (s *scalerService) getReplicas(ctx context.Context, serviceName string) (uint64, error) {
 
-	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
 
 	if err != nil {
 		return 0, errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -147,7 +148,8 @@ func (s *scalerService) getReplicas(ctx context.Context, serviceName string) (ui
 // setReplicas Sets the number of replicas
 func (s *scalerService) setReplicas(ctx context.Context, serviceName string, count uint64) error {
 
-	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
 
 	if err != nil {
 		return errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -168,7 +170,8 @@ func (s *scalerService) getMinMaxReplicas(ctx context.Context, serviceName strin
 	minReplicas := s.defaultMin
 	maxReplicas := s.defaultMax
 
-	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
 
 	if err != nil {
 		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -199,7 +202,8 @@ func (s *scalerService) getDownUpScaleDeltas(ctx context.Context, serviceName st
 	scaleDownBy := s.defaultScaleDownBy
 	scaleUpBy := s.defaultScaleUpBy
 
-	service, _, err := s.c.ServiceInspectWithRaw(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
 
 	if err != nil {
 		return scaleDownBy, scaleUpBy, errors.Wrap(err, "docker inspect failed in ScalerService")

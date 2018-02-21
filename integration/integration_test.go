@@ -299,7 +299,8 @@ func (s *IntegrationTestSuite) Test_RescheduleAll() {
 	request := "Rescheduling all labeled services"
 	s.Equal(request, string(alert.Annotations["request"]))
 
-	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(context.Background(), s.targetService)
+	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(
+		context.Background(), s.targetService, types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	spec := &serviceInfo.Spec
 	envs := spec.TaskTemplate.ContainerSpec.Env
@@ -316,7 +317,8 @@ func (s *IntegrationTestSuite) Test_RescheduleAll() {
 
 	s.NotEqual("", target1)
 
-	serviceInfo, _, err = s.dc.ServiceInspectWithRaw(context.Background(), s.falseRescheduleService)
+	serviceInfo, _, err = s.dc.ServiceInspectWithRaw(
+		context.Background(), s.falseRescheduleService, types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	spec = &serviceInfo.Spec
 	envs = spec.TaskTemplate.ContainerSpec.Env
@@ -354,7 +356,8 @@ func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(message, string(alert.Annotations["summary"]))
 
-	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(context.Background(), s.falseRescheduleService)
+	serviceInfo, _, err := s.dc.ServiceInspectWithRaw(
+		context.Background(), s.falseRescheduleService, types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	spec := &serviceInfo.Spec
 	envs := spec.TaskTemplate.ContainerSpec.Env
@@ -376,7 +379,8 @@ func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
 	require := s.Require()
 
-	service, _, err := s.dc.ServiceInspectWithRaw(context.Background(), serviceName)
+	service, _, err := s.dc.ServiceInspectWithRaw(
+		context.Background(), serviceName, types.ServiceInspectOptions{})
 	require.NoError(err)
 
 	service.Spec.Mode.Replicated.Replicas = &count
@@ -391,7 +395,8 @@ func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
 func (s *IntegrationTestSuite) getReplicas(serviceName string) int {
 
 	require := s.Require()
-	service, _, err := s.dc.ServiceInspectWithRaw(context.Background(), serviceName)
+	service, _, err := s.dc.ServiceInspectWithRaw(
+		context.Background(), serviceName, types.ServiceInspectOptions{})
 	require.NoError(err)
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas

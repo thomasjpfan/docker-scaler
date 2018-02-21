@@ -70,7 +70,8 @@ func (r *reschedulerService) getManagerNodeCount() (int, error) {
 
 func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
-	serviceInfo, _, err := r.c.ServiceInspectWithRaw(context.Background(), serviceID)
+	serviceInfo, _, err := r.c.ServiceInspectWithRaw(
+		context.Background(), serviceID, types.ServiceInspectOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Unable to inspect service %s", serviceID)
 	}

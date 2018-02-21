@@ -1,3 +1,5 @@
+required = ["github.com/docker/distribution"]
+
 [prune]
   non-go = true
   go-tests = true
@@ -13,7 +15,11 @@
 
 [[constraint]]
   name = "github.com/docker/docker"
-  version = "17.03.2-ce"
+  revision = "e3831a62a3052472d7252049bc59835d5d7dc8bd"
+
+[[constraint]]
+  name = "github.com/docker/distribution"
+  revision = "6664ec703991875e14419ff4960921cce7678bab"
 
 [[constraint]]
   name = "github.com/pkg/errors"

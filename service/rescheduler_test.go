@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
 )
@@ -111,7 +112,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {
 	err := s.reschedulerService.RescheduleService(s.serviceNames[0], value)
 	s.Require().NoError(err)
 
-	service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), s.serviceNames[0])
+	service, _, err := s.dClient.ServiceInspectWithRaw(
+		context.Background(), s.serviceNames[0], types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 
 	envList := service.Spec.TaskTemplate.ContainerSpec.Env
@@ -166,7 +168,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleWithTrueLabel() {
 
 	for _, name := range s.serviceNames {
 
-		service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), name)
+		service, _, err := s.dClient.ServiceInspectWithRaw(
+			context.Background(), name, types.ServiceInspectOptions{})
 		s.Require().NoError(err)
 
 		envLists := service.Spec.TaskTemplate.ContainerSpec.Env
@@ -184,13 +187,15 @@ func (s *ReschedulerTestSuite) Test_RescheduleWithFalseLabel() {
 	err := s.reschedulerService.RescheduleAll(value)
 	s.Require().NoError(err)
 
-	service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err := s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists := service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, fmt.Sprintf("%s=web_test1", s.envKey))
 	s.NotContains(envLists, envAdd)
 
-	service, _, err = s.dClient.ServiceInspectWithRaw(context.Background(), "web_test2")
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test2", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, envAdd)
@@ -206,13 +211,15 @@ func (s *ReschedulerTestSuite) Test_RescheduleWithNoLabel() {
 	err := s.reschedulerService.RescheduleAll(value)
 	s.Require().NoError(err)
 
-	service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err := s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists := service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, fmt.Sprintf("%s=web_test1", s.envKey))
 	s.NotContains(envLists, envAdd)
 
-	service, _, err = s.dClient.ServiceInspectWithRaw(context.Background(), "web_test2")
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test2", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, envAdd)
@@ -222,7 +229,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleChangesLabel() {
 	value := "HELLOWORLDNEW"
 	envAdd := fmt.Sprintf("%s=%s", s.envKey, value)
 
-	service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err := s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists := service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, fmt.Sprintf("%s=web_test1", s.envKey))
@@ -230,7 +238,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleChangesLabel() {
 	err = s.reschedulerService.RescheduleAll(value)
 	s.Require().NoError(err)
 
-	service, _, err = s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, envAdd)
@@ -240,7 +249,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleChangesLabelLeavesCurrentOnesAlone
 	value := "HELLOWORLD"
 	envAdd := fmt.Sprintf("%s=%s", s.envKey, value)
 
-	service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err := s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 	envLists := service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, "STUFF=web_test1")
@@ -248,14 +258,16 @@ func (s *ReschedulerTestSuite) Test_RescheduleChangesLabelLeavesCurrentOnesAlone
 	err = s.reschedulerService.RescheduleAll(value)
 	s.Require().NoError(err)
 
-	service, _, err = s.dClient.ServiceInspectWithRaw(context.Background(), "web_test1")
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test1", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envLists, envAdd)
 	s.Contains(envLists, "STUFF=web_test1")
 
-	service, _, err = s.dClient.ServiceInspectWithRaw(context.Background(), "web_test2")
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), "web_test2", types.ServiceInspectOptions{})
 	s.Require().NoError(err)
 
 	envLists = service.Spec.TaskTemplate.ContainerSpec.Env
@@ -291,7 +303,8 @@ L:
 
 	for _, name := range s.serviceNames {
 
-		service, _, err := s.dClient.ServiceInspectWithRaw(context.Background(), name)
+		service, _, err := s.dClient.ServiceInspectWithRaw(
+			context.Background(), name, types.ServiceInspectOptions{})
 		s.Require().NoError(err)
 
 		envLists := service.Spec.TaskTemplate.ContainerSpec.Env

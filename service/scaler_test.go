@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
 )
@@ -92,7 +93,8 @@ L:
 	for {
 		select {
 		case <-tickerC:
-			_, _, err = s.client.ServiceInspectWithRaw(s.ctx, "web_test")
+			_, _, err = s.client.ServiceInspectWithRaw(
+				s.ctx, "web_test", types.ServiceInspectOptions{})
 			if err == nil {
 				break L
 			}
@@ -118,7 +120,8 @@ L:
 	for {
 		select {
 		case <-tickerC:
-			_, _, err = s.client.ServiceInspectWithRaw(s.ctx, "web_test")
+			_, _, err = s.client.ServiceInspectWithRaw(
+				s.ctx, "web_test", types.ServiceInspectOptions{})
 			if err != nil {
 				break L
 			}
