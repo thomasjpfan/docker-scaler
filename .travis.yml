@@ -28,7 +28,7 @@ after_script:
   - docker stack rm test
 
 after_success:
-  - ./scripts/coverage.sh html
+  - ./scripts/coverage.sh coveralls
   - >
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       if [ "$TRAVIS_BRANCH" == "master" ]; then
