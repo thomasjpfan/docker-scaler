@@ -28,8 +28,8 @@ after_script:
   - docker stack rm test
 
 after_success:
+  - ./scripts/coverage.sh html
   - >
-    ./scripts/coverage.sh html
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       if [ "$TRAVIS_BRANCH" == "master" ]; then
         docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
