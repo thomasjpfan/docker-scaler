@@ -25,7 +25,7 @@ func TestAlertUnitTestSuite(t *testing.T) {
 }
 
 func (s *AlertTestSuite) SetupSuite() {
-	client, _ := client.NewEnvClient()
+	client, _ := NewDockerClientFromEnv()
 	_, err := client.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")

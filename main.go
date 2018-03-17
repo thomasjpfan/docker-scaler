@@ -1,3 +1,5 @@
+// +build !test
+
 // Reads configuration from environemnt to create and run scaling service
 package main
 

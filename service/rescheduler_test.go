@@ -27,7 +27,7 @@ func TestReshedulerUnitTestSuite(t *testing.T) {
 }
 
 func (s *ReschedulerTestSuite) SetupSuite() {
-	client, err := client.NewEnvClient()
+	client, err := NewDockerClientFromEnv()
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}

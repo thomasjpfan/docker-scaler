@@ -13,11 +13,13 @@ before_install:
   - go env && pwd
 
 install:
+  - go get github.com/mattn/goveralls
+  - go get golang.org/x/tools/cmd/cover
   - docker swarm init
 
 script:
   - >
-    go test ./... --run UnitTest -v &&
+    ./scripts/coverage.sh &&
     docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT . &&
     docker stack deploy -c stacks/docker-scaler-test.yml test &&
     ./scripts/integration_test.sh
@@ -27,6 +29,7 @@ after_script:
 
 after_success:
   - >
+    ./scripts/coverage.sh html
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       if [ "$TRAVIS_BRANCH" == "master" ]; then
         docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
