@@ -1,7 +1,7 @@
 FROM golang:1.10.0-alpine3.7 as build
 WORKDIR /go/src/github.com/thomasjpfan/docker-scaler
 COPY . .
-RUN go build -o docker-scaler main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' main.go
 
 FROM alpine:3.7
 RUN apk add --no-cache tini ca-certificates
