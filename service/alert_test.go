@@ -31,10 +31,7 @@ func (s *AlertTestSuite) SetupSuite() {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
 	s.url = "http://localhost:9093"
-	s.alertService = &alertService{
-		url:          s.url,
-		alertTimeout: time.Second * 15,
-	}
+	s.alertService = NewAlertService(s.url, time.Second*15)
 	s.client = client
 }
 
