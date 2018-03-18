@@ -16,7 +16,7 @@ type ReschedulerTestSuite struct {
 	suite.Suite
 	workerNodes        int
 	managerNodes       int
-	reschedulerService *reschedulerService
+	reschedulerService ReschedulerServicer
 	dClient            *client.Client
 	serviceNames       []string
 	envKey             string
@@ -41,13 +41,25 @@ func (s *ReschedulerTestSuite) SetupSuite() {
 		s.T().Skipf("Docker process is not a part of a swarm")
 	}
 
-	s.reschedulerService = &reschedulerService{
-		c:              client,
-		filterLabel:    "com.df.reschedule=true",
-		envKey:         "RESCHEDULE_DATE",
-		timeOut:        time.Second * 2,
-		tickerInterval: time.Second * 1,
-	}
+	reschedulerService, err := NewReschedulerService(
+		client,
+		"com.df.reschedule",
+		"RESCHEDULE_DATE",
+		time.Second*2,
+		time.Second,
+	)
+	s.Error(err)
+
+	reschedulerService, err = NewReschedulerService(
+		client,
+		"com.df.reschedule=true",
+		"RESCHEDULE_DATE",
+		time.Second*2,
+		time.Second,
+	)
+	s.Require().NoError(err)
+
+	s.reschedulerService = reschedulerService
 	s.workerNodes = info.Swarm.Nodes - info.Swarm.Managers
 	s.managerNodes = info.Swarm.Managers
 	s.dClient = client
@@ -77,30 +89,6 @@ func (s *ReschedulerTestSuite) TearDownTest() {
 		cmd := fmt.Sprintf(`docker service rm %s`, name)
 		exec.Command("/bin/sh", "-c", cmd).Output()
 	}
-}
-
-func (s *ReschedulerTestSuite) Test_GetManagerNodeCount() {
-	managerNodes, err := s.reschedulerService.getManagerNodeCount()
-	s.Require().NoError(err)
-	s.Equal(s.managerNodes, managerNodes)
-}
-
-func (s *ReschedulerTestSuite) Test_GetWorkerNodeCount() {
-	workerNodes, err := s.reschedulerService.getWorkerNodeCount()
-	s.Require().NoError(err)
-	s.Equal(s.workerNodes, workerNodes)
-}
-
-func (s *ReschedulerTestSuite) Test_equalTargetCountManager() {
-	equalTarget, err := s.reschedulerService.equalTargetCount(s.managerNodes, true)
-	s.Require().NoError(err)
-	s.True(equalTarget)
-}
-
-func (s *ReschedulerTestSuite) Test_equalTargetCountWorker() {
-	equalTarget, err := s.reschedulerService.equalTargetCount(s.workerNodes, false)
-	s.Require().NoError(err)
-	s.True(equalTarget)
 }
 
 func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {

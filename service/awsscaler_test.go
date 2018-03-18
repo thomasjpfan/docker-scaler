@@ -39,6 +39,10 @@ func (s *AwsScalerTestSuite) SetupTest() {
 	}
 }
 
+func (s *AwsScalerTestSuite) Test_String() {
+	s.Equal("aws", s.AWSScaler.String())
+}
+
 func (s *AwsScalerTestSuite) Test_ScaleWorkerByDelta_DescribeAutoScalingErrors_ReturnsError() {
 	retErr := errors.New("Error")
 	describeOutput := autoscaling.DescribeAutoScalingGroupsOutput{}
