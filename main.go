@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/docker/docker/client"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/thomasjpfan/docker-scaler/server"
 	"github.com/thomasjpfan/docker-scaler/service"
@@ -48,8 +47,12 @@ func main() {
 		logger.Panic(err)
 	}
 
-	client, _ := client.NewEnvClient()
+	client, err := service.NewDockerClientFromEnv()
+	if err != nil {
+		logger.Panic(err)
+	}
 	defer client.Close()
+
 	_, err = client.Info(context.Background())
 	if err != nil {
 		logger.Panic(err)

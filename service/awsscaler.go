@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/joho/godotenv"
@@ -15,8 +16,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+type awsAutoScaler interface {
+	DescribeAutoScalingGroupsWithContext(ctx aws.Context, input *autoscaling.DescribeAutoScalingGroupsInput, opts ...request.Option) (*autoscaling.DescribeAutoScalingGroupsOutput, error)
+	UpdateAutoScalingGroupWithContext(ctx aws.Context, input *autoscaling.UpdateAutoScalingGroupInput, opts ...request.Option) (*autoscaling.UpdateAutoScalingGroupOutput, error)
+}
+
 type awsScaler struct {
-	svc  *autoscaling.AutoScaling
+	svc  awsAutoScaler
 	spec AWSSpec
 }
 
@@ -93,13 +99,17 @@ func (s *awsScaler) scaleNodes(ctx context.Context, delta int64, groupName strin
 
 	var targetGroup *autoscaling.Group
 	for _, group := range groupsOutput.AutoScalingGroups {
-		if *group.AutoScalingGroupName == groupName {
+		if group.AutoScalingGroupName != nil && *group.AutoScalingGroupName == groupName {
 			targetGroup = group
 			break
 		}
 	}
 	if targetGroup == nil {
 		return 0, 0, fmt.Errorf("Unable to find launch-configuration-name: %s", groupName)
+	}
+
+	if targetGroup.DesiredCapacity == nil {
+		return 0, 0, fmt.Errorf("DesiredCapacity not set on aws")
 	}
 
 	currentCapacity := *targetGroup.DesiredCapacity
