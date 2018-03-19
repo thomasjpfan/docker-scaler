@@ -58,16 +58,16 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.defaultScaleUpBy = 1
 	s.client = client
 	s.ctx = context.Background()
-	s.scaler = &scalerService{
-		c:                  client,
-		minLabel:           "com.df.scaleMin",
-		maxLabel:           "com.df.scaleMax",
-		scaleDownByLabel:   "com.df.scaleDownBy",
-		scaleUpByLabel:     "com.df.scaleUpBy",
-		defaultMin:         s.defaultMin,
-		defaultMax:         s.defaultMax,
-		defaultScaleDownBy: s.defaultScaleDownBy,
-		defaultScaleUpBy:   s.defaultScaleUpBy}
+	s.scaler = NewScalerService(
+		client,
+		"com.df.scaleMin",
+		"com.df.scaleMax",
+		"com.df.scaleDownBy",
+		"com.df.scaleUpBy",
+		s.defaultMin,
+		s.defaultMax,
+		s.defaultScaleDownBy,
+		s.defaultScaleUpBy).(*scalerService)
 }
 
 func (s *ScalerTestSuite) SetupTest() {
