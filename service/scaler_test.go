@@ -137,9 +137,14 @@ func (s *ScalerTestSuite) Test_GetReplicasServiceDoesNotExist() {
 }
 
 func (s *ScalerTestSuite) Test_GetReplicas() {
+
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.replicas, replicas)
+
+	isGlobal, err := s.scaler.isGlobal(s.ctx, "web_test")
+	s.Require().NoError(err)
+	s.False(isGlobal)
 }
 
 func (s *ScalerTestSuite) Test_SetReplicas() {
@@ -278,4 +283,57 @@ func (s *ScalerTestSuite) Test_ScaleDown() {
 	replicas, err := s.scaler.getReplicas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(newReplicas, replicas)
+}
+
+func (s *ScalerTestSuite) Test_GlobalService_ScaleUpAndScaleDown_ReturnsError() {
+	cmd := fmt.Sprintf(`docker service create --name web_global \
+		   -l com.df.scaleMin=%d \
+		   -l com.df.scaleMax=%d \
+		   -l com.df.scaleDownBy=%d \
+		   -l com.df.scaleUpBy=%d \
+		   --mode global \
+		   -d \
+		   alpine:3.6 \
+		   sleep 10000000`, s.replicaMin, s.replicaMax,
+		s.scaleDownBy, s.scaleUpBy)
+	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	if err != nil {
+		s.T().Skipf("Unable to create service: %s", err.Error())
+	}
+
+	tickerC := time.NewTicker(time.Millisecond * 500).C
+	timerC := time.NewTimer(time.Second * 10).C
+
+L:
+	for {
+		select {
+		case <-tickerC:
+			_, _, err = s.client.ServiceInspectWithRaw(
+				s.ctx, "web_global", types.ServiceInspectOptions{})
+			if err == nil {
+				break L
+			}
+		case <-timerC:
+			break L
+		}
+	}
+
+	if err != nil {
+		s.T().Skipf("Unable to create service: %s", err.Error())
+	}
+
+	isGlobal, err := s.scaler.isGlobal(s.ctx, "web_global")
+	s.NoError(err)
+	s.True(isGlobal)
+
+	_, _, err = s.scaler.ScaleUp(s.ctx, "web_global")
+	s.Error(err)
+	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
+
+	_, _, err = s.scaler.ScaleDown(s.ctx, "web_global")
+	s.Error(err)
+	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
+
+	cmd = `docker service rm web_global`
+	exec.Command("/bin/sh", "-c", cmd).Output()
 }
