@@ -64,7 +64,7 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		return "", false, err
 	}
 
-	_, scaleUpBy, err := s.getDownUpScaleDeltas(ctx, serviceName)
+	_, scaleUpBy, err := s.getScaleUpDownDeltas(ctx, serviceName)
 	if err != nil {
 		return "", false, err
 	}
@@ -103,7 +103,7 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 		return "", false, err
 	}
 
-	scaleDownBy, _, err := s.getDownUpScaleDeltas(ctx, serviceName)
+	scaleDownBy, _, err := s.getScaleUpDownDeltas(ctx, serviceName)
 	if err != nil {
 		return "", false, err
 	}
@@ -197,8 +197,8 @@ func (s *scalerService) getMinMaxReplicas(ctx context.Context, serviceName strin
 	return minReplicas, maxReplicas, nil
 }
 
-// getDownUpScaleDeltas gets how much to scale service up or down by
-func (s *scalerService) getDownUpScaleDeltas(ctx context.Context, serviceName string) (uint64, uint64, error) {
+// getScaleUpDownDeltas gets how much to scale service up or down by
+func (s *scalerService) getScaleUpDownDeltas(ctx context.Context, serviceName string) (uint64, uint64, error) {
 	scaleDownBy := s.defaultScaleDownBy
 	scaleUpBy := s.defaultScaleUpBy
 

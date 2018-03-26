@@ -189,7 +189,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 }
 
 func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
-	scaleDownBy, scaleUpBy, err := s.scaler.getDownUpScaleDeltas(s.ctx, "web_test")
+	scaleDownBy, scaleUpBy, err := s.scaler.getScaleUpDownDeltas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.scaleDownBy, scaleDownBy)
 	s.Equal(s.scaleUpBy, scaleUpBy)
@@ -200,7 +200,7 @@ func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
 			--label-rm com.df.scaleDownBy \
 			--label-rm com.df.scaleUpBy -d`
 	exec.Command("/bin/sh", "-c", cmd).Output()
-	min, max, err := s.scaler.getDownUpScaleDeltas(s.ctx, "web_test")
+	min, max, err := s.scaler.getScaleUpDownDeltas(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal(s.defaultScaleDownBy, min)
 	s.Equal(s.defaultScaleUpBy, max)
