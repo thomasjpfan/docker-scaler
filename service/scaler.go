@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 )
@@ -54,7 +55,14 @@ func NewScalerService(
 
 func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string, bool, error) {
 
-	isGlobal, err := s.isGlobal(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
+
+	if err != nil {
+		return "", false, errors.Wrap(err, "docker inspect failed in ScalerService")
+	}
+
+	isGlobal, err := s.isGlobal(service)
 	if err != nil {
 		return "", false, err
 	}
@@ -63,17 +71,17 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 			"%s is a global service (can not be scaled)", serviceName)
 	}
 
-	_, maxReplicas, err := s.getMinMaxReplicas(ctx, serviceName)
+	_, maxReplicas, err := s.getMinMaxReplicas(service)
 	if err != nil {
 		return "", false, err
 	}
 
-	currentReplicas, err := s.getReplicas(ctx, serviceName)
+	currentReplicas, err := s.getReplicas(service)
 	if err != nil {
 		return "", false, err
 	}
 
-	_, scaleUpBy, err := s.getScaleUpDownDeltas(ctx, serviceName)
+	_, scaleUpBy, err := s.getScaleUpDownDeltas(service)
 	if err != nil {
 		return "", false, err
 	}
@@ -92,7 +100,7 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		return message, true, nil
 	}
 
-	err = s.setReplicas(ctx, serviceName, newReplicas)
+	err = s.setReplicas(ctx, service, newReplicas)
 	if err != nil {
 		return "", false, err
 	}
@@ -103,7 +111,14 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 
 func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (string, bool, error) {
 
-	isGlobal, err := s.isGlobal(ctx, serviceName)
+	service, _, err := s.c.ServiceInspectWithRaw(
+		ctx, serviceName, types.ServiceInspectOptions{})
+
+	if err != nil {
+		return "", false, errors.Wrap(err, "docker inspect failed in ScalerService")
+	}
+
+	isGlobal, err := s.isGlobal(service)
 	if err != nil {
 		return "", false, err
 	}
@@ -112,17 +127,17 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 			"%s is a global service (can not be scaled)", serviceName)
 	}
 
-	minReplicas, _, err := s.getMinMaxReplicas(ctx, serviceName)
+	minReplicas, _, err := s.getMinMaxReplicas(service)
 	if err != nil {
 		return "", false, err
 	}
 
-	currentReplicas, err := s.getReplicas(ctx, serviceName)
+	currentReplicas, err := s.getReplicas(service)
 	if err != nil {
 		return "", false, err
 	}
 
-	scaleDownBy, _, err := s.getScaleUpDownDeltas(ctx, serviceName)
+	scaleDownBy, _, err := s.getScaleUpDownDeltas(service)
 	if err != nil {
 		return "", false, err
 	}
@@ -141,7 +156,7 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 		return message, true, nil
 	}
 
-	err = s.setReplicas(ctx, serviceName, newReplicas)
+	err = s.setReplicas(ctx, service, newReplicas)
 	if err != nil {
 		return "", false, err
 	}
@@ -151,28 +166,14 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 }
 
 // getReplicas Gets Replicas
-func (s *scalerService) getReplicas(ctx context.Context, serviceName string) (uint64, error) {
-
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-
-	if err != nil {
-		return 0, errors.Wrap(err, "docker inspect failed in ScalerService")
-	}
+func (s *scalerService) getReplicas(service swarm.Service) (uint64, error) {
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
 	return currentReplicas, nil
 }
 
 // setReplicas Sets the number of replicas
-func (s *scalerService) setReplicas(ctx context.Context, serviceName string, count uint64) error {
-
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-
-	if err != nil {
-		return errors.Wrap(err, "docker inspect failed in ScalerService")
-	}
+func (s *scalerService) setReplicas(ctx context.Context, service swarm.Service, count uint64) error {
 
 	service.Spec.Mode.Replicated.Replicas = &count
 	updateOpts := types.ServiceUpdateOptions{}
@@ -184,17 +185,10 @@ func (s *scalerService) setReplicas(ctx context.Context, serviceName string, cou
 }
 
 // getMinMaxReplicas gets the min and maximum replicas allowed for serviceName
-func (s *scalerService) getMinMaxReplicas(ctx context.Context, serviceName string) (uint64, uint64, error) {
+func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64, error) {
 
 	minReplicas := s.defaultMin
 	maxReplicas := s.defaultMax
-
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-
-	if err != nil {
-		return minReplicas, maxReplicas, errors.Wrap(err, "docker inspect failed in ScalerService")
-	}
 
 	labels := service.Spec.Labels
 	minLabel := labels[s.minLabel]
@@ -217,16 +211,9 @@ func (s *scalerService) getMinMaxReplicas(ctx context.Context, serviceName strin
 }
 
 // getScaleUpDownDeltas gets how much to scale service up or down by
-func (s *scalerService) getScaleUpDownDeltas(ctx context.Context, serviceName string) (uint64, uint64, error) {
+func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uint64, error) {
 	scaleDownBy := s.defaultScaleDownBy
 	scaleUpBy := s.defaultScaleUpBy
-
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-
-	if err != nil {
-		return scaleDownBy, scaleUpBy, errors.Wrap(err, "docker inspect failed in ScalerService")
-	}
 
 	labels := service.Spec.Labels
 	downLabel := labels[s.scaleDownByLabel]
@@ -249,12 +236,7 @@ func (s *scalerService) getScaleUpDownDeltas(ctx context.Context, serviceName st
 	return scaleDownBy, scaleUpBy, nil
 }
 
-func (s *scalerService) isGlobal(ctx context.Context, serviceName string) (bool, error) {
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-	if err != nil {
-		return false, errors.Wrap(err, "docker inspect failed in ScalerService")
-	}
+func (s *scalerService) isGlobal(service swarm.Service) (bool, error) {
 
 	if service.Spec.Mode.Global != nil {
 		return true, nil
@@ -264,5 +246,5 @@ func (s *scalerService) isGlobal(ctx context.Context, serviceName string) (bool,
 		return false, nil
 	}
 
-	return false, fmt.Errorf("Unable to recognize service model for: %s", serviceName)
+	return false, fmt.Errorf("Unable to recognize service model for: %s", service.Spec.Name)
 }
