@@ -7,7 +7,7 @@ FROM alpine:3.7
 RUN apk add --no-cache tini ca-certificates
 
 HEALTHCHECK --interval=5s CMD \
-    wget -qO- http://localhost:8080/v1/ping || exit 1
+    wget --quiet --tries=1 --spider http://localhost:8080/v1/ping || exit 1
 
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
