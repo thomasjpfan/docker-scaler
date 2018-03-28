@@ -22,5 +22,5 @@ docker run --rm \
 	-e "TARGET_SERVICE=test_web1" \
 	-e "FALSE_RESCHEDULE_SERVICE=test_web2" \
 	-e "ALERTMANAGER_ADDRESS=http://alertmanager:9093" \
-	golang:1.9.2-alpine3.7 \
+	golang:1.10.0-alpine3.7 \
 	go test github.com/thomasjpfan/docker-scaler/integration -v
