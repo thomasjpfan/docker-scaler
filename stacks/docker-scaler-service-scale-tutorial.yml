@@ -3,7 +3,7 @@ version: "3.1"
 services:
 
   scaler:
-    image: thomasjpfan/docker-scaler
+    image: thomasjpfan/docker-scaler:${TAG:-master}
     environment:
       - ALERTMANAGER_ADDRESS=http://alert-manager:9093
       - SERVER_PREFIX=/scaler

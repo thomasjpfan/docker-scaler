@@ -85,6 +85,10 @@ func (s *Server) addRoutes(router *mux.Router) {
 		Queries("service", "{service}").
 		HandlerFunc(s.RescheduleOneService).
 		Name("RescheduleOneService")
+	router.Path("/ping").
+		Methods("GET").
+		HandlerFunc(s.PingHandler).
+		Name("Ping")
 }
 
 // Run starts server
@@ -93,6 +97,11 @@ func (s *Server) Run(port uint16, prefix string) {
 	m := s.MakeRouter(prefix)
 	h := handler.RecoveryHandler(s.logger)
 	log.Fatal(http.ListenAndServe(address, h(m)))
+}
+
+// PingHandler is sends StatusOK (used by healthcheck)
+func (s *Server) PingHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 // ScaleService scales service

@@ -1,7 +1,9 @@
 .PHONY: build unit_test deploy_test integration_test undeploy_test
 
+TAG?=master
+
 build:
-	docker image build -t thomasjpfan/docker-scaler:master .
+	docker image build -t thomasjpfan/docker-scaler:$(TAG) .
 
 unit_test:
 	go test ./... --run UnitTest

@@ -6,6 +6,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' main.go
 FROM alpine:3.7
 RUN apk add --no-cache tini ca-certificates
 
+HEALTHCHECK --interval=5s CMD \
+    wget -q -t 1 http://localhost:8080/v1/ping || exit 1
+
 COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
 

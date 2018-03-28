@@ -105,6 +105,14 @@ func (s *ServerTestSuite) SetupTest() {
 	s.r = s.s.MakeRouter("/")
 }
 
+func (s *ServerTestSuite) Test_Ping_Returns_StatusCode() {
+	url := "/v1/ping"
+	req, _ := http.NewRequest("GET", url, nil)
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+}
+
 func (s *ServerTestSuite) Test_ScaleService_NoBody() {
 	errorMessage := "No POST body"
 	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
