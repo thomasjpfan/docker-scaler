@@ -26,3 +26,9 @@ func (s *NodeScalerTestSuite) Test_SilentNodeScaler_ErrorsOnScale() {
 	_, _, err = silentScaler.ScaleManagerByDelta(ctx, -1)
 	s.Error(err)
 }
+
+func (s *NodeScalerTestSuite) Test_AWSNodeScaler_ErrorsOnScale() {
+	_, err := NewNodeScaler("aws")
+	s.Error(err)
+	s.Equal("AWS_ENV_FILE not defined", err.Error())
+}

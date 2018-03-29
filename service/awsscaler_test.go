@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,6 +42,33 @@ func (s *AwsScalerTestSuite) SetupTest() {
 
 func (s *AwsScalerTestSuite) Test_String() {
 	s.Equal("aws", s.AWSScaler.String())
+}
+
+func (s *AwsScalerTestSuite) Test_NewAWSScalerFromENV_UndefinedAWS_MANAGER_ASG_ReturnsError() {
+	_, err := NewAWSScalerFromEnv()
+	s.Error(err)
+	s.Equal("AWS Scaling requires AWS_MANAGER_ASG", err.Error())
+}
+
+func (s *AwsScalerTestSuite) Test_NewAWSScalerFromENV_UndefinedAWS_WORKER_ASG_ReturnsError() {
+	defer func() {
+		os.Unsetenv("AWS_MANAGER_ASG")
+	}()
+	os.Setenv("AWS_MANAGER_ASG", "awsmanager")
+	_, err := NewAWSScalerFromEnv()
+	s.Error(err)
+	s.Equal("AWS Scaling requires AWS_WORKER_ASG", err.Error())
+}
+
+func (s *AwsScalerTestSuite) Test_NewAWSScalerFromENV() {
+	defer func() {
+		os.Unsetenv("AWS_MANAGER_ASG")
+		os.Unsetenv("AWS_WORKER_ASG")
+	}()
+	os.Setenv("AWS_MANAGER_ASG", "awsmanager")
+	os.Setenv("AWS_WORKER_ASG", "awsworker")
+	_, err := NewAWSScalerFromEnv()
+	s.NoError(err)
 }
 
 func (s *AwsScalerTestSuite) Test_ScaleWorkerByDelta_DescribeAutoScalingErrors_ReturnsError() {

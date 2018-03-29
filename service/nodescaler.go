@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 )
 
@@ -29,6 +31,14 @@ func (s silentNodeScaler) ScaleWorkerByDelta(ctx context.Context, delta int) (ui
 func NewNodeScaler(nodeBackend string) (NodeScaler, error) {
 	switch nodeBackend {
 	case "aws":
+		envFile := os.Getenv("AWS_ENV_FILE")
+		if len(envFile) == 0 {
+			return nil, fmt.Errorf("AWS_ENV_FILE not defined")
+		}
+		err := godotenv.Load(envFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to load %s", envFile)
+		}
 		scaler, err := NewAWSScalerFromEnv()
 		if err != nil {
 			return nil, errors.Wrap(err, "Unable to create aws scaler")

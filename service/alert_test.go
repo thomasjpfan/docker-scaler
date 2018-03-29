@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -39,7 +37,12 @@ func (s *AlertTestSuite) TearDownSuite() {
 	s.client.Close()
 }
 
-func (s *AlertTestSuite) SetupTest() {
+func (s *AlertTestSuite) Test_SendAlert() {
+
+	defer func() {
+		cmd := "docker container rm -f am9093"
+		exec.Command("/bin/sh", "-c", cmd).Output()
+	}()
 	cmd := `docker run --name am9093 -p 9093:9093 \
 			-d prom/alertmanager:v0.13.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
@@ -58,14 +61,7 @@ func (s *AlertTestSuite) SetupTest() {
 		time.Sleep(1 * time.Second)
 	}
 	s.T().Skipf("Unable to create alertmanager")
-}
 
-func (s *AlertTestSuite) TearDownTest() {
-	cmd := "docker container rm -f am9093"
-	exec.Command("/bin/sh", "-c", cmd).Output()
-}
-
-func (s *AlertTestSuite) Test_SendAlert() {
 	require := s.Require()
 	serviceName := "web"
 	alertname := "service_scaler"
@@ -89,9 +85,7 @@ func (s *AlertTestSuite) Test_SendAlert() {
 	s.Equal("", alert.GeneratorURL)
 }
 
-func Test_generateAlert(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func (s *AlertTestSuite) Test_generateAlert() {
 
 	serviceName := "web"
 	alertname := "service_scaler"
@@ -103,13 +97,13 @@ func Test_generateAlert(t *testing.T) {
 	endsAt := startsAt.Add(timeout)
 
 	alert := generateAlert(alertname, serviceName, request, status, summary, startsAt, timeout)
-	require.NotNil(alert)
-	assert.Equal(alertname, string(alert.Labels["alertname"]))
-	assert.Equal(serviceName, string(alert.Labels["service"]))
-	assert.Equal(status, string(alert.Labels["status"]))
-	assert.Equal(summary, string(alert.Annotations["summary"]))
-	assert.Equal(request, string(alert.Annotations["request"]))
-	assert.Equal(startsAt, alert.StartsAt)
-	assert.Equal(endsAt, alert.EndsAt)
-	assert.Equal("", alert.GeneratorURL)
+	s.Require().NotNil(alert)
+	s.Equal(alertname, string(alert.Labels["alertname"]))
+	s.Equal(serviceName, string(alert.Labels["service"]))
+	s.Equal(status, string(alert.Labels["status"]))
+	s.Equal(summary, string(alert.Annotations["summary"]))
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(startsAt, alert.StartsAt)
+	s.Equal(endsAt, alert.EndsAt)
+	s.Equal("", alert.GeneratorURL)
 }

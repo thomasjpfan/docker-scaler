@@ -115,6 +115,7 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 			err = r.RescheduleAll(value)
 			if err != nil {
 				errorC <- err
+				return
 			}
 			errorC <- nil
 			return

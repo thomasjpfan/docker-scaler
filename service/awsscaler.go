@@ -5,13 +5,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
-	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 )
@@ -38,13 +36,6 @@ type AWSSpec struct {
 
 // NewAWSScalerFromEnv creates an AWS based node scaler
 func NewAWSScalerFromEnv() (NodeScaler, error) {
-
-	envFile := os.Getenv("AWS_ENV_FILE")
-	if len(envFile) == 0 {
-		return nil, fmt.Errorf("AWS_ENV_FILE not defined")
-	}
-
-	godotenv.Load(envFile)
 
 	var spec AWSSpec
 	err := envconfig.Process("", &spec)

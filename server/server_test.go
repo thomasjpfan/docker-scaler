@@ -105,6 +105,11 @@ func (s *ServerTestSuite) SetupTest() {
 	s.r = s.s.MakeRouter("/")
 }
 
+func (s *ServerTestSuite) Test_MakeRouter_WithPrefix() {
+	m := s.s.MakeRouter("/scaler")
+	s.NotNil(m)
+}
+
 func (s *ServerTestSuite) Test_Ping_Returns_StatusCode() {
 	url := "/v1/ping"
 	req, _ := http.NewRequest("GET", url, nil)
