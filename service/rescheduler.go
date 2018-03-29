@@ -87,7 +87,7 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 		return fmt.Errorf("%s is not labeled with %s (%s=%s)", serviceID, r.filterLabel, kv[0], filterValue)
 	}
 
-	err = r.reschedulerService(serviceInfo, value)
+	err = r.rescheduleService(serviceInfo, value)
 	if err != nil {
 		return errors.Wrap(err, "Unable to reschedule service")
 	}
