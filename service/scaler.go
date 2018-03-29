@@ -71,20 +71,9 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 			"%s is a global service (can not be scaled)", serviceName)
 	}
 
-	_, maxReplicas, err := s.getMinMaxReplicas(service)
-	if err != nil {
-		return "", false, err
-	}
-
-	currentReplicas, err := s.getReplicas(service)
-	if err != nil {
-		return "", false, err
-	}
-
-	_, scaleUpBy, err := s.getScaleUpDownDeltas(service)
-	if err != nil {
-		return "", false, err
-	}
+	_, maxReplicas := s.getMinMaxReplicas(service)
+	currentReplicas := s.getReplicas(service)
+	_, scaleUpBy := s.getScaleUpDownDeltas(service)
 
 	newReplicasInt := currentReplicas + scaleUpBy
 
@@ -127,20 +116,9 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 			"%s is a global service (can not be scaled)", serviceName)
 	}
 
-	minReplicas, _, err := s.getMinMaxReplicas(service)
-	if err != nil {
-		return "", false, err
-	}
-
-	currentReplicas, err := s.getReplicas(service)
-	if err != nil {
-		return "", false, err
-	}
-
-	scaleDownBy, _, err := s.getScaleUpDownDeltas(service)
-	if err != nil {
-		return "", false, err
-	}
+	minReplicas, _ := s.getMinMaxReplicas(service)
+	currentReplicas := s.getReplicas(service)
+	scaleDownBy, _ := s.getScaleUpDownDeltas(service)
 
 	newReplicasInt := int(currentReplicas) - int(scaleDownBy)
 
@@ -166,10 +144,10 @@ func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (stri
 }
 
 // getReplicas Gets Replicas
-func (s *scalerService) getReplicas(service swarm.Service) (uint64, error) {
+func (s *scalerService) getReplicas(service swarm.Service) uint64 {
 
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
-	return currentReplicas, nil
+	return currentReplicas
 }
 
 // setReplicas Sets the number of replicas
@@ -185,7 +163,7 @@ func (s *scalerService) setReplicas(ctx context.Context, service swarm.Service, 
 }
 
 // getMinMaxReplicas gets the min and maximum replicas allowed for serviceName
-func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64, error) {
+func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64) {
 
 	minReplicas := s.defaultMin
 	maxReplicas := s.defaultMax
@@ -207,11 +185,11 @@ func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64
 		}
 	}
 
-	return minReplicas, maxReplicas, nil
+	return 0, minReplicas, maxReplicas
 }
 
 // getScaleUpDownDeltas gets how much to scale service up or down by
-func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uint64, error) {
+func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uint64) {
 	scaleDownBy := s.defaultScaleDownBy
 	scaleUpBy := s.defaultScaleUpBy
 
@@ -233,7 +211,7 @@ func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uin
 		}
 	}
 
-	return scaleDownBy, scaleUpBy, nil
+	return 0, scaleDownBy, scaleUpBy
 }
 
 func (s *scalerService) isGlobal(service swarm.Service) (bool, error) {

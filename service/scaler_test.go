@@ -135,8 +135,7 @@ L:
 func (s *ScalerTestSuite) Test_GetReplicas() {
 
 	ts := s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(s.replicas, replicas)
 
 	isGlobal, err := s.scaler.isGlobal(ts)
@@ -151,16 +150,14 @@ func (s *ScalerTestSuite) Test_SetReplicas() {
 	s.Require().NoError(err)
 
 	ts = s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(uint64(4), replicas)
 }
 
 func (s *ScalerTestSuite) Test_GetMinMaxReplicas() {
 
 	ts := s.getTestService()
-	min, max, err := s.scaler.getMinMaxReplicas(ts)
-	s.Require().NoError(err)
+	min, max := s.scaler.getMinMaxReplicas(ts)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.replicaMax, max)
 }
@@ -172,8 +169,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 
 	ts := s.getTestService()
-	min, max, err := s.scaler.getMinMaxReplicas(ts)
-	s.Require().NoError(err)
+	min, max := s.scaler.getMinMaxReplicas(ts)
 	s.Equal(s.replicaMin, min)
 	s.Equal(s.defaultMax, max)
 }
@@ -184,8 +180,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
 
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	ts := s.getTestService()
-	min, max, err := s.scaler.getMinMaxReplicas(ts)
-	s.Require().NoError(err)
+	min, max := s.scaler.getMinMaxReplicas(ts)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.replicaMax, max)
 }
@@ -197,8 +192,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 
 	ts := s.getTestService()
-	min, max, err := s.scaler.getMinMaxReplicas(ts)
-	s.Require().NoError(err)
+	min, max := s.scaler.getMinMaxReplicas(ts)
 	s.Equal(s.defaultMin, min)
 	s.Equal(s.defaultMax, max)
 }
@@ -206,8 +200,7 @@ func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
 func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
 
 	ts := s.getTestService()
-	scaleDownBy, scaleUpBy, err := s.scaler.getScaleUpDownDeltas(ts)
-	s.Require().NoError(err)
+	scaleDownBy, scaleUpBy := s.scaler.getScaleUpDownDeltas(ts)
 	s.Equal(s.scaleDownBy, scaleDownBy)
 	s.Equal(s.scaleUpBy, scaleUpBy)
 }
@@ -219,8 +212,7 @@ func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 
 	ts := s.getTestService()
-	min, max, err := s.scaler.getScaleUpDownDeltas(ts)
-	s.Require().NoError(err)
+	min, max := s.scaler.getScaleUpDownDeltas(ts)
 	s.Equal(s.defaultScaleDownBy, min)
 	s.Equal(s.defaultScaleUpBy, max)
 }
@@ -236,8 +228,7 @@ func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(s.replicaMax, replicas)
 }
 
@@ -252,8 +243,7 @@ func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(s.replicaMin, replicas)
 }
 
@@ -271,8 +261,7 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(newReplicas, replicas)
 }
 
@@ -286,8 +275,7 @@ func (s *ScalerTestSuite) Test_ScaleUp() {
 	s.Equal(expMsg, msg)
 
 	ts := s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
+	replicas := s.scaler.getReplicas(ts)
 	s.Equal(newReplicas, replicas)
 }
 
@@ -307,7 +295,7 @@ func (s *ScalerTestSuite) Test_ScaleDown() {
 	s.Equal(expMsg, msg)
 
 	ts := s.getTestService()
-	replicas, err := s.scaler.getReplicas(ts)
+	replicas := s.scaler.getReplicas(ts)
 	s.Require().NoError(err)
 	s.Equal(newReplicas, replicas)
 }
