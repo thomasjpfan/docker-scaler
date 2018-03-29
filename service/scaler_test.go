@@ -132,15 +132,15 @@ L:
 	}
 }
 
-func (s *ScalerTestSuite) Test_GetReplicas() {
+func (s *ScalerTestSuite) Test_isGlobal() {
+	_, err := s.scaler.isGlobal(swarm.Service{})
+	s.Error(err)
+}
 
+func (s *ScalerTestSuite) Test_GetReplicas() {
 	ts := s.getTestService()
 	replicas := s.scaler.getReplicas(ts)
 	s.Equal(s.replicas, replicas)
-
-	isGlobal, err := s.scaler.isGlobal(ts)
-	s.Require().NoError(err)
-	s.False(isGlobal)
 }
 
 func (s *ScalerTestSuite) Test_SetReplicas() {
