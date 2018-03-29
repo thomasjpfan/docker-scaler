@@ -49,25 +49,6 @@ func NewReschedulerService(
 	}, nil
 }
 
-func (r *reschedulerService) getWorkerNodeCount() (int, error) {
-	info, err := r.c.Info(context.Background())
-	if err != nil {
-		return 0, errors.Wrap(err, "Unable to get docker info for node count")
-	}
-	allNodes := info.Swarm.Nodes
-	managerNodes := info.Swarm.Managers
-	return allNodes - managerNodes, nil
-}
-
-func (r *reschedulerService) getManagerNodeCount() (int, error) {
-	info, err := r.c.Info(context.Background())
-	if err != nil {
-		return 0, errors.Wrap(err, "Unable to get docker info for node count")
-	}
-	managerNodes := info.Swarm.Managers
-	return managerNodes, nil
-}
-
 func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
 	serviceInfo, _, err := r.c.ServiceInspectWithRaw(
@@ -87,7 +68,7 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 		return fmt.Errorf("%s is not labeled with %s (%s=%s)", serviceID, r.filterLabel, kv[0], filterValue)
 	}
 
-	err = r.rescheduleService(serviceInfo, value)
+	err = r.rescheduleSingleService(serviceInfo, value)
 	if err != nil {
 		return errors.Wrap(err, "Unable to reschedule service")
 	}
@@ -140,7 +121,7 @@ func (r *reschedulerService) RescheduleAll(value string) error {
 	// This could be concurrent
 	errorServices := []string{}
 	for _, service := range services {
-		err = r.rescheduleService(service, value)
+		err = r.rescheduleSingleService(service, value)
 		if err != nil {
 			errorServices = append(errorServices, service.Spec.Name)
 		}
@@ -156,10 +137,16 @@ func (r *reschedulerService) RescheduleAll(value string) error {
 func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (bool, error) {
 	var nodeCnt int
 	var err error
+
+	info, err := r.c.Info(context.Background())
+	if err != nil {
+		return false, errors.Wrap(err, "Unable to get docker info for node count")
+	}
+
 	if manager {
-		nodeCnt, err = r.getManagerNodeCount()
+		nodeCnt = info.Swarm.Managers
 	} else {
-		nodeCnt, err = r.getWorkerNodeCount()
+		nodeCnt = info.Swarm.Nodes - info.Swarm.Managers
 	}
 
 	if err != nil {
@@ -168,7 +155,7 @@ func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (
 	return nodeCnt == targetNodeCnt, nil
 }
 
-func (r *reschedulerService) rescheduleService(service swarm.Service, value string) error {
+func (r *reschedulerService) rescheduleSingleService(service swarm.Service, value string) error {
 	spec := &service.Spec
 	envs := spec.TaskTemplate.ContainerSpec.Env
 

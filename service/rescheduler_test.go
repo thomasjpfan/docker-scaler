@@ -91,18 +91,6 @@ func (s *ReschedulerTestSuite) TearDownTest() {
 	}
 }
 
-func (s *ReschedulerTestSuite) Test_GetManagerNodeCount() {
-	managerNodes, err := s.reschedulerService.getManagerNodeCount()
-	s.Require().NoError(err)
-	s.Equal(s.managerNodes, managerNodes)
-}
-
-func (s *ReschedulerTestSuite) Test_GetWorkerNodeCount() {
-	workerNodes, err := s.reschedulerService.getWorkerNodeCount()
-	s.Require().NoError(err)
-	s.Equal(s.workerNodes, workerNodes)
-}
-
 func (s *ReschedulerTestSuite) Test_equalTargetCountManager() {
 	equalTarget, err := s.reschedulerService.equalTargetCount(s.managerNodes, true)
 	s.Require().NoError(err)
@@ -117,7 +105,10 @@ func (s *ReschedulerTestSuite) Test_equalTargetCountWorker() {
 
 func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {
 	cmd := `docker service update \
-			--label-add com.df.reschedule=true -d web_test1`
+			--label-add com.df.reschedule=true \
+			--env-add hello=world \
+			--env-add wow \
+			-d web_test1`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	value := "HELLOWORLD"
 	envAdd := fmt.Sprintf("%s=%s", s.envKey, value)
@@ -130,6 +121,20 @@ func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {
 
 	envList := service.Spec.TaskTemplate.ContainerSpec.Env
 	s.Contains(envList, envAdd)
+
+	// Calling again will not change envList
+	err = s.reschedulerService.RescheduleService(s.serviceNames[0], value)
+	s.Require().NoError(err)
+
+	service, _, err = s.dClient.ServiceInspectWithRaw(
+		context.Background(), s.serviceNames[0], types.ServiceInspectOptions{})
+	s.Require().NoError(err)
+
+	newEnvList := service.Spec.TaskTemplate.ContainerSpec.Env
+	s.Equal(newEnvList, envList)
+
+	s.Contains(newEnvList, "hello=world")
+	s.Contains(newEnvList, "wow")
 }
 
 func (s *ReschedulerTestSuite) Test_RescheduleSingleServiceFalseLabel() {
