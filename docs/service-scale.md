@@ -239,7 +239,7 @@ main:
       - com.df.alertName.1=resptimeabove
       - com.df.alertIf.1=@resp_time_above:0.1,5m,0.99
       - com.df.alertName.2=resptimebelow_unless_resptimeabove
-      - com.df.alertIf.2=sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.025"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) > 0.75 unless sum(rate(http_server_resp_time_bucket{job="go-demo_main",le="0.1"}[5m])) / sum(rate(http_server_resp_time_count{job="go-demo_main"}[5m])) < 0.99
+      - com.df.alertIf.2=@resp_time_below:0.025,5m,0.75_unless_@resp_time_above:0.1,5m,0.9
       - com.df.alertLabels.2=receiver=system,service=go-demo_main,scale=down,type=service
       - com.df.alertAnnotations.2=summary=Response time of service go-demo_main is below 0.025 and not above 0.1
     ...
