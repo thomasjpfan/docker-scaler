@@ -185,7 +185,7 @@ func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64
 		}
 	}
 
-	return 0, minReplicas, maxReplicas
+	return minReplicas, maxReplicas
 }
 
 // getScaleUpDownDeltas gets how much to scale service up or down by
@@ -211,7 +211,7 @@ func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uin
 		}
 	}
 
-	return 0, scaleDownBy, scaleUpBy
+	return scaleDownBy, scaleUpBy
 }
 
 func (s *scalerService) isGlobal(service swarm.Service) (bool, error) {
