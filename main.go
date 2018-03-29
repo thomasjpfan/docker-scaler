@@ -1,6 +1,6 @@
 // +build !test
 
-// Reads configuration from environemnt to create and run scaling service
+// Reads configuration from environment to create and run scaling service
 package main
 
 import (

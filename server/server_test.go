@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -134,6 +135,23 @@ func (s *ServerTestSuite) Test_ScaleService_NoBody() {
 	s.am.AssertExpectations(s.T())
 }
 
+func (s *ServerTestSuite) Test_ScaleSerivce_InvalidJson() {
+	errorMessage := "Unable to decode POST body"
+	body := "{\"hello:}"
+	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, body)
+	url := "/v1/scale-service"
+	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
+
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusBadRequest, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	s.RequireLogs(s.b.String(), logMessage)
+	s.am.AssertExpectations(s.T())
+}
+
 func (s *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
 	errorMessage := "No service name in request body"
 	url := "/v1/scale-service"
@@ -200,6 +218,28 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp() {
 	s.Require().Equal(http.StatusOK, rec.Code)
 	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertExpectations(s.T())
+	s.m.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleUp_AlertFails() {
+	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
+	requestMessage := "Scale service up: web"
+	expMsg := "Scaled up service: web"
+	alertErr := errors.New("Alert failed")
+	alertMsg := fmt.Sprintf("Alertmanager did not receive message: %s, error: %v", expMsg, alertErr)
+	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(alertErr)
+	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, false, nil)
+
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+	url := "/v1/scale-service"
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg)
 	s.am.AssertExpectations(s.T())
 	s.m.AssertExpectations(s.T())
 }
@@ -389,6 +429,23 @@ func (s *ServerTestSuite) Test_ScaleNode_NoPOSTBody() {
 	s.am.AssertExpectations(s.T())
 }
 
+func (s *ServerTestSuite) Test_ScaleNode_InvalidJson() {
+	errorMessage := "Unable to decode POST body"
+	body := "{\"hello:}"
+	logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, body)
+	url := "/v1/scale-nodes?by=1&type=worker"
+	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
+
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusBadRequest, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	s.RequireLogs(s.b.String(), logMessage)
+	s.am.AssertExpectations(s.T())
+}
+
 func (s *ServerTestSuite) Test_ScaleNode_NoScaleDirectionInBody() {
 	errorMessage := "No scale direction in request body"
 	url := "/v1/scale-nodes?by=1&type=worker"
@@ -472,6 +529,25 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 	s.am.AssertExpectations(s.T())
 	s.nsm.AssertExpectations(s.T())
 
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_IncorrectNodeType() {
+
+	url := "/v1/scale-nodes?type=invalid&by=1"
+	errorMessage := "Incorrect node type: invalid, type can only be worker or manager"
+	logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
+	jsonStr := `{"groupLabels":{"scale":"up"}}`
+
+	s.am.On("Send", "scale_nodes", "mock", "Incorrect request", "error", errorMessage).Return(nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Equal(http.StatusBadRequest, rec.Code)
+
+	s.RequireLogs(s.b.String(), logMessage)
+	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
+	s.am.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {

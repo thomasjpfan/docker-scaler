@@ -121,7 +121,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err != nil {
-		message := "Unable to decode POST body"
+		message := "Unable to recognize POST body"
 		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
@@ -132,7 +132,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &ssReq)
 
 	if err != nil {
-		message := "Unable to recognize POST body"
+		message := "Unable to decode POST body"
 		s.logger.Printf("scale-service error: %s, body: %s", message, body)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
@@ -225,7 +225,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err != nil {
-		message := "Unable to decode POST body"
+		message := "Unable to recognize POST body"
 		s.logger.Printf("scale-nodes error: %s", message)
 		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
@@ -236,7 +236,7 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &ssReq)
 
 	if err != nil {
-		message := "Unable to recognize POST body"
+		message := "Unable to decode POST body"
 		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
 		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
@@ -265,16 +265,16 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		byInt *= -1
 	}
 
-	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %s, type: %s", scaleDirection, s.nodeScaler, byStr, typeStr)
-	s.logger.Printf(requestMessage)
-
 	if typeStr != "worker" && typeStr != "manager" {
-		message := fmt.Sprintf("Incorrect type: %s, type can only be worker or manager", typeStr)
-		respondWithError(w, http.StatusPreconditionFailed, message)
+		message := fmt.Sprintf("Incorrect node type: %s, type can only be worker or manager", typeStr)
+		respondWithError(w, http.StatusBadRequest, message)
 		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), requestMessage, "error", message)
+		s.sendAlert("scale_nodes", fmt.Sprint(s.nodeScaler), "Incorrect request", "error", message)
 		return
 	}
+
+	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %s, type: %s", scaleDirection, s.nodeScaler, byStr, typeStr)
+	s.logger.Printf(requestMessage)
 
 	var nodesBefore, nodesNow uint64
 
