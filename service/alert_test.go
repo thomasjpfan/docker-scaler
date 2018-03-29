@@ -51,16 +51,20 @@ func (s *AlertTestSuite) Test_SendAlert() {
 		return
 	}
 
+	running := false
 	// Wait for am to come online
 	for i := 1; i <= 60; i++ {
 		info, _ := s.client.ContainerInspect(context.Background(), "am9093")
 		if info.State.Running {
-			time.Sleep(1 * time.Second)
-			return
+			running = true
+			break
 		}
 		time.Sleep(1 * time.Second)
 	}
-	s.T().Skipf("Unable to create alertmanager")
+	if !running {
+		s.T().Skipf(fmt.Sprintf("Alertmanager not created"))
+		return
+	}
 
 	require := s.Require()
 	serviceName := "web"
@@ -69,7 +73,8 @@ func (s *AlertTestSuite) Test_SendAlert() {
 	summary := "Scaled web from 3 to 4 replicas"
 	request := "Scale web with delta=1"
 
-	s.alertService.Send(alertname, serviceName, request, status, summary)
+	err = s.alertService.Send(alertname, serviceName, request, status, summary)
+	require.NoError(err)
 	time.Sleep(1 * time.Second)
 
 	alerts, err := FetchAlerts(s.url, alertname, status, serviceName)
