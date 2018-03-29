@@ -137,10 +137,10 @@ func (r *reschedulerService) RescheduleAll(value string) error {
 		return errors.Wrap(err, "Unable to get service list to reschedule")
 	}
 
-	// Concurrent?
+	// This could be concurrent
 	errorServices := []string{}
 	for _, service := range services {
-		err = r.reschedulerService(service, value)
+		err = r.rescheduleService(service, value)
 		if err != nil {
 			errorServices = append(errorServices, service.Spec.Name)
 		}
@@ -168,7 +168,7 @@ func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (
 	return nodeCnt == targetNodeCnt, nil
 }
 
-func (r *reschedulerService) reschedulerService(service swarm.Service, value string) error {
+func (r *reschedulerService) rescheduleService(service swarm.Service, value string) error {
 	spec := &service.Spec
 	envs := spec.TaskTemplate.ContainerSpec.Env
 
@@ -177,18 +177,20 @@ func (r *reschedulerService) reschedulerService(service swarm.Service, value str
 	envAdd := fmt.Sprintf("%s=%s", r.envKey, value)
 
 	for _, env := range envs {
-		envSplit := strings.Split(env, "=")
-		if len(envSplit) != 2 {
-			newEnvs = append(newEnvs, env)
-			continue
-		}
 
 		// Already exist in env
 		if env == envAdd {
 			return nil
 		}
 
+		envSplit := strings.SplitN(env, "=", 2)
+		if len(envSplit) <= 1 {
+			newEnvs = append(newEnvs, env)
+			continue
+		}
+
 		if envSplit[0] == r.envKey && envSplit[1] != value {
+			// env variable updated
 			addedNewEnv = true
 			newEnvs = append(newEnvs, envAdd)
 		} else {
@@ -196,6 +198,8 @@ func (r *reschedulerService) reschedulerService(service swarm.Service, value str
 		}
 	}
 
+	// envAdd is not in service environment
+	// add to newEnvs
 	if !addedNewEnv {
 		newEnvs = append(newEnvs, envAdd)
 	}
