@@ -103,11 +103,18 @@ func (s *ReschedulerTestSuite) Test_equalTargetCountWorker() {
 	s.True(equalTarget)
 }
 
+func (s *ReschedulerTestSuite) Test_Reschedule_ServiceDoesNotExist() {
+	err := s.reschedulerService.RescheduleService("doesnotexist", "value")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "Unable to inspect service doesnotexist")
+}
+
 func (s *ReschedulerTestSuite) Test_RescheduleSingleService() {
 	cmd := `docker service update \
 			--label-add com.df.reschedule=true \
 			--env-add hello=world \
 			--env-add wow \
+			--env-rm RESCHEDULE_DATE \
 			-d web_test1`
 	exec.Command("/bin/sh", "-c", cmd).Output()
 	value := "HELLOWORLD"
