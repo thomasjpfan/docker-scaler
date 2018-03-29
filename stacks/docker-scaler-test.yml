@@ -36,7 +36,7 @@ services:
     networks:
       - scaling
   alertmanager:
-    image: prom/alertmanager:v0.13.0
+    image: prom/alertmanager:v0.14.0
     ports:
       - 9093:9093
     networks:

@@ -40,11 +40,11 @@ func (s *AlertTestSuite) TearDownSuite() {
 func (s *AlertTestSuite) Test_SendAlert() {
 
 	defer func() {
-		cmd := "docker container rm -f am9093"
+		cmd := "docker container stop am9093"
 		exec.Command("/bin/sh", "-c", cmd).Output()
 	}()
-	cmd := `docker run --name am9093 -p 9093:9093 \
-			-d prom/alertmanager:v0.13.0`
+	cmd := `docker run --name am9093 --rm -p 9093:9093 \
+			-d prom/alertmanager:v0.14.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))

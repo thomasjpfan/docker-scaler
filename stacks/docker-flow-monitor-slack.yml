@@ -27,7 +27,7 @@ services:
           memory: 800M
 
   alert-manager:
-    image: prom/alertmanager:v0.13.0
+    image: prom/alertmanager:v0.14.0
     networks:
       - monitor
       - scaler
