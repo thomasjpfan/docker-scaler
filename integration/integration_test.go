@@ -58,7 +58,7 @@ func (s *IntegrationTestSuite) Test_NoPOSTBody() {
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "Unable to recognize POST body"
+	message := "Unable to decode POST body"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
