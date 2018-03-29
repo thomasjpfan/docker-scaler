@@ -4,7 +4,7 @@
 
 ## Scaling Services
 
-This request queries docker service labels: `com.df.scaleMin`, `com.df.scaleMax`, `com.df.scaleDownBy`, `com.df.scaleUpBy` to determine how much to scale the service. Please see [configuration](configuration.md) for details.
+This request queries docker service labels: `com.df.scaleMin`, `com.df.scaleMax`, `com.df.scaleDownBy`, `com.df.scaleUpBy` to determine how much to scale the service by. The request body conforms to the alertmanager notifications so that *Docker Scaler* can be used as a webhook.
 
 - **URL:**
     `/v1/scale-service`
@@ -52,6 +52,8 @@ This request only reschedule target service with label: `com.df.reschedule=true`
 | service | Name of service to reschedule | yes      |
 
 ## Scaling Nodes
+
+The request body conforms to the alertmanager notifications so that *Docker Scaler* can be used as a webhook.
 
 - **URL:**
     `/v1/scale-nodes`
