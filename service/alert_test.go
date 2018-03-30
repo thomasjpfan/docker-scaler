@@ -24,13 +24,13 @@ func TestAlertUnitTestSuite(t *testing.T) {
 
 func (s *AlertTestSuite) SetupSuite() {
 	client, _ := NewDockerClientFromEnv()
-	_, err := client.Info(context.Background())
+	_, err := client.dc.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
 	s.url = "http://localhost:9093"
 	s.alertService = NewAlertService(s.url, time.Second*15)
-	s.client = client
+	s.client = client.dc
 }
 
 func (s *AlertTestSuite) TearDownSuite() {

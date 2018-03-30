@@ -31,12 +31,11 @@ func (s *ReschedulerTestSuite) SetupSuite() {
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
-	defer client.Close()
-	info, err := client.Info(context.Background())
+	info, err := client.dc.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
-	_, err = client.SwarmInspect(context.Background())
+	_, err = client.dc.SwarmInspect(context.Background())
 	if err != nil {
 		s.T().Skipf("Docker process is not a part of a swarm")
 	}

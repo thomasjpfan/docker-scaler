@@ -7,7 +7,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 )
 
@@ -17,8 +16,14 @@ type ScalerServicer interface {
 	ScaleDown(ctx context.Context, serviceName string) (string, bool, error)
 }
 
+// UpdaterInspector is an interface for scaling services
+type UpdaterInspector interface {
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
+}
+
 type scalerService struct {
-	c                  *client.Client
+	c                  UpdaterInspector
 	minLabel           string
 	maxLabel           string
 	scaleDownByLabel   string
@@ -31,7 +36,7 @@ type scalerService struct {
 
 // NewScalerService creates a New Docker Swarm Client
 func NewScalerService(
-	c *client.Client,
+	c UpdaterInspector,
 	minLabel string,
 	maxLabel string,
 	scaleDownByLabel string,

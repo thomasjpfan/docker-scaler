@@ -9,7 +9,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -17,7 +16,7 @@ type ScalerTestSuite struct {
 	suite.Suite
 	scaler             *scalerService
 	ctx                context.Context
-	client             *client.Client
+	client             DockerClient
 	defaultMax         uint64
 	defaultMin         uint64
 	replicaMin         uint64
@@ -38,12 +37,12 @@ func (s *ScalerTestSuite) SetupSuite() {
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
-	defer client.Close()
-	_, err = client.Info(context.Background())
+	defer client.dc.Close()
+	_, err = client.dc.Info(context.Background())
 	if err != nil {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
-	_, err = client.SwarmInspect(context.Background())
+	_, err = client.dc.SwarmInspect(context.Background())
 	if err != nil {
 		s.T().Skipf("Docker process is not a part of a swarm")
 	}

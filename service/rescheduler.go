@@ -9,7 +9,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 )
 
@@ -20,8 +19,16 @@ type ReschedulerServicer interface {
 	RescheduleAll(value string) error
 }
 
+// InfoListUpdaterInspector is an interface needd for rescheduling events
+type InfoListUpdaterInspector interface {
+	Info(ctx context.Context) (types.Info, error)
+	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
+	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+}
+
 type reschedulerService struct {
-	c              *client.Client
+	c              InfoListUpdaterInspector
 	filterLabel    string
 	envKey         string
 	tickerInterval time.Duration
@@ -30,7 +37,7 @@ type reschedulerService struct {
 
 // NewReschedulerService creates a reschduler
 func NewReschedulerService(
-	c *client.Client,
+	c InfoListUpdaterInspector,
 	filterLabel string,
 	envKey string,
 	tickerInterval time.Duration,
