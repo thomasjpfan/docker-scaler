@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"github.com/thomasjpfan/docker-scaler/server/handler"
+	"github.com/thomasjpfan/docker-scaler/service"
 
 	"github.com/gorilla/mux"
-	"github.com/thomasjpfan/docker-scaler/service"
 )
 
 // Server runs service that scales docker services
 type Server struct {
-	scaler        service.ScalerServicer
+	serviceScaler service.ScalerServicer
 	alerter       service.AlertServicer
 	nodeScaler    service.NodeScaler
 	rescheduler   service.ReschedulerServicer
@@ -31,7 +31,7 @@ type Server struct {
 
 // NewServer creates Server
 func NewServer(
-	scaler service.ScalerServicer,
+	serviceScaler service.ScalerServicer,
 	alerter service.AlertServicer,
 	nodeScaler service.NodeScaler,
 	rescheduler service.ReschedulerServicer,
@@ -41,7 +41,7 @@ func NewServer(
 	alertNodeMin bool,
 	alertNodeMax bool) *Server {
 	return &Server{
-		scaler:        scaler,
+		serviceScaler: serviceScaler,
 		alerter:       alerter,
 		nodeScaler:    nodeScaler,
 		rescheduler:   rescheduler,
@@ -172,9 +172,9 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	var message string
 	var atBound bool
 	if scaleDirection == "down" {
-		message, atBound, err = s.scaler.ScaleDown(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.ScaleDown(ctx, serviceName)
 	} else {
-		message, atBound, err = s.scaler.ScaleUp(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.ScaleUp(ctx, serviceName)
 	}
 
 	if err != nil {
