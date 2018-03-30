@@ -38,7 +38,7 @@ The following environment variables can be used to configure the *Docker Scaler*
 | NODE_SCALER_BACKEND | Backend of node backend.<br>**Accepted Values:** [none, aws]<br>**Default:** none |
 | DEFAULT_MIN_MANAGER_NODES | Miniumum number of manager nodes.<br>**Default:** 3 |
 | DEFAULT_MAX_MANAGER_NODES | Maximum number of manager nodes.<br>**Default:** 7 |
-| DEFAULT_MIN_WORKER_NODES | Miniumum number of worker nodes.<br>**Default:** 1 |
+| DEFAULT_MIN_WORKER_NODES | Miniumum number of worker nodes.<br>**Default:** 0 |
 | DEFAULT_MAX_WORKER_NODES | Maximum number of worker nodes.<br>**Default:** 5 |
 | ALERT_NODE_MIN | Send alert to alertmanager when trying to scale up nodes already at minimum nodes.<br>**Default:** true |
 | ALERT_NODE_MAX | Send alert to alertmanager when trying to scale up nodes already at maximum nodes.<br>**Default:** true |
