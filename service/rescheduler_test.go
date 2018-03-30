@@ -61,7 +61,7 @@ func (s *ReschedulerTestSuite) SetupSuite() {
 	s.reschedulerService = rs.(*reschedulerService)
 	s.workerNodes = info.Swarm.Nodes - info.Swarm.Managers
 	s.managerNodes = info.Swarm.Managers
-	s.dClient = client
+	s.dClient = client.dc
 	s.serviceNames = []string{"web_test1", "web_test2"}
 	s.envKey = "RESCHEDULE_DATE"
 }
