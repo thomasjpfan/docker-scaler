@@ -16,19 +16,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"github.com/thomasjpfan/docker-scaler/service"
 )
 
 type ScalerServicerMock struct {
 	mock.Mock
 }
 
-func (m *ScalerServicerMock) ScaleUp(ctx context.Context, serviceName string) (string, bool, error) {
-	args := m.Called(ctx, serviceName)
-	return args.String(0), args.Bool(1), args.Error(2)
-}
-
-func (m *ScalerServicerMock) ScaleDown(ctx context.Context, serviceName string) (string, bool, error) {
-	args := m.Called(ctx, serviceName)
+func (m *ScalerServicerMock) Scale(ctx context.Context, serviceName string, by uint64, direction service.ScaleDirection) (string, bool, error) {
+	args := m.Called(ctx, serviceName, by, direction)
 	return args.String(0), args.Bool(1), args.Error(2)
 }
 
@@ -207,7 +203,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp() {
 	requestMessage := "Scale service up: web"
 	expMsg := "Scaled up service: web"
 	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
-	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, false, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleUpDirection).Return(expMsg, false, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 	url := "/v1/scale-service"
@@ -229,7 +225,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_AlertFails() {
 	alertErr := errors.New("Alert failed")
 	alertMsg := fmt.Sprintf("Alertmanager did not receive message: %s, error: %v", expMsg, alertErr)
 	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(alertErr)
-	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, false, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleUpDirection).Return(expMsg, false, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 	url := "/v1/scale-service"
@@ -249,7 +245,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxTrue() {
 	requestMessage := "Scale service up: web"
 	expMsg := "web is already scaled to the maximum number of 5 replicas"
 	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
-	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleUpDirection).Return(expMsg, true, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 	url := "/v1/scale-service"
@@ -269,7 +265,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Bounded_AlertMaxFalse() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
 	requestMessage := "Scale service up: web"
 	expMsg := "web is already scaled to the maximum number of 5 replicas"
-	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleUpDirection).Return(expMsg, true, nil)
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 
 	url := "/v1/scale-service"
@@ -293,7 +289,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded_AlertMinTrue() {
 	requestMessage := "Scale service down: web"
 	expMsg := "web is already descaled to the minimum number of 1 replicas"
 
-	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleDownDirection).Return(expMsg, true, nil)
 	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 
@@ -317,7 +313,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded_AlertMinFalse() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
 	requestMessage := "Scale service down: web"
 	expMsg := "web is already descaled to the minimum number of 1 replicas"
-	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleDownDirection).Return(expMsg, true, nil)
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 
 	url := "/v1/scale-service"
@@ -338,7 +334,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Error() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "up"}}`
 	requestMessage := "Scale service up: web"
 	s.am.On("Send", "scale_service", "web", requestMessage, "error", expErr.Error()).Return(nil)
-	s.m.On("ScaleUp", mock.AnythingOfType("*context.valueCtx"), "web").Return("", false, expErr)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleUpDirection).Return("", false, expErr)
 
 	logMessage := fmt.Sprintf("scale-service error: %s", expErr.Error())
 	url := "/v1/scale-service"
@@ -358,7 +354,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown() {
 	requestMessage := "Scale service down: web"
 	expMsg := "Scaled down service: web"
 	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
-	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, false, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleDownDirection).Return(expMsg, false, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 	url := "/v1/scale-service"
@@ -377,7 +373,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Bounded() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
 	requestMessage := "Scale service down: web"
 	expMsg := "Scaled down service: web"
-	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return(expMsg, true, nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleDownDirection).Return(expMsg, true, nil)
 
 	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
 	url := "/v1/scale-service"
@@ -398,7 +394,7 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Error() {
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "down"}}`
 	requestMessage := "Scale service down: web"
 	s.am.On("Send", "scale_service", "web", requestMessage, "error", expErr.Error()).Return(nil)
-	s.m.On("ScaleDown", mock.AnythingOfType("*context.valueCtx"), "web").Return("", false, expErr)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", 0, service.ScaleDownDirection).Return("", false, expErr)
 
 	logMessage := fmt.Sprintf("scale-service error: %s", expErr.Error())
 	url := "/v1/scale-service"

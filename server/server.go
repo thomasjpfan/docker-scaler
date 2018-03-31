@@ -172,9 +172,9 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 	var message string
 	var atBound bool
 	if scaleDirection == "down" {
-		message, atBound, err = s.serviceScaler.ScaleDown(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, 0, service.ScaleDownDirection)
 	} else {
-		message, atBound, err = s.serviceScaler.ScaleUp(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, 0, service.ScaleUpDirection)
 	}
 
 	if err != nil {

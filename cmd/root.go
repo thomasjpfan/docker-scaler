@@ -87,13 +87,20 @@ func Run() {
 	}
 
 	logger.Print("Starting Docker Scaler")
+
+	resolveScalerDetlaOpts := service.ResolveDeltaOptions{
+		MinLabel:           spec.MinScaleLabel,
+		MaxLabel:           spec.MaxScaleLabel,
+		ScaleDownByLabel:   spec.ScaleDownByLabel,
+		ScaleUpByLabel:     spec.ScaleUpByLabel,
+		DefaultMin:         spec.DefaultMinReplicas,
+		DefaultMax:         spec.DefaultMaxReplicas,
+		DefaultScaleDownBy: spec.DefaultScaleServiceDownBy,
+		DefaultScaleUpBy:   spec.DefaultScaleServiceUpBy,
+	}
+
 	scalerService := service.NewScalerService(
-		client, spec.MinScaleLabel, spec.MaxScaleLabel,
-		spec.ScaleDownByLabel, spec.ScaleUpByLabel,
-		spec.DefaultMinReplicas,
-		spec.DefaultMaxReplicas,
-		spec.DefaultScaleServiceDownBy,
-		spec.DefaultScaleServiceUpBy)
+		client, resolveScalerDetlaOpts)
 	s := server.NewServer(scalerService, alerter, nodeScaler,
 		rescheduler, logger,
 		spec.AlertScaleMin, spec.AlertScaleMax,

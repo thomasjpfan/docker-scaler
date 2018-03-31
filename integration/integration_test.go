@@ -167,7 +167,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	message := fmt.Sprintf("Scaling %s from 4 to 5 replicas (max: 5)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 4 to 5 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -239,7 +239,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	resp := s.responseForRequest(req, http.StatusOK)
 	s.Require().Equal(5, s.getReplicas(s.targetService))
 
-	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas (max: 5)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -267,7 +267,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	resp := s.responseForRequest(req, http.StatusOK)
 	s.Require().Equal(2, s.getReplicas(s.targetService))
 
-	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas (min: 2)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 

@@ -56,18 +56,20 @@ func (s *ScalerTestSuite) SetupSuite() {
 	s.scaleUpBy = 2
 	s.defaultScaleDownBy = 1
 	s.defaultScaleUpBy = 1
+
+	resolveScalerOpts := ResolveDeltaOptions{
+		MinLabel:           "com.df.scaleMin",
+		MaxLabel:           "com.df.scaleMax",
+		ScaleDownByLabel:   "com.df.scaleDownBy",
+		ScaleUpByLabel:     "com.df.scaleUpBy",
+		DefaultMin:         s.defaultMin,
+		DefaultMax:         s.defaultMax,
+		DefaultScaleDownBy: s.defaultScaleDownBy,
+		DefaultScaleUpBy:   s.defaultScaleUpBy,
+	}
 	s.client = client
 	s.ctx = context.Background()
-	s.scaler = NewScalerService(
-		client,
-		"com.df.scaleMin",
-		"com.df.scaleMax",
-		"com.df.scaleDownBy",
-		"com.df.scaleUpBy",
-		s.defaultMin,
-		s.defaultMax,
-		s.defaultScaleDownBy,
-		s.defaultScaleUpBy).(*scalerService)
+	s.scaler = NewScalerService(client, resolveScalerOpts).(*scalerService)
 }
 
 func (s *ScalerTestSuite) SetupTest() {
@@ -136,12 +138,6 @@ func (s *ScalerTestSuite) Test_isGlobal() {
 	s.Error(err)
 }
 
-func (s *ScalerTestSuite) Test_GetReplicas() {
-	ts := s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
-	s.Equal(s.replicas, replicas)
-}
-
 func (s *ScalerTestSuite) Test_SetReplicas() {
 
 	ts := s.getTestService()
@@ -149,71 +145,8 @@ func (s *ScalerTestSuite) Test_SetReplicas() {
 	s.Require().NoError(err)
 
 	ts = s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Equal(uint64(4), replicas)
-}
-
-func (s *ScalerTestSuite) Test_GetMinMaxReplicas() {
-
-	ts := s.getTestService()
-	min, max := s.scaler.getMinMaxReplicas(ts)
-	s.Equal(s.replicaMin, min)
-	s.Equal(s.replicaMax, max)
-}
-
-func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMaxLabel() {
-
-	cmd := `docker service update web_test \
-			--label-rm com.df.scaleMax -d`
-	exec.Command("/bin/sh", "-c", cmd).Output()
-
-	ts := s.getTestService()
-	min, max := s.scaler.getMinMaxReplicas(ts)
-	s.Equal(s.replicaMin, min)
-	s.Equal(s.defaultMax, max)
-}
-
-func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoMinLabel() {
-	cmd := `docker service update web_test \
-			--label-rm com.df.scaleMin -d`
-
-	exec.Command("/bin/sh", "-c", cmd).Output()
-	ts := s.getTestService()
-	min, max := s.scaler.getMinMaxReplicas(ts)
-	s.Equal(s.defaultMin, min)
-	s.Equal(s.replicaMax, max)
-}
-
-func (s *ScalerTestSuite) Test_GetMinMaxReplicasNoLabels() {
-	cmd := `docker service update web_test \
-			--label-rm com.df.scaleMin \
-			--label-rm com.df.scaleMax -d`
-	exec.Command("/bin/sh", "-c", cmd).Output()
-
-	ts := s.getTestService()
-	min, max := s.scaler.getMinMaxReplicas(ts)
-	s.Equal(s.defaultMin, min)
-	s.Equal(s.defaultMax, max)
-}
-
-func (s *ScalerTestSuite) Test_GetDownUpScaleDeltas() {
-
-	ts := s.getTestService()
-	scaleDownBy, scaleUpBy := s.scaler.getScaleUpDownDeltas(ts)
-	s.Equal(s.scaleDownBy, scaleDownBy)
-	s.Equal(s.scaleUpBy, scaleUpBy)
-}
-
-func (s *ScalerTestSuite) Test_GetDownUpScaleDeltasNoLabels() {
-	cmd := `docker service update web_test \
-			--label-rm com.df.scaleDownBy \
-			--label-rm com.df.scaleUpBy -d`
-	exec.Command("/bin/sh", "-c", cmd).Output()
-
-	ts := s.getTestService()
-	min, max := s.scaler.getScaleUpDownDeltas(ts)
-	s.Equal(s.defaultScaleDownBy, min)
-	s.Equal(s.defaultScaleUpBy, max)
 }
 
 func (s *ScalerTestSuite) Test_AlreadyAtMax() {
@@ -221,13 +154,13 @@ func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 
 	ts := s.getTestService()
 	err := s.scaler.setReplicas(s.ctx, ts, s.replicaMax)
-	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Equal(s.replicaMax, replicas)
 }
 
@@ -236,71 +169,71 @@ func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 
 	ts := s.getTestService()
 	err := s.scaler.setReplicas(s.ctx, ts, s.replicaMin)
-	msg, alreadyBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
 	s.Require().NoError(err)
 	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Equal(s.replicaMin, replicas)
 }
 
 func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	oldReplicas := s.replicaMax - 1
 	newReplicas := s.replicaMax
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", oldReplicas, newReplicas, s.replicaMax)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.replicaMax)
 
 	ts := s.getTestService()
 	err := s.scaler.setReplicas(s.ctx, ts, oldReplicas)
 	time.Sleep(time.Second)
-	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	ts = s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Equal(newReplicas, replicas)
 }
 
 func (s *ScalerTestSuite) Test_ScaleUp() {
 	newReplicas := s.replicas + s.scaleUpBy
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (max: %d)", s.replicas, newReplicas, s.replicaMax)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
 
-	msg, alreadyBounded, err := s.scaler.ScaleUp(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	ts := s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Equal(newReplicas, replicas)
 }
 
 func (s *ScalerTestSuite) Test_ScaleUp_ServiceDoesNotExist() {
-	_, _, err := s.scaler.ScaleUp(s.ctx, "NOT_EXIST")
+	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleUpDirection)
 	s.Error(err)
 }
 
 func (s *ScalerTestSuite) Test_ScaleDown() {
 
 	newReplicas := s.replicas - s.scaleDownBy
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d)", s.replicas, newReplicas, s.replicaMin)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
 
-	msg, alreadyBounded, err := s.scaler.ScaleDown(s.ctx, "web_test")
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
 	ts := s.getTestService()
-	replicas := s.scaler.getReplicas(ts)
+	replicas, _ := s.scaler.getReplicas(ts)
 	s.Require().NoError(err)
 	s.Equal(newReplicas, replicas)
 }
 
 func (s *ScalerTestSuite) Test_ScaleDown_ServiceDoesNotExist() {
-	_, _, err := s.scaler.ScaleDown(s.ctx, "NOT_EXIST")
+	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleDownDirection)
 	s.Error(err)
 }
 
@@ -346,11 +279,11 @@ L:
 	s.NoError(err)
 	s.True(isGlobal)
 
-	_, _, err = s.scaler.ScaleUp(s.ctx, "web_global")
+	_, _, err = s.scaler.Scale(s.ctx, "web_global", 0, ScaleUpDirection)
 	s.Error(err)
 	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
 
-	_, _, err = s.scaler.ScaleDown(s.ctx, "web_global")
+	_, _, err = s.scaler.Scale(s.ctx, "web_global", 0, ScaleDownDirection)
 	s.Error(err)
 	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
 

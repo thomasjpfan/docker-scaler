@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
@@ -12,8 +11,7 @@ import (
 
 // ScalerServicer interface for resizing services
 type ScalerServicer interface {
-	ScaleUp(ctx context.Context, serviceName string) (string, bool, error)
-	ScaleDown(ctx context.Context, serviceName string) (string, bool, error)
+	Scale(ctx context.Context, serviceName string, by uint64, direction ScaleDirection) (string, bool, error)
 }
 
 // UpdaterInspector is an interface for scaling services
@@ -23,42 +21,22 @@ type UpdaterInspector interface {
 }
 
 type scalerService struct {
-	c                  UpdaterInspector
-	minLabel           string
-	maxLabel           string
-	scaleDownByLabel   string
-	scaleUpByLabel     string
-	defaultMin         uint64
-	defaultMax         uint64
-	defaultScaleDownBy uint64
-	defaultScaleUpBy   uint64
+	c           UpdaterInspector
+	resolveOpts ResolveDeltaOptions
 }
 
 // NewScalerService creates a New Docker Swarm Client
 func NewScalerService(
 	c UpdaterInspector,
-	minLabel string,
-	maxLabel string,
-	scaleDownByLabel string,
-	scaleUpByLabel string,
-	defaultMin uint64,
-	defaultMax uint64,
-	defaultScaleDownBy uint64,
-	defaultScaleUpBy uint64) ScalerServicer {
+	resolveOpts ResolveDeltaOptions,
+) ScalerServicer {
 	return &scalerService{
-		c:                  c,
-		minLabel:           minLabel,
-		maxLabel:           maxLabel,
-		scaleDownByLabel:   scaleDownByLabel,
-		scaleUpByLabel:     scaleUpByLabel,
-		defaultMin:         defaultMin,
-		defaultMax:         defaultMax,
-		defaultScaleDownBy: defaultScaleDownBy,
-		defaultScaleUpBy:   defaultScaleUpBy,
+		c:           c,
+		resolveOpts: resolveOpts,
 	}
 }
 
-func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string, bool, error) {
+func (s scalerService) Scale(ctx context.Context, serviceName string, by uint64, direction ScaleDirection) (string, bool, error) {
 
 	service, _, err := s.c.ServiceInspectWithRaw(
 		ctx, serviceName, types.ServiceInspectOptions{})
@@ -75,22 +53,15 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		return "", false, fmt.Errorf(
 			"%s is a global service (can not be scaled)", serviceName)
 	}
-
-	_, maxReplicas := s.getMinMaxReplicas(service)
-	currentReplicas := s.getReplicas(service)
-	_, scaleUpBy := s.getScaleUpDownDeltas(service)
-
-	newReplicasInt := currentReplicas + scaleUpBy
-
-	var newReplicas uint64
-	if newReplicasInt > maxReplicas {
-		newReplicas = maxReplicas
-	} else {
-		newReplicas = newReplicasInt
+	currentReplicas, err := s.getReplicas(service)
+	if err != nil {
+		return "", false, err
 	}
 
-	if currentReplicas == maxReplicas && newReplicas == maxReplicas {
-		message := fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
+	minReplicas, maxReplicas, newReplicas := resolveDelta(currentReplicas, by, direction, service.Spec.Labels, s.resolveOpts)
+
+	if currentReplicas == newReplicas {
+		message := s.scaledToBoundMessage(serviceName, minReplicas, maxReplicas, newReplicas, direction)
 		return message, true, nil
 	}
 
@@ -99,64 +70,29 @@ func (s *scalerService) ScaleUp(ctx context.Context, serviceName string) (string
 		return "", false, err
 	}
 
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas (max: %d)", serviceName, currentReplicas, newReplicas, maxReplicas)
+	message := fmt.Sprintf("Scaling %s from %d to %d replicas (min: %d, max: %d)", serviceName, currentReplicas, newReplicas, minReplicas, maxReplicas)
 	return message, false, nil
 }
 
-func (s *scalerService) ScaleDown(ctx context.Context, serviceName string) (string, bool, error) {
-
-	service, _, err := s.c.ServiceInspectWithRaw(
-		ctx, serviceName, types.ServiceInspectOptions{})
-
-	if err != nil {
-		return "", false, errors.Wrap(err, "docker inspect failed in ScalerService")
+func (s scalerService) scaledToBoundMessage(serviceName string,
+	minReplicas, maxReplicas, newReplicas uint64, direction ScaleDirection) string {
+	if direction == ScaleDownDirection {
+		return fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
 	}
-
-	isGlobal, err := s.isGlobal(service)
-	if err != nil {
-		return "", false, err
-	}
-	if isGlobal {
-		return "", false, fmt.Errorf(
-			"%s is a global service (can not be scaled)", serviceName)
-	}
-
-	minReplicas, _ := s.getMinMaxReplicas(service)
-	currentReplicas := s.getReplicas(service)
-	scaleDownBy, _ := s.getScaleUpDownDeltas(service)
-
-	newReplicasInt := int(currentReplicas) - int(scaleDownBy)
-
-	var newReplicas uint64
-	if newReplicasInt < int(minReplicas) {
-		newReplicas = minReplicas
-	} else {
-		newReplicas = uint64(newReplicasInt)
-	}
-
-	if currentReplicas == minReplicas && newReplicas == minReplicas {
-		message := fmt.Sprintf("%s is already descaled to the minimum number of %d replicas", serviceName, minReplicas)
-		return message, true, nil
-	}
-
-	err = s.setReplicas(ctx, service, newReplicas)
-	if err != nil {
-		return "", false, err
-	}
-
-	message := fmt.Sprintf("Scaling %s from %d to %d replicas (min: %d)", serviceName, currentReplicas, newReplicas, minReplicas)
-	return message, false, nil
+	return fmt.Sprintf("%s is already scaled to the maximum number of %d replicas", serviceName, maxReplicas)
 }
 
 // getReplicas Gets Replicas
-func (s *scalerService) getReplicas(service swarm.Service) uint64 {
-
+func (s scalerService) getReplicas(service swarm.Service) (uint64, error) {
+	if service.Spec.Mode.Replicated.Replicas == nil {
+		return 0, fmt.Errorf("%s does not have a replicas value", service.Spec.Name)
+	}
 	currentReplicas := *service.Spec.Mode.Replicated.Replicas
-	return currentReplicas
+	return currentReplicas, nil
 }
 
 // setReplicas Sets the number of replicas
-func (s *scalerService) setReplicas(ctx context.Context, service swarm.Service, count uint64) error {
+func (s scalerService) setReplicas(ctx context.Context, service swarm.Service, count uint64) error {
 
 	service.Spec.Mode.Replicated.Replicas = &count
 	updateOpts := types.ServiceUpdateOptions{}
@@ -167,59 +103,7 @@ func (s *scalerService) setReplicas(ctx context.Context, service swarm.Service, 
 	return updateErr
 }
 
-// getMinMaxReplicas gets the min and maximum replicas allowed for serviceName
-func (s *scalerService) getMinMaxReplicas(service swarm.Service) (uint64, uint64) {
-
-	minReplicas := s.defaultMin
-	maxReplicas := s.defaultMax
-
-	labels := service.Spec.Labels
-	minLabel := labels[s.minLabel]
-	maxLabel := labels[s.maxLabel]
-
-	if len(minLabel) > 0 {
-		minReplicasLabel, err := strconv.Atoi(minLabel)
-		if err == nil {
-			minReplicas = uint64(minReplicasLabel)
-		}
-	}
-	if len(maxLabel) > 0 {
-		maxReplicasLabel, err := strconv.Atoi(maxLabel)
-		if err == nil {
-			maxReplicas = uint64(maxReplicasLabel)
-		}
-	}
-
-	return minReplicas, maxReplicas
-}
-
-// getScaleUpDownDeltas gets how much to scale service up or down by
-func (s *scalerService) getScaleUpDownDeltas(service swarm.Service) (uint64, uint64) {
-	scaleDownBy := s.defaultScaleDownBy
-	scaleUpBy := s.defaultScaleUpBy
-
-	labels := service.Spec.Labels
-	downLabel := labels[s.scaleDownByLabel]
-	upLabel := labels[s.scaleUpByLabel]
-
-	if len(downLabel) > 0 {
-		scaleDownLabel, err := strconv.Atoi(downLabel)
-		if err == nil {
-			scaleDownBy = uint64(scaleDownLabel)
-		}
-	}
-
-	if len(upLabel) > 0 {
-		scaleUpLabel, err := strconv.Atoi(upLabel)
-		if err == nil {
-			scaleUpBy = uint64(scaleUpLabel)
-		}
-	}
-
-	return scaleDownBy, scaleUpBy
-}
-
-func (s *scalerService) isGlobal(service swarm.Service) (bool, error) {
+func (s scalerService) isGlobal(service swarm.Service) (bool, error) {
 
 	if service.Spec.Mode.Global != nil {
 		return true, nil
