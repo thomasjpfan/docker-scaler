@@ -27,8 +27,9 @@ func NewDockerClientFromEnv() (DockerClient, error) {
 }
 
 // ServiceInspectWithRaw wraps `dc.ServiceInspectWithRaw`
-func (c DockerClient) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
-	return c.dc.ServiceInspectWithRaw(ctx, serviceID, opts)
+func (c DockerClient) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error) {
+	service, _, err := c.dc.ServiceInspectWithRaw(ctx, serviceID, opts)
+	return service, err
 }
 
 // ServiceUpdate wraps `dc.ServiceUpdate`

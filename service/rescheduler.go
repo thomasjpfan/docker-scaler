@@ -23,7 +23,7 @@ type ReschedulerServicer interface {
 type InfoListUpdaterInspector interface {
 	Info(ctx context.Context) (types.Info, error)
 	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
-	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
+	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
 	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
 }
 
@@ -58,7 +58,7 @@ func NewReschedulerService(
 
 func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
-	serviceInfo, _, err := r.c.ServiceInspectWithRaw(
+	serviceInfo, err := r.c.ServiceInspectWithRaw(
 		context.Background(), serviceID, types.ServiceInspectOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Unable to inspect service %s", serviceID)
