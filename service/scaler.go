@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/pkg/errors"
 )
@@ -16,8 +15,8 @@ type ScalerServicer interface {
 
 // UpdaterInspector is an interface for scaling services
 type UpdaterInspector interface {
-	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) error
-	ServiceInspect(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec) error
+	ServiceInspect(ctx context.Context, serviceID string) (swarm.Service, error)
 }
 
 type scalerService struct {
@@ -38,8 +37,7 @@ func NewScalerService(
 
 func (s scalerService) Scale(ctx context.Context, serviceName string, by uint64, direction ScaleDirection) (string, bool, error) {
 
-	service, err := s.c.ServiceInspect(
-		ctx, serviceName, types.ServiceInspectOptions{})
+	service, err := s.c.ServiceInspect(ctx, serviceName)
 
 	if err != nil {
 		return "", false, errors.Wrap(err, "docker inspect failed in ScalerService")
@@ -95,11 +93,9 @@ func (s scalerService) getReplicas(service swarm.Service) (uint64, error) {
 func (s scalerService) setReplicas(ctx context.Context, service swarm.Service, count uint64) error {
 
 	service.Spec.Mode.Replicated.Replicas = &count
-	updateOpts := types.ServiceUpdateOptions{}
-	updateOpts.RegistryAuthFrom = types.RegistryAuthFromSpec
 
 	updateErr := s.c.ServiceUpdate(
-		ctx, service.ID, service.Version, service.Spec, updateOpts)
+		ctx, service.ID, service.Version, service.Spec)
 	return updateErr
 }
 

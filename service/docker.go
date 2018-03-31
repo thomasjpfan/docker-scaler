@@ -27,14 +27,18 @@ func NewDockerClientFromEnv() (DockerClient, error) {
 }
 
 // ServiceInspect wraps `dc.ServiceInspect`
-func (c DockerClient) ServiceInspect(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error) {
-	service, _, err := c.dc.ServiceInspectWithRaw(ctx, serviceID, opts)
+func (c DockerClient) ServiceInspect(ctx context.Context, serviceID string) (swarm.Service, error) {
+	service, _, err := c.dc.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
 	return service, err
 }
 
 // ServiceUpdate wraps `dc.ServiceUpdate`
-func (c DockerClient) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) error {
-	_, err := c.dc.ServiceUpdate(ctx, serviceID, version, service, options)
+func (c DockerClient) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec) error {
+	_, err := c.dc.ServiceUpdate(
+		ctx, serviceID, version, service,
+		types.ServiceUpdateOptions{
+			RegistryAuthFrom: types.RegistryAuthFromSpec,
+		})
 	return err
 }
 

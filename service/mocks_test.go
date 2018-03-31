@@ -12,13 +12,13 @@ type DockerClientMock struct {
 	mock.Mock
 }
 
-func (m *DockerClientMock) ServiceInspect(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error) {
-	called := m.Called(ctx, serviceID, opts)
+func (m *DockerClientMock) ServiceInspect(ctx context.Context, serviceID string) (swarm.Service, error) {
+	called := m.Called(ctx, serviceID)
 	return called.Get(0).(swarm.Service), called.Error(1)
 }
 
-func (m *DockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) error {
-	called := m.Called(ctx, serviceID, version, service, options)
+func (m *DockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec) error {
+	called := m.Called(ctx, serviceID, version, service)
 	return called.Error(0)
 }
 

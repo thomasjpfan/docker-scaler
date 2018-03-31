@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
@@ -63,23 +62,49 @@ func (s *ScalerTestSuite) SetupTest() {
 	s.scaler = NewScalerService(s.clientMock, s.opts).(*scalerService)
 }
 
-func (s *ScalerTestSuite) Test_isGlobal_UnrecognizedService() {
-	_, err := s.scaler.isGlobal(swarm.Service{
+func (s *ScalerTestSuite) Test_Scale_UnrecognizedService() {
+	ss := swarm.Service{
 		Spec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "wow",
 			},
 		},
-	})
+	}
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "wow").
+		Return(ss, nil)
+	_, _, err := s.scaler.Scale(s.ctx, "wow", 0, ScaleUpDirection)
 	s.Require().Error(err)
 
-	s.Equal("Unable to recognize service model for: wow", err.Error())
+	s.Contains(err.Error(), "Unable to recognize service model for: wow")
+}
+
+func (s *ScalerTestSuite) Test_Scale_UnrecognizedReplicas() {
+	ss := swarm.Service{
+		Spec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "wow",
+			},
+			Mode: swarm.ServiceMode{
+				Replicated: &swarm.ReplicatedService{
+					Replicas: nil,
+				},
+			},
+		},
+	}
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "wow").
+		Return(ss, nil)
+	_, _, err := s.scaler.Scale(s.ctx, "wow", 0, ScaleUpDirection)
+	s.Require().Error(err)
+
+	s.Contains(err.Error(), "wow does not have a replicas value")
 }
 
 func (s *ScalerTestSuite) Test_ScaleUp_ServiceDoesNotExist() {
 	expErr := errors.New("Does not exist")
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "NOT_EXIST", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "NOT_EXIST").
 		Return(swarm.Service{}, expErr)
 	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleUpDirection)
 	s.Require().Error(err)
@@ -90,7 +115,7 @@ func (s *ScalerTestSuite) Test_ScaleUp_ServiceDoesNotExist() {
 func (s *ScalerTestSuite) Test_ScaleDown_ServiceDoesNotExist() {
 	expErr := errors.New("Does not exist")
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "NOT_EXIST", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "NOT_EXIST").
 		Return(swarm.Service{}, expErr)
 	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleDownDirection)
 	s.Require().Error(err)
@@ -98,13 +123,36 @@ func (s *ScalerTestSuite) Test_ScaleDown_ServiceDoesNotExist() {
 	s.Contains(err.Error(), "docker inspect failed in ScalerService")
 }
 
-func (s *ScalerTestSuite) Test_AlreadyAtMax() {
+func (s *ScalerTestSuite) Test_ScaleUp_UpdateError() {
+	oldReplicas := s.replicaMax - 1
+	newReplicas := s.replicaMax
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	expErr := errors.New("Unable to update")
+
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test").
+		Return(prevts, nil).
+		On("ServiceUpdate", s.ctx, "web_testID", prevts.Version,
+			newts.Spec).
+		Return(expErr)
+
+	_, _, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
+	s.Require().Error(err)
+
+	s.Equal("Unable to update", err.Error())
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleUp_AlreadyAtMax() {
 	expMsg := fmt.Sprintf("web_test is already scaled to the maximum number of %d replicas", s.replicaMax)
 
 	ts := s.getTestService()
 	ts.Spec.Mode.Replicated.Replicas = &s.replicaMax
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "web_test").
 		Return(ts, nil)
 
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
@@ -115,13 +163,13 @@ func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 	s.clientMock.AssertExpectations(s.T())
 }
 
-func (s *ScalerTestSuite) Test_AlreadyAtMin() {
+func (s *ScalerTestSuite) Test_ScaleDown_AlreadyAtMin() {
 	expMsg := fmt.Sprintf("web_test is already descaled to the minimum number of %d replicas", s.replicaMin)
 
 	ts := s.getTestService()
 	ts.Spec.Mode.Replicated.Replicas = &s.replicaMin
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "web_test").
 		Return(ts, nil)
 
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
@@ -315,7 +363,7 @@ func (s *ScalerTestSuite) Test_GlobalService_ScaleUp_ReturnsError() {
 	ts.Spec.Mode.Replicated = nil
 	ts.Spec.Mode.Global = &swarm.GlobalService{}
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "web_test").
 		Return(ts, nil)
 
 	_, _, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
@@ -330,7 +378,7 @@ func (s *ScalerTestSuite) Test_GlobalService_ScaleDown_ReturnsError() {
 	ts.Spec.Mode.Replicated = nil
 	ts.Spec.Mode.Global = &swarm.GlobalService{}
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "web_test").
 		Return(ts, nil)
 
 	_, _, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
@@ -369,9 +417,9 @@ func (s *ScalerTestSuite) getTestService() swarm.Service {
 
 func (s *ScalerTestSuite) setClientMock(prevService, nextService swarm.Service) {
 	s.clientMock.On(
-		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		"ServiceInspect", s.ctx, "web_test").
 		Return(prevService, nil).
 		On("ServiceUpdate", s.ctx, "web_testID", prevService.Version,
-			nextService.Spec, types.ServiceUpdateOptions{RegistryAuthFrom: types.RegistryAuthFromSpec}).
+			nextService.Spec).
 		Return(nil)
 }
