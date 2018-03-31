@@ -23,8 +23,8 @@ type ReschedulerServicer interface {
 type InfoListUpdaterInspector interface {
 	Info(ctx context.Context) (types.Info, error)
 	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
-	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
-	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	ServiceInspect(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) error
 }
 
 type reschedulerService struct {
@@ -58,7 +58,7 @@ func NewReschedulerService(
 
 func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
-	serviceInfo, err := r.c.ServiceInspectWithRaw(
+	serviceInfo, err := r.c.ServiceInspect(
 		context.Background(), serviceID, types.ServiceInspectOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Unable to inspect service %s", serviceID)
@@ -201,7 +201,7 @@ func (r *reschedulerService) rescheduleSingleService(service swarm.Service, valu
 	spec.TaskTemplate.ContainerSpec.Env = newEnvs
 	updateOpts := types.ServiceUpdateOptions{}
 
-	_, err := r.c.ServiceUpdate(context.Background(), service.ID, service.Version, *spec, updateOpts)
+	err := r.c.ServiceUpdate(context.Background(), service.ID, service.Version, *spec, updateOpts)
 	if err != nil {
 		return err
 	}

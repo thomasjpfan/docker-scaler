@@ -16,8 +16,8 @@ type ScalerServicer interface {
 
 // UpdaterInspector is an interface for scaling services
 type UpdaterInspector interface {
-	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
-	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) error
+	ServiceInspect(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, error)
 }
 
 type scalerService struct {
@@ -38,7 +38,7 @@ func NewScalerService(
 
 func (s scalerService) Scale(ctx context.Context, serviceName string, by uint64, direction ScaleDirection) (string, bool, error) {
 
-	service, err := s.c.ServiceInspectWithRaw(
+	service, err := s.c.ServiceInspect(
 		ctx, serviceName, types.ServiceInspectOptions{})
 
 	if err != nil {
@@ -98,7 +98,7 @@ func (s scalerService) setReplicas(ctx context.Context, service swarm.Service, c
 	updateOpts := types.ServiceUpdateOptions{}
 	updateOpts.RegistryAuthFrom = types.RegistryAuthFromSpec
 
-	_, updateErr := s.c.ServiceUpdate(
+	updateErr := s.c.ServiceUpdate(
 		ctx, service.ID, service.Version, service.Spec, updateOpts)
 	return updateErr
 }

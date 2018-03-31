@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"testing"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -16,7 +15,7 @@ type ScalerTestSuite struct {
 	suite.Suite
 	scaler             *scalerService
 	ctx                context.Context
-	client             DockerClient
+	clientMock         *DockerClientMock
 	defaultMax         uint64
 	defaultMin         uint64
 	replicaMin         uint64
@@ -26,6 +25,7 @@ type ScalerTestSuite struct {
 	scaleDownBy        uint64
 	defaultScaleDownBy uint64
 	defaultScaleUpBy   uint64
+	opts               ResolveDeltaOptions
 }
 
 func TestScalerUnitTestSuite(t *testing.T) {
@@ -33,31 +33,18 @@ func TestScalerUnitTestSuite(t *testing.T) {
 }
 
 func (s *ScalerTestSuite) SetupSuite() {
-	client, err := NewDockerClientFromEnv()
-	if err != nil {
-		s.T().Skipf("Unable to connect to Docker Client")
-	}
-	defer client.dc.Close()
-	_, err = client.dc.Info(context.Background())
-	if err != nil {
-		s.T().Skipf("Unable to connect to Docker Client")
-	}
-	_, err = client.dc.SwarmInspect(context.Background())
-	if err != nil {
-		s.T().Skipf("Docker process is not a part of a swarm")
-	}
-
 	s.defaultMin = 1
 	s.defaultMax = 10
+	s.replicas = 4
+	s.defaultScaleDownBy = 3
+	s.defaultScaleUpBy = 3
+
 	s.replicaMin = 2
 	s.replicaMax = 6
-	s.replicas = 4
 	s.scaleDownBy = 1
 	s.scaleUpBy = 2
-	s.defaultScaleDownBy = 1
-	s.defaultScaleUpBy = 1
 
-	resolveScalerOpts := ResolveDeltaOptions{
+	s.opts = ResolveDeltaOptions{
 		MinLabel:           "com.df.scaleMin",
 		MaxLabel:           "com.df.scaleMax",
 		ScaleDownByLabel:   "com.df.scaleDownBy",
@@ -67,116 +54,82 @@ func (s *ScalerTestSuite) SetupSuite() {
 		DefaultScaleDownBy: s.defaultScaleDownBy,
 		DefaultScaleUpBy:   s.defaultScaleUpBy,
 	}
-	s.client = client
 	s.ctx = context.Background()
-	s.scaler = NewScalerService(client, resolveScalerOpts).(*scalerService)
 }
 
 func (s *ScalerTestSuite) SetupTest() {
-	cmd := fmt.Sprintf(`docker service create --name web_test \
-		   -l com.df.scaleMin=%d \
-		   -l com.df.scaleMax=%d \
-		   -l com.df.scaleDownBy=%d \
-		   -l com.df.scaleUpBy=%d \
-		   --replicas %d \
-		   -d \
-		   alpine:3.6 \
-		   sleep 10000000`, s.replicaMin, s.replicaMax,
-		s.scaleDownBy, s.scaleUpBy, s.replicas)
-	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
-	if err != nil {
-		s.T().Skipf("Unable to create service: %s", err.Error())
-	}
 
-	tickerC := time.NewTicker(time.Millisecond * 500).C
-	timerC := time.NewTimer(time.Second * 10).C
-
-L:
-	for {
-		select {
-		case <-tickerC:
-			_, _, err = s.client.ServiceInspectWithRaw(
-				s.ctx, "web_test", types.ServiceInspectOptions{})
-			if err == nil {
-				break L
-			}
-		case <-timerC:
-			break L
-		}
-	}
-
-	if err != nil {
-		s.T().Skipf("Unable to create service: %s", err.Error())
-	}
+	s.clientMock = new(DockerClientMock)
+	s.scaler = NewScalerService(s.clientMock, s.opts).(*scalerService)
 }
 
-func (s *ScalerTestSuite) TearDownTest() {
-	cmd := `docker service rm web_test`
-	exec.Command("/bin/sh", "-c", cmd).Output()
+func (s *ScalerTestSuite) Test_isGlobal_UnrecognizedService() {
+	_, err := s.scaler.isGlobal(swarm.Service{
+		Spec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "wow",
+			},
+		},
+	})
+	s.Require().Error(err)
 
-	tickerC := time.NewTicker(time.Millisecond * 500).C
-	timerC := time.NewTimer(time.Second * 10).C
-
-	var err error
-L:
-	for {
-		select {
-		case <-tickerC:
-			_, _, err = s.client.ServiceInspectWithRaw(
-				s.ctx, "web_test", types.ServiceInspectOptions{})
-			if err != nil {
-				break L
-			}
-		case <-timerC:
-			break L
-		}
-	}
+	s.Equal("Unable to recognize service model for: wow", err.Error())
 }
 
-func (s *ScalerTestSuite) Test_isGlobal() {
-	_, err := s.scaler.isGlobal(swarm.Service{})
-	s.Error(err)
+func (s *ScalerTestSuite) Test_ScaleUp_ServiceDoesNotExist() {
+	expErr := errors.New("Does not exist")
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "NOT_EXIST", types.ServiceInspectOptions{}).
+		Return(swarm.Service{}, expErr)
+	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleUpDirection)
+	s.Require().Error(err)
+
+	s.Contains(err.Error(), "docker inspect failed in ScalerService")
 }
 
-func (s *ScalerTestSuite) Test_SetReplicas() {
+func (s *ScalerTestSuite) Test_ScaleDown_ServiceDoesNotExist() {
+	expErr := errors.New("Does not exist")
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "NOT_EXIST", types.ServiceInspectOptions{}).
+		Return(swarm.Service{}, expErr)
+	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleDownDirection)
+	s.Require().Error(err)
 
-	ts := s.getTestService()
-	err := s.scaler.setReplicas(s.ctx, ts, 4)
-	s.Require().NoError(err)
-
-	ts = s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Equal(uint64(4), replicas)
+	s.Contains(err.Error(), "docker inspect failed in ScalerService")
 }
 
 func (s *ScalerTestSuite) Test_AlreadyAtMax() {
 	expMsg := fmt.Sprintf("web_test is already scaled to the maximum number of %d replicas", s.replicaMax)
 
 	ts := s.getTestService()
-	err := s.scaler.setReplicas(s.ctx, ts, s.replicaMax)
+	ts.Spec.Mode.Replicated.Replicas = &s.replicaMax
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		Return(ts, nil)
+
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
-	ts = s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Equal(s.replicaMax, replicas)
+	s.clientMock.AssertExpectations(s.T())
 }
 
 func (s *ScalerTestSuite) Test_AlreadyAtMin() {
 	expMsg := fmt.Sprintf("web_test is already descaled to the minimum number of %d replicas", s.replicaMin)
 
 	ts := s.getTestService()
-	err := s.scaler.setReplicas(s.ctx, ts, s.replicaMin)
+	ts.Spec.Mode.Replicated.Replicas = &s.replicaMin
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		Return(ts, nil)
+
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
 	s.Require().NoError(err)
 	s.True(alreadyBounded)
 	s.Equal(expMsg, msg)
 
-	ts = s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Equal(s.replicaMin, replicas)
+	s.clientMock.AssertExpectations(s.T())
 }
 
 func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
@@ -184,36 +137,127 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 	newReplicas := s.replicaMax
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.replicaMax)
 
-	ts := s.getTestService()
-	err := s.scaler.setReplicas(s.ctx, ts, oldReplicas)
-	time.Sleep(time.Second)
+	prevts, newts := s.getTestService(), s.getTestService()
+	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
-	ts = s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Equal(newReplicas, replicas)
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleUpBy_PassDefaultMax() {
+	oldReplicas := s.defaultMax - 1
+	newReplicas := s.defaultMax
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.defaultMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	delete(prevts.Spec.Labels, "com.df.scaleMax")
+	delete(newts.Spec.Labels, "com.df.scaleMax")
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+
+	s.clientMock.AssertExpectations(s.T())
 }
 
 func (s *ScalerTestSuite) Test_ScaleUp() {
 	newReplicas := s.replicas + s.scaleUpBy
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
 
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
 
-	ts := s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Equal(newReplicas, replicas)
+	s.clientMock.AssertExpectations(s.T())
 }
 
-func (s *ScalerTestSuite) Test_ScaleUp_ServiceDoesNotExist() {
-	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleUpDirection)
-	s.Error(err)
+func (s *ScalerTestSuite) Test_ScaleUp_CustomBy() {
+	newReplicas := s.replicas + 1
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 1, ScaleUpDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleUp_DefaultBy() {
+
+	newReplicas := s.replicas + 3
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.defaultMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	delete(prevts.Spec.Labels, "com.df.scaleUpBy")
+	delete(newts.Spec.Labels, "com.df.scaleUpBy")
+	delete(prevts.Spec.Labels, "com.df.scaleMax")
+	delete(newts.Spec.Labels, "com.df.scaleMax")
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleDownBy_PassMin() {
+	oldReplicas := s.replicaMin + 1
+	newReplicas := s.replicaMin
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.replicaMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleDownBy_PassDefaultMin() {
+	oldReplicas := s.defaultMin - 1
+	newReplicas := s.defaultMin
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.defaultMin, s.replicaMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	delete(prevts.Spec.Labels, "com.df.scaleMin")
+	delete(newts.Spec.Labels, "com.df.scaleMin")
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+
+	s.clientMock.AssertExpectations(s.T())
 }
 
 func (s *ScalerTestSuite) Test_ScaleDown() {
@@ -221,79 +265,113 @@ func (s *ScalerTestSuite) Test_ScaleDown() {
 	newReplicas := s.replicas - s.scaleDownBy
 	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
 
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
 	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
 	s.Require().NoError(err)
 	s.False(alreadyBounded)
 	s.Equal(expMsg, msg)
+	s.clientMock.AssertExpectations(s.T())
+}
 
+func (s *ScalerTestSuite) Test_ScaleDown_CustomBy() {
+
+	newReplicas := s.replicas - 2
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 2, ScaleDownDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_ScaleDown_DefaultBy() {
+
+	newReplicas := s.replicaMin
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.replicaMax)
+
+	prevts, newts := s.getTestService(), s.getTestService()
+	newts.Spec.Mode.Replicated.Replicas = &newReplicas
+	delete(prevts.Spec.Labels, "com.df.scaleDownBy")
+	delete(newts.Spec.Labels, "com.df.scaleDownBy")
+	s.setClientMock(prevts, newts)
+
+	msg, alreadyBounded, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
+	s.Require().NoError(err)
+	s.False(alreadyBounded)
+	s.Equal(expMsg, msg)
+	s.clientMock.AssertExpectations(s.T())
+}
+
+func (s *ScalerTestSuite) Test_GlobalService_ScaleUp_ReturnsError() {
 	ts := s.getTestService()
-	replicas, _ := s.scaler.getReplicas(ts)
-	s.Require().NoError(err)
-	s.Equal(newReplicas, replicas)
+	ts.Spec.Mode.Replicated = nil
+	ts.Spec.Mode.Global = &swarm.GlobalService{}
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		Return(ts, nil)
+
+	_, _, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleUpDirection)
+
+	s.Require().Error(err)
+	s.Contains(err.Error(), "web_test is a global service (can not be scaled)")
+	s.clientMock.AssertExpectations(s.T())
 }
 
-func (s *ScalerTestSuite) Test_ScaleDown_ServiceDoesNotExist() {
-	_, _, err := s.scaler.Scale(s.ctx, "NOT_EXIST", 0, ScaleDownDirection)
-	s.Error(err)
+func (s *ScalerTestSuite) Test_GlobalService_ScaleDown_ReturnsError() {
+	ts := s.getTestService()
+	ts.Spec.Mode.Replicated = nil
+	ts.Spec.Mode.Global = &swarm.GlobalService{}
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		Return(ts, nil)
+
+	_, _, err := s.scaler.Scale(s.ctx, "web_test", 0, ScaleDownDirection)
+
+	s.Require().Error(err)
+	s.Contains(err.Error(), "web_test is a global service (can not be scaled)")
+	s.clientMock.AssertExpectations(s.T())
+
 }
-
-func (s *ScalerTestSuite) Test_GlobalService_ScaleUpAndScaleDown_ReturnsError() {
-	cmd := fmt.Sprintf(`docker service create --name web_global \
-		   -l com.df.scaleMin=%d \
-		   -l com.df.scaleMax=%d \
-		   -l com.df.scaleDownBy=%d \
-		   -l com.df.scaleUpBy=%d \
-		   --mode global \
-		   -d \
-		   alpine:3.6 \
-		   sleep 10000000`, s.replicaMin, s.replicaMax,
-		s.scaleDownBy, s.scaleUpBy)
-	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
-	if err != nil {
-		s.T().Skipf("Unable to create service: %s", err.Error())
-	}
-
-	tickerC := time.NewTicker(time.Millisecond * 500).C
-	timerC := time.NewTimer(time.Second * 10).C
-	var globalService swarm.Service
-
-L:
-	for {
-		select {
-		case <-tickerC:
-			globalService, _, err = s.client.ServiceInspectWithRaw(
-				s.ctx, "web_global", types.ServiceInspectOptions{})
-			if err == nil {
-				break L
-			}
-		case <-timerC:
-			break L
-		}
-	}
-
-	if err != nil {
-		s.T().Skipf("Unable to create service: %s", err.Error())
-	}
-
-	isGlobal, err := s.scaler.isGlobal(globalService)
-	s.NoError(err)
-	s.True(isGlobal)
-
-	_, _, err = s.scaler.Scale(s.ctx, "web_global", 0, ScaleUpDirection)
-	s.Error(err)
-	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
-
-	_, _, err = s.scaler.Scale(s.ctx, "web_global", 0, ScaleDownDirection)
-	s.Error(err)
-	s.Contains(err.Error(), "web_global is a global service (can not be scaled)")
-
-	cmd = `docker service rm web_global`
-	exec.Command("/bin/sh", "-c", cmd).Output()
-}
-
 func (s *ScalerTestSuite) getTestService() swarm.Service {
-	service, _, err := s.client.ServiceInspectWithRaw(
-		s.ctx, "web_test", types.ServiceInspectOptions{})
-	s.Require().NoError(err)
-	return service
+	labels := map[string]string{
+		"com.df.scaleMin":    "2",
+		"com.df.scaleMax":    "6",
+		"com.df.scaleDownBy": "1",
+		"com.df.scaleUpBy":   "2",
+	}
+	return swarm.Service{
+		ID: "web_testID",
+		Meta: swarm.Meta{
+			Version: swarm.Version{
+				Index: uint64(1),
+			}},
+		Spec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name:   "web_test",
+				Labels: labels,
+			},
+			Mode: swarm.ServiceMode{
+				Replicated: &swarm.ReplicatedService{
+					Replicas: &s.replicas,
+				},
+			},
+		},
+	}
+}
+
+func (s *ScalerTestSuite) setClientMock(prevService, nextService swarm.Service) {
+	s.clientMock.On(
+		"ServiceInspect", s.ctx, "web_test", types.ServiceInspectOptions{}).
+		Return(prevService, nil).
+		On("ServiceUpdate", s.ctx, "web_testID", prevService.Version,
+			nextService.Spec, types.ServiceUpdateOptions{RegistryAuthFrom: types.RegistryAuthFromSpec}).
+		Return(nil)
 }
