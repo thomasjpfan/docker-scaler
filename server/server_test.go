@@ -115,23 +115,6 @@ func (s *ServerTestSuite) Test_Ping_Returns_StatusCode() {
 	s.Require().Equal(http.StatusOK, rec.Code)
 }
 
-func (s *ServerTestSuite) Test_ScaleSerivce_InvalidJson() {
-	errorMessage := "Unable to decode POST body"
-	body := "{\"hello:}"
-	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, body)
-	url := "/v1/scale-service"
-	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
-
-	rec := httptest.NewRecorder()
-	s.r.ServeHTTP(rec, req)
-	s.Require().Equal(http.StatusBadRequest, rec.Code)
-	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-	s.RequireLogs(s.b.String(), logMessage)
-	s.am.AssertExpectations(s.T())
-}
-
 func (s *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
 	errorMessage := "No service name in request"
 	url := "/v1/scale-service"
