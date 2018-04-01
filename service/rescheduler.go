@@ -16,7 +16,7 @@ import (
 // ReschedulerServicer is an interface for rescheduling services
 type ReschedulerServicer interface {
 	RescheduleService(serviceID, value string) error
-	// RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error)
+	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string)
 	RescheduleAll(value string) (string, error)
 }
 
@@ -83,39 +83,39 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 	return nil
 }
 
-// func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error) {
+func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string) {
 
-// 	tickerChan := time.NewTicker(r.tickerInterval).C
-// 	timerChan := time.NewTimer(r.timeOut).C
+	tickerChan := time.NewTicker(r.tickerInterval).C
+	timerChan := time.NewTimer(r.timeOut).C
 
-// 	for {
-// 		select {
-// 		case tc := <-tickerChan:
-// 			tickerC <- tc
-// 			equalTarget, err := r.equalTargetCount(targetNodeCnt, manager)
-// 			if err != nil {
-// 				errorC <- err
-// 				return
-// 			}
-// 			if !equalTarget {
-// 				continue
-// 			}
+	for {
+		select {
+		case tc := <-tickerChan:
+			tickerC <- tc
+			equalTarget, err := r.equalTargetCount(targetNodeCnt, manager)
+			if err != nil {
+				errorC <- err
+				return
+			}
+			if !equalTarget {
+				continue
+			}
 
-// 			err = r.RescheduleAll(value)
-// 			if err != nil {
-// 				errorC <- err
-// 				return
-// 			}
-// 			errorC <- nil
-// 			return
-// 		case <-timerChan:
-// 			errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
-// 			return
+			status, err := r.RescheduleAll(value)
+			if err != nil {
+				errorC <- err
+				return
+			}
+			statusC <- status
+			return
+		case <-timerChan:
+			errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
+			return
 
-// 		}
-// 	}
+		}
+	}
 
-// }
+}
 
 func (r *reschedulerService) RescheduleAll(value string) (string, error) {
 	labelFitler := filters.NewArgs()
@@ -192,9 +192,10 @@ func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (
 		nodeCnt = info.Swarm.Nodes - info.Swarm.Managers
 	}
 
-	if err != nil {
-		return false, errors.Wrap(err, "Equal target count error")
+	if nodeCnt < 0 {
+		return false, fmt.Errorf("total node count: %d is negative", nodeCnt)
 	}
+
 	return nodeCnt == targetNodeCnt, nil
 }
 

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/mock"
@@ -63,9 +64,9 @@ func (rsm *ReschedulerServiceMock) RescheduleService(serviceID, value string) er
 	return args.Error(0)
 }
 
-// func (rsm *ReschedulerServiceMock) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error) {
-// 	rsm.Called(manager, targetNodeCnt, value, tickerC, errorC)
-// }
+func (rsm *ReschedulerServiceMock) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string) {
+	rsm.Called(manager, targetNodeCnt, value, tickerC, errorC, statusC)
+}
 
 func (rsm *ReschedulerServiceMock) RescheduleAll(value string) (string, error) {
 	args := rsm.Called(value)
@@ -545,35 +546,83 @@ func (s *ServerTestSuite) Test_ScaleNode_IncorrectNodeType() {
 	s.am.AssertExpectations(s.T())
 }
 
-// func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
-// 	url := "/v1/scale-nodes?type=worker&by=1"
-// 	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
-// 	message := "Changing the number of worker nodes on mock from 3 to 4"
-// 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
-// 	rescheduleMsg := "Waiting for worker nodes to scale from 3 to 4 for rescheduling"
-// 	logMessage2 := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
-// 	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
-// 	jsonStr := `{"groupLabels":{"scale":"up"}}`
+func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
+	url := "/v1/scale-nodes?type=worker&by=1"
+	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
+	message := "Changing the number of worker nodes on mock from 3 to 4"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+	rescheduleMsg := "Waiting for worker nodes to scale from 3 to 4 for rescheduling"
+	logMessage2 := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
+	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
+	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
-// 	s.am.
-// 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-// 		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil)
+	calls := 0
+	done := make(chan struct{})
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil).
+		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale up", "error", mock.AnythingOfType("string")).Return(nil).
+		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale up", "success", mock.AnythingOfType("string")).Return(nil).Run(func(args mock.Arguments) {
+		calls++
+		if calls == 2 {
+			done <- struct{}{}
+		}
+	})
 
-// 	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
-// 	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
-// 		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error")).Return()
+	var tickerC chan<- time.Time
+	var errC chan<- error
+	var statusC chan<- string
+	waitCalled := make(chan struct{})
+	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
+	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
+		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
+		tickerC = args.Get(3).(chan<- time.Time)
+		errC = args.Get(4).(chan<- error)
+		statusC = args.Get(5).(chan<- string)
+		waitCalled <- struct{}{}
+	})
 
-// 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
-// 	rec := httptest.NewRecorder()
-// 	s.r.ServeHTTP(rec, req)
-// 	s.Equal(http.StatusOK, rec.Code)
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
 
-// 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
-// 	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg, logMessage2)
-// 	s.nsm.AssertExpectations(s.T())
+H:
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+			return
+		case <-waitCalled:
+			break H
+		}
+	}
+	go func() {
+		tickerC <- time.Now()
+		errC <- errors.New("Here is an error")
+		statusC <- "web_test rescheduled"
+	}()
 
-// 	s.am.AssertExpectations(s.T())
-// }
+L:
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+			return
+		case <-done:
+			break L
+		}
+	}
+
+	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg, logMessage2)
+	logMessages := strings.Split(s.b.String(), "\n")
+	s.Len(logMessages, 12)
+
+	s.rsm.AssertExpectations(s.T())
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+}
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	url := "/v1/scale-nodes?type=manager&by=1"
