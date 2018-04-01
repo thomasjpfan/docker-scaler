@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ func (s *AlertTestSuite) SetupSuite() {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
 	s.url = "http://localhost:9093"
-	s.alertService = NewAlertService(s.url, time.Second*15)
+	s.alertService = NewAlertService(s.url)
 	s.client = client.dc
 }
 
@@ -41,23 +40,17 @@ func (s *AlertTestSuite) TearDownSuite() {
 func (s *AlertTestSuite) Test_SendAlert() {
 
 	defer func() {
-		cmd := "docker service rm am9093"
+		cmd := "docker container stop am9093"
 		exec.Command("/bin/sh", "-c", cmd).Output()
 	}()
-	cmd := `docker service create --name am9093 -d -p 9093:9093 prom/alertmanager:v0.14.0`
-	exec.Command("/bin/sh", "-c", cmd).Output()
+	cmd := `docker run --rm --name am9093 -d -p 9093:9093 prom/alertmanager:v0.14.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
-	if err != nil {
-		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))
-		return
-	}
-
-	ticker := time.NewTicker(time.Second).C
+	s.Require().NoError(err)
 
 L:
 	for {
 		select {
-		case <-ticker:
+		case <-time.NewTicker(time.Second).C:
 			_, _, err := s.client.ServiceInspectWithRaw(context.Background(), "am9093", types.ServiceInspectOptions{})
 			if err != nil {
 				break L
@@ -72,7 +65,7 @@ L:
 	serviceName := "web"
 	alertname := "service_scaler"
 	status := "success"
-	summary := "Scaled web from 3 to 4 replicas"
+	summary := "Scaled web from 3 to 5 replicas"
 	request := "Scale web with delta=1"
 
 	err = s.alertService.Send(alertname, serviceName, request, status, summary)
@@ -100,10 +93,8 @@ func (s *AlertTestSuite) Test_generateAlert() {
 	summary := "Scaled web from 3 to 4 replicas"
 	request := "Scale web with delta=1"
 	startsAt := time.Now().UTC()
-	timeout := time.Second
-	endsAt := startsAt.Add(timeout)
 
-	alert := generateAlert(alertname, serviceName, request, status, summary, startsAt, timeout)
+	alert := generateAlert(alertname, serviceName, request, status, summary, startsAt)
 	s.Require().NotNil(alert)
 	s.Equal(alertname, string(alert.Labels["alertname"]))
 	s.Equal(serviceName, string(alert.Labels["service"]))
@@ -111,6 +102,5 @@ func (s *AlertTestSuite) Test_generateAlert() {
 	s.Equal(summary, string(alert.Annotations["summary"]))
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(startsAt, alert.StartsAt)
-	s.Equal(endsAt, alert.EndsAt)
 	s.Equal("", alert.GeneratorURL)
 }
