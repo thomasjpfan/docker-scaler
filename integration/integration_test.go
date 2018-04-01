@@ -53,26 +53,6 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.falseRescheduleService = falseRescheduleService
 }
 
-func (s *IntegrationTestSuite) Test_NoPOSTBody() {
-	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
-	req, _ := http.NewRequest("POST", url, nil)
-
-	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "Unable to decode POST body"
-	requestMsg := "Incorrect request"
-	s.Equal("NOK", resp.Status)
-	s.Equal(message, resp.Message)
-
-	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	s.Require().NoError(err)
-	s.Require().Len(alerts, 1)
-
-	alert := alerts[0]
-	s.Equal(requestMsg, string(alert.Annotations["request"]))
-	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
-}
-
 func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
@@ -254,6 +234,33 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	s.Equal(message, string(alert.Annotations["summary"]))
 }
 
+func (s *IntegrationTestSuite) Test_ServiceScaledUp_Query() {
+
+	s.scaleService(s.targetService, 3)
+	time.Sleep(1 * time.Second)
+
+	// Now service is scaled to the min of 3
+	url := fmt.Sprintf("%s/scale-service?service=%s&scale=up&by=1", s.scaleURL, s.targetService)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusOK)
+	s.Require().Equal(5, s.getReplicas(s.targetService))
+
+	message := fmt.Sprintf("Scaling %s from 3 to 4 replicas (min: 2, max: 5)", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
+}
+
 func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 
 	s.scaleService(s.targetService, 3)
@@ -268,6 +275,33 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	s.Require().Equal(2, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas (min: 2, max: 5)", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Scale service down: %s", s.targetService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
+}
+
+func (s *IntegrationTestSuite) Test_ServiceScaledDown_Query() {
+
+	s.scaleService(s.targetService, 5)
+	time.Sleep(1 * time.Second)
+
+	// Now service is scaled to the min of 2
+	url := fmt.Sprintf("%s/scale-service?service=%s&scale=down&by=2", s.scaleURL, s.targetService)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusOK)
+	s.Require().Equal(2, s.getReplicas(s.targetService))
+
+	message := fmt.Sprintf("Scaling %s from 5 to 3 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 

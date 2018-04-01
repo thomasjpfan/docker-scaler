@@ -115,22 +115,6 @@ func (s *ServerTestSuite) Test_Ping_Returns_StatusCode() {
 	s.Require().Equal(http.StatusOK, rec.Code)
 }
 
-func (s *ServerTestSuite) Test_ScaleService_NoBody() {
-	errorMessage := "No POST body"
-	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
-	url := "/v1/scale-service"
-	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-
-	req, _ := http.NewRequest("POST", url, nil)
-
-	rec := httptest.NewRecorder()
-	s.r.ServeHTTP(rec, req)
-	s.Require().Equal(http.StatusBadRequest, rec.Code)
-	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-	s.RequireLogs(s.b.String(), logMessage)
-	s.am.AssertExpectations(s.T())
-}
-
 func (s *ServerTestSuite) Test_ScaleSerivce_InvalidJson() {
 	errorMessage := "Unable to decode POST body"
 	body := "{\"hello:}"
@@ -149,10 +133,10 @@ func (s *ServerTestSuite) Test_ScaleSerivce_InvalidJson() {
 }
 
 func (s *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
-	errorMessage := "No service name in request body"
+	errorMessage := "No service name in request"
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"scale": "up"}}`
-	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
 	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
@@ -165,11 +149,11 @@ func (s *ServerTestSuite) Test_ScaleService_NoServiceNameInBody() {
 }
 
 func (s *ServerTestSuite) Test_ScaleService_NoScaleDirectionInBody() {
-	errorMessage := "No scale direction in request body"
+	errorMessage := "No scale direction in request"
 	url := "/v1/scale-service"
 	jsonStr := `{"groupLabels":{"service": "web"}}`
 	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
@@ -183,10 +167,10 @@ func (s *ServerTestSuite) Test_ScaleService_NoScaleDirectionInBody() {
 }
 
 func (s *ServerTestSuite) Test_ScaleService_IncorrectScaleName() {
-	errorMessage := "Incorrect scale direction in request body"
+	errorMessage := "Incorrect scale direction in request"
 	jsonStr := `{"groupLabels":{"service": "web", "scale": "boo"}}`
 	s.am.On("Send", "scale_service", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-	logMessage := fmt.Sprintf("scale-service error: %s, body: %s", errorMessage, jsonStr)
+	logMessage := fmt.Sprintf("scale-service error: %s", errorMessage)
 	url := "/v1/scale-service"
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
@@ -209,6 +193,44 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleUp() {
 	url := "/v1/scale-service"
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertExpectations(s.T())
+	s.m.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleUp_Query() {
+	requestMessage := "Scale service up: web"
+	expMsg := "Scaled up service: web"
+	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", uint64(1), service.ScaleUpDirection).Return(expMsg, false, nil)
+
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+	url := "/v1/scale-service?service=web&scale=up&by=1"
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusOK, rec.Code)
+	s.RequireResponse(rec.Body.Bytes(), "OK", expMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.am.AssertExpectations(s.T())
+	s.m.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleService_ScaleDown_NegativeBy_Query() {
+	requestMessage := "Scale service up: web"
+	expMsg := "Scaled up service: web"
+	s.am.On("Send", "scale_service", "web", requestMessage, "success", expMsg).Return(nil)
+	s.m.On("Scale", mock.AnythingOfType("*context.valueCtx"), "web", uint64(2), service.ScaleUpDirection).Return(expMsg, false, nil)
+
+	logMessage := fmt.Sprintf("scale-service success: %s", expMsg)
+	url := "/v1/scale-service?service=web&scale=up&by=-2"
+
+	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
 	s.r.ServeHTTP(rec, req)
 	s.Require().Equal(http.StatusOK, rec.Code)

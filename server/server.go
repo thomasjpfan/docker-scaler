@@ -108,59 +108,72 @@ func (s *Server) PingHandler(w http.ResponseWriter, req *http.Request) {
 func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-
-	if r.Body == nil {
-		message := "No POST body"
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		message := "Unable to recognize POST body"
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
 	var ssReq ScaleRequest
-	err = json.Unmarshal(body, &ssReq)
 
-	if err != nil {
-		message := "Unable to decode POST body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
+	if r.Body != nil {
+		body, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		if err != nil {
+			message := "Unable to recognize POST body"
+			s.logger.Printf("scale-service error: %s", message)
+			s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
+			respondWithError(w, http.StatusBadRequest, message)
+			return
+		}
+
+		err = json.Unmarshal(body, &ssReq)
+
+		if err != nil {
+			message := "Unable to decode POST body"
+			s.logger.Printf("scale-service error: %s, body: %s", message, body)
+			s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
+			respondWithError(w, http.StatusBadRequest, message)
+			return
+		}
+	}
+
+	q := r.URL.Query()
+	if service := q.Get("service"); len(service) > 0 {
+		ssReq.GroupLabels.Service = service
+	}
+	if scale := q.Get("scale"); len(scale) > 0 {
+		ssReq.GroupLabels.Scale = scale
+	}
+	by := uint64(0)
+	if byStr := q.Get("by"); len(byStr) > 0 {
+		byInt, err := strconv.Atoi(byStr)
+		if err == nil {
+			if byInt < 0 {
+				by = uint64(-1 * byInt)
+			} else {
+				by = uint64(byInt)
+			}
+		}
 	}
 
 	serviceName := ssReq.GroupLabels.Service
 	scaleDirection := ssReq.GroupLabels.Scale
 
 	if len(serviceName) == 0 {
-		message := "No service name in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "No service name in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
 
 	if len(scaleDirection) == 0 {
-		message := "No scale direction in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "No scale direction in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
 
 	if scaleDirection != "up" && scaleDirection != "down" {
-		message := "Incorrect scale direction in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "Incorrect scale direction in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
@@ -171,10 +184,11 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	var message string
 	var atBound bool
+	var err error
 	if scaleDirection == "down" {
-		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, 0, service.ScaleDownDirection)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, by, service.ScaleDownDirection)
 	} else {
-		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, 0, service.ScaleUpDirection)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, by, service.ScaleUpDirection)
 	}
 
 	if err != nil {
