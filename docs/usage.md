@@ -4,6 +4,8 @@
 
 ## Scaling Services
 
+### Alertmanager Webhook
+
 This request queries docker service labels: `com.df.scaleMin`, `com.df.scaleMax`, `com.df.scaleDownBy`, `com.df.scaleUpBy` to determine how much to scale the service by. The request body conforms to the alertmanager notifications so that *Docker Scaler* can be used as a webhook.
 
 - **URL:**
@@ -24,6 +26,27 @@ This request queries docker service labels: `com.df.scaleMin`, `com.df.scaleMax`
 ```
 
 The `service` value is the name of the service to scale. The `scale` value accepts `up` for scaling up and `down` for scaling down.
+
+### User Friendly Endpoint
+
+The whole scaling event can be place in the url:
+
+- **URL:**
+    `/v1/reschedule-service`
+
+- **Method:**
+    `POST`
+
+- **Query Parameters:**
+
+| Query   | Description                         | Required |
+| ------- | ----------------------------------- | -------- |
+| service | Name of service to reschedule       | yes      |
+| scale   | direction to scale (`up` or `down`) | yes      |
+| by      | number of replicas to save by       | yes      |
+
+The `com.df.scaleMax` and `com.df.scaleMin` will still be used to bound the number of replicas for the service.
+
 
 ## Rescheduling All Services
 
@@ -48,7 +71,7 @@ This request only reschedule target service with label: `com.df.reschedule=true`
 - **Query Parameters:**
 
 | Query   | Description                   | Required |
-|---------|-------------------------------|----------|
+| ------- | ----------------------------- | -------- |
 | service | Name of service to reschedule | yes      |
 
 ## Scaling Nodes
@@ -64,7 +87,7 @@ The request body conforms to the alertmanager notifications so that *Docker Scal
 - **Query Parameters:**
 
 | Query | Description                                | Required |
-|-------|--------------------------------------------|----------|
+| ----- | ------------------------------------------ | -------- |
 | by    | The number of nodes to scale up or down by | yes      |
 
 - **Request Body:**
