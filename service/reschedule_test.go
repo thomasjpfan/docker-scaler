@@ -213,11 +213,10 @@ func (s *ReschedulerTestSuite) Test_RescheduleAll_List() {
 
 	status, err := s.reschedulerService.RescheduleAll("value")
 	s.Require().NoError(err)
-	s.Equal("web_test, web_test2 rescheduled", status)
-
+	s.Regexp("(web_test|web_test2), (web_test|web_test2) rescheduled", status)
 }
 
-func (s *ReschedulerTestSuite) Test_RescheduleAll_ListErrors() {
+func (s *ReschedulerTestSuite) Test_RescheduleAll_UpdateErrors() {
 	ts1, ts2 := s.getTestService(), s.getTestService()
 	ts2.ID = "web_testID2"
 	ts2.Spec.Name = "web_test2"
@@ -232,7 +231,7 @@ func (s *ReschedulerTestSuite) Test_RescheduleAll_ListErrors() {
 	_, err := s.reschedulerService.RescheduleAll("value")
 	s.Require().Error(err)
 
-	s.Equal("web_test, web_test2 failed to reschedule", err.Error())
+	s.Regexp("(web_test|web_test2), (web_test|web_test2) failed to reschedule", err.Error())
 
 }
 
@@ -244,12 +243,12 @@ func (s *ReschedulerTestSuite) Test_RescheduleAll_PartialErrors() {
 	serviceList := []swarm.Service{ts1, ts2}
 
 	s.clientMock.On("ServiceList", s.ctx, s.getFilter()).Return(serviceList, nil).
-		On("ServiceUpdate", s.ctx, "web_test", mock.AnythingOfType("swarm.Version"),
+		On("ServiceUpdate", s.ctx, "web_testID", mock.AnythingOfType("swarm.Version"),
 			mock.AnythingOfType("swarm.ServiceSpec")).
 		Return(errors.New("update error")).
-		On("ServiceUpdate", s.ctx, "web_test2", mock.AnythingOfType("swarm.Version"),
+		On("ServiceUpdate", s.ctx, "web_testID2", mock.AnythingOfType("swarm.Version"),
 			mock.AnythingOfType("swarm.ServiceSpec")).
-		Return(errors.New("update error"))
+		Return(nil)
 
 	_, err := s.reschedulerService.RescheduleAll("value")
 	s.Require().Error(err)

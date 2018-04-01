@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
 )
@@ -40,30 +41,31 @@ func (s *AlertTestSuite) TearDownSuite() {
 func (s *AlertTestSuite) Test_SendAlert() {
 
 	defer func() {
-		cmd := "docker container stop am9093"
+		cmd := "docker service rm am9093"
 		exec.Command("/bin/sh", "-c", cmd).Output()
 	}()
-	cmd := `docker run --name am9093 --rm -p 9093:9093 \
-			-d prom/alertmanager:v0.14.0`
+	cmd := `docker service create --name am9093 -d -p 9093:9093 prom/alertmanager:v0.14.0`
+	exec.Command("/bin/sh", "-c", cmd).Output()
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
 		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))
 		return
 	}
 
-	running := false
-	// Wait for am to come online
-	for i := 1; i <= 60; i++ {
-		info, _ := s.client.ContainerInspect(context.Background(), "am9093")
-		if info.State.Running {
-			running = true
-			break
+	ticker := time.NewTicker(time.Second).C
+
+L:
+	for {
+		select {
+		case <-ticker:
+			_, _, err := s.client.ServiceInspectWithRaw(context.Background(), "am9093", types.ServiceInspectOptions{})
+			if err != nil {
+				break L
+			}
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+			return
 		}
-		time.Sleep(1 * time.Second)
-	}
-	if !running {
-		s.T().Skipf(fmt.Sprintf("Alertmanager not created"))
-		return
 	}
 
 	require := s.Require()

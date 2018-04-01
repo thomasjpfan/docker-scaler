@@ -132,6 +132,22 @@ func (r *reschedulerService) RescheduleAll(value string) (string, error) {
 
 	failed := make(chan string)
 	success := make(chan string)
+	done := make(chan struct{})
+
+	failedList := []string{}
+	successList := []string{}
+	go func() {
+		for {
+			select {
+			case f := <-failed:
+				failedList = append(failedList, f)
+			case s := <-success:
+				successList = append(successList, s)
+			case <-done:
+				return
+			}
+		}
+	}()
 
 	var wg sync.WaitGroup
 	for _, service := range services {
@@ -147,25 +163,16 @@ func (r *reschedulerService) RescheduleAll(value string) (string, error) {
 		}(service)
 	}
 	wg.Wait()
-	close(failed)
-	close(success)
+	done <- struct{}{}
 
-	failedList := []string{}
-	successList := []string{}
-	for f := range failed {
-		failedList = append(failedList, f)
-	}
-	for s := range success {
-		successList = append(successList, s)
-	}
 	successStr := strings.Join(successList, ", ")
 
 	if len(failedList) > 0 {
 		failedStr := strings.Join(failedList, ", ")
 		if len(successStr) > 0 {
-			return "", fmt.Errorf("%sfailed to reschedule (%s succeeded)", failedStr, successStr)
+			return "", fmt.Errorf("%s failed to reschedule (%s succeeded)", failedStr, successStr)
 		}
-		return "", fmt.Errorf("%sfailed to reschedule", failedStr)
+		return "", fmt.Errorf("%s failed to reschedule", failedStr)
 	}
 	return fmt.Sprintf("%s rescheduled", successStr), nil
 }

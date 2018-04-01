@@ -50,6 +50,8 @@ func NewAlertService(url string, alertTimeout time.Duration) AlertServicer {
 func (a alertService) Send(alertName string, serviceName string, request string, status string, message string) error {
 	startsAt := time.Now().UTC()
 	alert := generateAlert(alertName, serviceName, request, status, message, startsAt, a.alertTimeout)
+
+	fmt.Println(alert)
 	alerts := []*model.Alert{alert}
 	alertsJSON, _ := json.Marshal(alerts)
 	r := bytes.NewReader(alertsJSON)
