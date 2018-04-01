@@ -122,15 +122,7 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = json.Unmarshal(body, &ssReq)
-
-		if err != nil {
-			message := "Unable to decode POST body"
-			s.logger.Printf("scale-service error: %s, body: %s", message, body)
-			s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-			respondWithError(w, http.StatusBadRequest, message)
-			return
-		}
+		json.Unmarshal(body, &ssReq)
 	}
 
 	q := r.URL.Query()

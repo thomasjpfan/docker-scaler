@@ -59,7 +59,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "No service name in request body"
+	message := "No service name in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -80,7 +80,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "No scale direction in request body"
+	message := "No scale direction in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -101,7 +101,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "Incorrect scale direction in request body"
+	message := "Incorrect scale direction in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -244,7 +244,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp_Query() {
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	s.Require().Equal(5, s.getReplicas(s.targetService))
+	s.Require().Equal(4, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("Scaling %s from 3 to 4 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
@@ -299,7 +299,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown_Query() {
 	req, _ := http.NewRequest("POST", url, nil)
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	s.Require().Equal(2, s.getReplicas(s.targetService))
+	s.Require().Equal(3, s.getReplicas(s.targetService))
 
 	message := fmt.Sprintf("Scaling %s from 5 to 3 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
