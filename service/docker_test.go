@@ -76,10 +76,20 @@ func (s *DockerClientTestSuite) TearDownTest() {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 }
 
-func (s *DockerClientTestSuite) Test_ServiceInspect() {
+func (s *DockerClientTestSuite) Test_ServiceInspect_WithName() {
 	ss, err := s.client.ServiceInspect(s.ctx, "web_test")
 	s.Require().NoError(err)
 	s.Equal("web_test", ss.Spec.Name)
+
+	s.Require().NotNil(ss.Spec.Mode.Replicated)
+	s.Require().NotNil(ss.Spec.Mode.Replicated.Replicas)
+	s.Equal(uint64(2), *ss.Spec.Mode.Replicated.Replicas)
+}
+
+func (s *DockerClientTestSuite) Test_ServiceInspect_WithID() {
+	ss, err := s.client.ServiceInspect(s.ctx, s.service.ID)
+	s.Require().NoError(err)
+	s.Equal(s.service.ID, ss.ID)
 
 	s.Require().NotNil(ss.Spec.Mode.Replicated)
 	s.Require().NotNil(ss.Spec.Mode.Replicated.Replicas)

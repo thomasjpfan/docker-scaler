@@ -289,9 +289,8 @@ func (s *IntegrationTestSuite) Test_RescheduleAll() {
 
 	resp := s.responseForRequest(req, http.StatusOK)
 
-	message := "Rescheduled all services"
 	s.Equal("OK", resp.Status)
-	s.Equal(message, resp.Message)
+	s.Contains(resp.Message, "rescheduled")
 
 	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_services", "success", "reschedule")
 	s.Require().NoError(err)
