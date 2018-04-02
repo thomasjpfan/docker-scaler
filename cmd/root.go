@@ -11,6 +11,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/thomasjpfan/docker-scaler/server"
 	"github.com/thomasjpfan/docker-scaler/service"
+	"github.com/thomasjpfan/docker-scaler/service/cloud"
 )
 
 type specification struct {
@@ -33,6 +34,8 @@ type specification struct {
 	NodeScalerBackend         string `envconfig:"NODE_SCALER_BACKEND"`
 	AlertNodeMin              bool   `envconfig:"ALERT_NODE_MIN"`
 	AlertNodeMax              bool   `envconfig:"ALERT_NODE_MAX"`
+
+	AwsEnvFile string `envconfig:"AWS_ENV_FILE"`
 }
 
 // Run starts docker-scaler service
@@ -67,11 +70,21 @@ func Run() {
 		logger.Printf("Using a stubbed alertmanager")
 	}
 
-	nodeScaler, err := service.NewNodeScaler(spec.NodeScalerBackend)
+	cloudOptions := cloud.NewCloudOptions{
+		AWSEnvFile: spec.AwsEnvFile,
+	}
+
+	cloud, err := cloud.NewCloud(spec.NodeScalerBackend, cloudOptions)
 	if err != nil {
-		logger.Panic(err)
+		logger.Printf("No cloud provider for node scaling configured")
 	}
 	logger.Printf("Using node-scaling backend: %s", spec.NodeScalerBackend)
+
+	managerResolveOpts := service.ResolveDeltaOptions{}
+	workerResolveOpts := service.ResolveDeltaOptions{}
+
+	nodeScaler := service.NewNodeScaler(
+		cloud, client, managerResolveOpts, workerResolveOpts)
 
 	rescheduler, err := service.NewReschedulerService(
 		client,

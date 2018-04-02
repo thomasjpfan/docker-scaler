@@ -12,6 +12,7 @@ import (
 
 	"github.com/thomasjpfan/docker-scaler/server/handler"
 	"github.com/thomasjpfan/docker-scaler/service"
+	"github.com/thomasjpfan/docker-scaler/service/cloud"
 
 	"github.com/gorilla/mux"
 )
@@ -20,7 +21,7 @@ import (
 type Server struct {
 	serviceScaler service.ScalerServicer
 	alerter       service.AlertServicer
-	nodeScaler    service.NodeScaler
+	nodeScaler    service.NodeScaling
 	rescheduler   service.ReschedulerServicer
 	logger        *log.Logger
 	alertScaleMin bool
@@ -33,7 +34,7 @@ type Server struct {
 func NewServer(
 	serviceScaler service.ScalerServicer,
 	alerter service.AlertServicer,
-	nodeScaler service.NodeScaler,
+	nodeScaler service.NodeScaling,
 	rescheduler service.ReschedulerServicer,
 	logger *log.Logger,
 	alertScaleMin bool,
@@ -227,6 +228,13 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var byInt64 uint64
+	if byInt < 0 {
+		byInt64 = uint64(-1 * byInt)
+	} else {
+		byInt64 = uint64(byInt)
+	}
+
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 
@@ -267,10 +275,6 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if scaleDirection == "down" {
-		byInt *= -1
-	}
-
 	if typeStr != "worker" && typeStr != "manager" {
 		message := fmt.Sprintf("Incorrect node type: %s, type can only be worker or manager", typeStr)
 		respondWithError(w, http.StatusBadRequest, message)
@@ -282,15 +286,25 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %s, type: %s", scaleDirection, s.nodeScaler, byStr, typeStr)
 	s.logger.Printf(requestMessage)
 
-	var nodesBefore, nodesNow uint64
-
 	isManager := (typeStr == "manager")
 
-	if isManager {
-		nodesBefore, nodesNow, err = s.nodeScaler.ScaleManagerByDelta(ctx, byInt)
+	var direction service.ScaleDirection
+	var nodeType cloud.NodeType
+
+	if scaleDirection == "up" {
+		direction = service.ScaleUpDirection
 	} else {
-		nodesBefore, nodesNow, err = s.nodeScaler.ScaleWorkerByDelta(ctx, byInt)
+		direction = service.ScaleDownDirection
 	}
+
+	if isManager {
+		nodeType = cloud.NodeManagerType
+	} else {
+		nodeType = cloud.NodeWorkerType
+	}
+	nodesBefore, nodesNow, err := s.nodeScaler.Scale(
+		ctx, byInt64, direction, nodeType, "")
+
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		s.logger.Printf("scale-nodes error: %s", err)

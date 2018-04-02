@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"github.com/thomasjpfan/docker-scaler/service"
+	"github.com/thomasjpfan/docker-scaler/service/cloud"
 )
 
 type ScalerServicerMock struct {
@@ -41,13 +42,8 @@ type NodeScalerMock struct {
 	mock.Mock
 }
 
-func (nsm *NodeScalerMock) ScaleManagerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	args := nsm.Called(delta)
-	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
-}
-
-func (nsm *NodeScalerMock) ScaleWorkerByDelta(ctx context.Context, delta int) (uint64, uint64, error) {
-	args := nsm.Called(delta)
+func (nsm *NodeScalerMock) Scale(ctx context.Context, by uint64, direction service.ScaleDirection, nodeType cloud.NodeType, serviceName string) (uint64, uint64, error) {
+	args := nsm.Called(ctx, by, direction, nodeType, serviceName)
 	return args.Get(0).(uint64), args.Get(1).(uint64), args.Error(2)
 }
 
@@ -518,7 +514,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	s.am.On("Send", "scale_nodes", "mock", requestMessage, "error", expErr.Error()).Return(nil)
-	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(0), uint64(0), expErr)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType).Return(uint64(0), uint64(0), expErr)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -577,7 +573,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
 	var errC chan<- error
 	var statusC chan<- string
 	waitCalled := make(chan struct{})
-	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(4), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(4), nil)
 	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
 		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
 		tickerC = args.Get(3).(chan<- time.Time)
@@ -637,7 +633,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
-	s.nsm.On("ScaleManagerByDelta", -1).Return(uint64(3), uint64(2), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(3), uint64(2), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -659,7 +655,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
-	s.nsm.On("ScaleManagerByDelta", 1).Return(uint64(4), uint64(4), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeManagerType, "").Return(uint64(4), uint64(4), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -681,7 +677,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
-	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(3), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(3), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -701,7 +697,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
-	s.nsm.On("ScaleWorkerByDelta", 1).Return(uint64(3), uint64(3), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(3), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -727,7 +723,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_MinAlertTrue() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
-	s.nsm.On("ScaleWorkerByDelta", -1).Return(uint64(1), uint64(1), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "").Return(uint64(1), uint64(1), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -751,7 +747,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_MinAlertFalse() {
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
-	s.nsm.On("ScaleManagerByDelta", -1).Return(uint64(1), uint64(1), nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(1), uint64(1), nil)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
