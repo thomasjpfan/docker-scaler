@@ -12,19 +12,15 @@ import (
 
 type ScalerTestSuite struct {
 	suite.Suite
-	scaler             *scalerService
-	ctx                context.Context
-	clientMock         *DockerClientMock
-	defaultMax         uint64
-	defaultMin         uint64
-	replicaMin         uint64
-	replicaMax         uint64
-	replicas           uint64
-	scaleUpBy          uint64
-	scaleDownBy        uint64
-	defaultScaleDownBy uint64
-	defaultScaleUpBy   uint64
-	opts               ResolveDeltaOptions
+	scaler      *scalerService
+	ctx         context.Context
+	clientMock  *DockerClientMock
+	replicaMin  uint64
+	replicaMax  uint64
+	replicas    uint64
+	scaleUpBy   uint64
+	scaleDownBy uint64
+	opts        ResolveDeltaOptions
 }
 
 func TestScalerUnitTestSuite(t *testing.T) {
@@ -32,11 +28,7 @@ func TestScalerUnitTestSuite(t *testing.T) {
 }
 
 func (s *ScalerTestSuite) SetupSuite() {
-	s.defaultMin = 1
-	s.defaultMax = 10
 	s.replicas = 4
-	s.defaultScaleDownBy = 3
-	s.defaultScaleUpBy = 3
 
 	s.replicaMin = 2
 	s.replicaMax = 6
@@ -48,10 +40,10 @@ func (s *ScalerTestSuite) SetupSuite() {
 		MaxLabel:           "com.df.scaleMax",
 		ScaleDownByLabel:   "com.df.scaleDownBy",
 		ScaleUpByLabel:     "com.df.scaleUpBy",
-		DefaultMin:         s.defaultMin,
-		DefaultMax:         s.defaultMax,
-		DefaultScaleDownBy: s.defaultScaleDownBy,
-		DefaultScaleUpBy:   s.defaultScaleUpBy,
+		DefaultMin:         1,
+		DefaultMax:         10,
+		DefaultScaleDownBy: 3,
+		DefaultScaleUpBy:   3,
 	}
 	s.ctx = context.Background()
 }
@@ -199,9 +191,9 @@ func (s *ScalerTestSuite) Test_ScaleUpBy_PassMax() {
 }
 
 func (s *ScalerTestSuite) Test_ScaleUpBy_PassDefaultMax() {
-	oldReplicas := s.defaultMax - 1
-	newReplicas := s.defaultMax
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.defaultMax)
+	oldReplicas := s.opts.DefaultMax - 1
+	newReplicas := s.opts.DefaultMax
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.replicaMin, s.opts.DefaultMax)
 
 	prevts, newts := s.getTestService(), s.getTestService()
 	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
@@ -253,7 +245,7 @@ func (s *ScalerTestSuite) Test_ScaleUp_CustomBy() {
 func (s *ScalerTestSuite) Test_ScaleUp_DefaultBy() {
 
 	newReplicas := s.replicas + 3
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.defaultMax)
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", s.replicas, newReplicas, s.replicaMin, s.opts.DefaultMax)
 
 	prevts, newts := s.getTestService(), s.getTestService()
 	newts.Spec.Mode.Replicated.Replicas = &newReplicas
@@ -289,9 +281,9 @@ func (s *ScalerTestSuite) Test_ScaleDownBy_PassMin() {
 }
 
 func (s *ScalerTestSuite) Test_ScaleDownBy_PassDefaultMin() {
-	oldReplicas := s.defaultMin - 1
-	newReplicas := s.defaultMin
-	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.defaultMin, s.replicaMax)
+	oldReplicas := s.opts.DefaultMin + 1
+	newReplicas := s.opts.DefaultMin
+	expMsg := fmt.Sprintf("Scaling web_test from %d to %d replicas (min: %d, max: %d)", oldReplicas, newReplicas, s.opts.DefaultMin, s.replicaMax)
 
 	prevts, newts := s.getTestService(), s.getTestService()
 	prevts.Spec.Mode.Replicated.Replicas = &oldReplicas
