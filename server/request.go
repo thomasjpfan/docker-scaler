@@ -4,6 +4,7 @@ type groupLabels struct {
 	Service string `json:"service,omitempty"`
 	Scale   string `json:"scale,omitempty"`
 	By      uint64 `json:"by,omitempty"`
+	Type    string `json:"type,omitempty"`
 }
 
 // ScaleRequest is the POST body used to scale services/nodes

@@ -410,44 +410,11 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Error() {
 	s.m.AssertExpectations(s.T())
 }
 
-func (s *ServerTestSuite) Test_ScaleNode_NoPOSTBody() {
-	errorMessage := "No POST body"
-	logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
-	url := "/v1/scale-nodes?by=1&type=worker"
-	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-
-	req, _ := http.NewRequest("POST", url, nil)
-
-	rec := httptest.NewRecorder()
-	s.r.ServeHTTP(rec, req)
-	s.Require().Equal(http.StatusBadRequest, rec.Code)
-	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-	s.RequireLogs(s.b.String(), logMessage)
-	s.am.AssertExpectations(s.T())
-}
-
-func (s *ServerTestSuite) Test_ScaleNode_InvalidJson() {
-	errorMessage := "Unable to decode POST body"
-	body := "{\"hello:}"
-	logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, body)
-	url := "/v1/scale-nodes?by=1&type=worker"
-	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-
-	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(body))
-
-	rec := httptest.NewRecorder()
-	s.r.ServeHTTP(rec, req)
-	s.Require().Equal(http.StatusBadRequest, rec.Code)
-	s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-	s.RequireLogs(s.b.String(), logMessage)
-	s.am.AssertExpectations(s.T())
-}
-
 func (s *ServerTestSuite) Test_ScaleNode_NoScaleDirectionInBody() {
-	errorMessage := "No scale direction in request body"
+	errorMessage := "No scale direction"
 	url := "/v1/scale-nodes?by=1&type=worker"
 	jsonStr := `{"groupLabels":{}}`
-	logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
+	logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
 	s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
@@ -464,32 +431,9 @@ func (s *ServerTestSuite) Test_ScaleNode_InvalidScaleValue() {
 
 	for _, deltaStr := range tt {
 
-		errorMessage := "Incorrect scale direction in request body"
+		errorMessage := "Incorrect scale direction"
 		url := "/v1/scale-nodes?by=1&type=worker"
 		jsonStr := fmt.Sprintf(`{"groupLabels":{"scale":"%s"}}`, deltaStr)
-		logMessage := fmt.Sprintf("scale-nodes error: %s, body: %s", errorMessage, jsonStr)
-		s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
-		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
-
-		rec := httptest.NewRecorder()
-		s.r.ServeHTTP(rec, req)
-		s.Equal(http.StatusBadRequest, rec.Code)
-		s.RequireLogs(s.b.String(), logMessage)
-		s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
-		s.am.AssertExpectations(s.T())
-		s.b.Reset()
-	}
-}
-
-func (s *ServerTestSuite) Test_ScaleNode_NonIntegerByQuery() {
-
-	tt := []string{"what", "2114what", "24y4", "he"}
-
-	for _, byStr := range tt {
-
-		errorMessage := fmt.Sprintf("Non integer by query parameter: %s", byStr)
-		url := fmt.Sprintf("/v1/scale-nodes?by=%s&type=worker", byStr)
-		jsonStr := `{"groupLabels":{"scale":"up"}}`
 		logMessage := fmt.Sprintf("scale-nodes error: %s", errorMessage)
 		s.am.On("Send", "scale_nodes", "bad_request", "Incorrect request", "error", errorMessage).Return(nil)
 		req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
@@ -497,7 +441,6 @@ func (s *ServerTestSuite) Test_ScaleNode_NonIntegerByQuery() {
 		rec := httptest.NewRecorder()
 		s.r.ServeHTTP(rec, req)
 		s.Equal(http.StatusBadRequest, rec.Code)
-
 		s.RequireLogs(s.b.String(), logMessage)
 		s.RequireResponse(rec.Body.Bytes(), "NOK", errorMessage)
 		s.am.AssertExpectations(s.T())
@@ -514,7 +457,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleByDeltaError() {
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	s.am.On("Send", "scale_nodes", "mock", requestMessage, "error", expErr.Error()).Return(nil)
-	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType).Return(uint64(0), uint64(0), expErr)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(0), uint64(0), expErr)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -644,6 +587,90 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_QueryInBody() {
+	url := "/v1/scale-nodes"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: manager"
+	message := "Changing the number of manager nodes on mock from 3 to 2"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+	jsonStr := `{"groupLabels":{"scale":"down","type":"manager","by":1}}`
+
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(3), uint64(2), nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_QueryInBodyWithServiceTrigger() {
+	url := "/v1/scale-nodes?by=1&type=worker"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: worker"
+	message := "Changing the number of worker nodes on mock from 3 to 2"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+	jsonStr := `{"groupLabels":{"scale":"down","service":"node_exporter"}}`
+
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "node_exporter").Return(uint64(3), uint64(2), nil)
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_QueryInURL() {
+	url := "/v1/scale-nodes?type=worker&by=1&scale=up&by=1"
+	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
+	message := "Changing the number of worker nodes on mock from 3 to 4"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", mock.AnythingOfType("string")).Return(nil)
+
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(4), nil)
+
+	waitCalled := make(chan struct{})
+	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
+		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
+		waitCalled <- struct{}{}
+	})
+
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	s.r.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+
+L:
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+		case <-waitCalled:
+			break L
+		}
+	}
+
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
