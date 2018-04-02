@@ -558,7 +558,6 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
 	rescheduleMsg := "Waiting for worker nodes to scale from 3 to 4 for rescheduling"
 	logMessage2 := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
-	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	calls := 0
@@ -620,9 +619,9 @@ L:
 		}
 	}
 
-	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg, logMessage2)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage, logMessage2)
 	logMessages := strings.Split(s.b.String(), "\n")
-	s.Len(logMessages, 12)
+	s.Len(logMessages, 7)
 
 	s.rsm.AssertExpectations(s.T())
 	s.nsm.AssertExpectations(s.T())
@@ -634,7 +633,6 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	requestMessage := "Scale nodes down on: mock, by: 1, type: manager"
 	message := "Changing the number of manager nodes on mock from 3 to 2"
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
-	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
 	s.am.
@@ -647,7 +645,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	s.Equal(http.StatusOK, rec.Code)
 
 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
-	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
 }
@@ -657,7 +655,6 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
 	requestMessage := "Scale nodes up on: mock, by: 1, type: manager"
 	message := "manager nodes are already scaled to the maximum number of 4 nodes"
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
-	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	s.am.
@@ -670,7 +667,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
 	s.Equal(http.StatusOK, rec.Code)
 
 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
-	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
 }
@@ -680,7 +677,6 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
 	requestMessage := "Scale nodes up on: mock, by: 1, type: worker"
 	message := "worker nodes are already scaled to the maximum number of 3 nodes"
 	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
-	alertMsg := fmt.Sprintf("Alertmanager received message: %s", message)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	s.am.
@@ -693,7 +689,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
 	s.Equal(http.StatusOK, rec.Code)
 
 	s.RequireResponse(rec.Body.Bytes(), "OK", message)
-	s.RequireLogs(s.b.String(), requestMessage, logMessage, alertMsg)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
 }

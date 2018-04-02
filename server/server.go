@@ -333,8 +333,6 @@ func (s *Server) sendAlert(alertName string, serviceName string, request string,
 	err := s.alerter.Send(alertName, serviceName, request, status, message)
 	if err != nil {
 		s.logger.Printf("Alertmanager did not receive message: %s, error: %v", message, err)
-	} else {
-		s.logger.Printf("Alertmanager received message: %s", message)
 	}
 }
 

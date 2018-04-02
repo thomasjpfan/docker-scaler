@@ -42,11 +42,10 @@ The whole scaling event can be place in the url:
 | Query   | Description                         | Required |
 | ------- | ----------------------------------- | -------- |
 | service | Name of service to reschedule       | yes      |
-| scale   | direction to scale (`up` or `down`) | yes      |
-| by      | number of replicas to save by       | yes      |
+| scale   | Direction to scale (`up` or `down`) | yes      |
+| by      | Number of replicas to scale by      | yes      |
 
 The `com.df.scaleMax` and `com.df.scaleMin` will still be used to bound the number of replicas for the service.
-
 
 ## Rescheduling All Services
 
