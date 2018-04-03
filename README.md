@@ -9,4 +9,4 @@
 
 Microservice providing a REST API that scales services in Docker Swarm.
 
-Please visit the [documentation](http://scaler.dockerflow.com) for configuration, tutorials and advanced usage options. Specifically the [Auto-Scaling Services With Instrumented Metrics](http://scaler.dockerflow.com/service-scale/) tutorial will quickly get you started on using *Docker Scaler*!
+Please visit the [documentation](https://thomasjpfan.github.io/docker-scaler/) for configuration, tutorials and advanced usage options. Specifically the [Auto-Scaling Services With Instrumented Metrics](https://thomasjpfan.github.io/docker-scaler/service-scale/) tutorial will quickly get you started on using *Docker Scaler*!
