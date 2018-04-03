@@ -47,15 +47,17 @@ func (s *AlertTestSuite) Test_SendAlert() {
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	s.Require().NoError(err)
 
+	ticker := time.NewTicker(time.Second).C
+	timer := time.NewTimer(time.Second * 5).C
 L:
 	for {
 		select {
-		case <-time.NewTicker(time.Second).C:
+		case <-ticker:
 			_, _, err := s.client.ServiceInspectWithRaw(context.Background(), "am9093", types.ServiceInspectOptions{})
 			if err != nil {
 				break L
 			}
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		}

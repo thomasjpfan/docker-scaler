@@ -267,6 +267,8 @@ func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_InfoError() {
 
 	go s.reschedulerService.RescheduleServicesWaitForNodes(true, 3, "value", tickerC, errorC, statusC)
 
+	timer := time.NewTimer(time.Second * 5).C
+
 	var err error
 L:
 	for {
@@ -274,7 +276,7 @@ L:
 		case e := <-errorC:
 			err = e
 			break L
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		case <-tickerC:
@@ -298,6 +300,7 @@ func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_ServiceListFa
 
 	go s.reschedulerService.RescheduleServicesWaitForNodes(true, 3, "value", tickerC, errorC, statusC)
 
+	timer := time.NewTimer(time.Second * 5).C
 	var err error
 L:
 	for {
@@ -305,7 +308,7 @@ L:
 		case e := <-errorC:
 			err = e
 			break L
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		case <-tickerC:
@@ -336,6 +339,7 @@ func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Manager() {
 
 	go s.reschedulerService.RescheduleServicesWaitForNodes(true, 4, "value", tickerC, errorC, statusC)
 
+	timer := time.NewTimer(time.Second * 5).C
 	var status string
 L:
 	for {
@@ -345,7 +349,7 @@ L:
 				s.Failf("Error raised", "Error was raised: %s", e.Error())
 				return
 			}
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		case <-tickerC:
@@ -378,6 +382,7 @@ func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Worker() {
 
 	go s.reschedulerService.RescheduleServicesWaitForNodes(false, 4, "value", tickerC, errorC, statusC)
 
+	timer := time.NewTimer(time.Second * 5).C
 	var status string
 L:
 	for {
@@ -387,7 +392,7 @@ L:
 				s.Failf("Error raised", "Error was raised: %s", e.Error())
 				return
 			}
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		case <-tickerC:
@@ -412,6 +417,7 @@ func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Timeout() {
 
 	go s.reschedulerService.RescheduleServicesWaitForNodes(true, 4, "value", tickerC, errorC, statusC)
 
+	timer := time.NewTimer(time.Second * 5).C
 	var err error
 
 L:
@@ -420,7 +426,7 @@ L:
 		case e := <-errorC:
 			err = e
 			break L
-		case <-time.After(time.Second * 5):
+		case <-timer:
 			s.Fail("Timeout")
 			return
 		case <-tickerC:
