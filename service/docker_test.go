@@ -138,9 +138,18 @@ func (s *DockerClientTestSuite) Test_ServiceUpdateEnv() {
 	s.Require().Contains(newEnvs, "DOG=CAT")
 }
 
-func (s *DockerClientTestSuite) Test_Info() {
-	_, err := s.client.Info(s.ctx)
+func (s *DockerClientTestSuite) Test_Info_Manager() {
+	cnt, err := s.client.NodeReadyCnt(s.ctx, true)
 	s.Require().NoError(err)
+
+	s.Equal(1, cnt)
+}
+
+func (s *DockerClientTestSuite) Test_Info_Worker() {
+	cnt, err := s.client.NodeReadyCnt(s.ctx, false)
+	s.Require().NoError(err)
+
+	s.Equal(0, cnt)
 }
 
 func (s *DockerClientTestSuite) Test_ServiceList_TrueLabel() {

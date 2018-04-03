@@ -21,16 +21,16 @@ type ReschedulerServicer interface {
 	IsWaitingToReschedule() bool
 }
 
-// InfoListUpdaterInspector is an interface needd for rescheduling events
-type InfoListUpdaterInspector interface {
-	Info(ctx context.Context) (types.Info, error)
+// InfoListUpdaterNodeLister is an interface needd for rescheduling events
+type InfoListUpdaterNodeLister interface {
+	NodeReadyCnt(ctx context.Context, manager bool) (int, error)
 	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
 	ServiceInspect(ctx context.Context, serviceID string) (swarm.Service, error)
 	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec) error
 }
 
 type reschedulerService struct {
-	c              InfoListUpdaterInspector
+	c              InfoListUpdaterNodeLister
 	filterLabel    string
 	envKey         string
 	tickerInterval time.Duration
@@ -80,7 +80,7 @@ func (h *cancelHolder) HasCancel() bool {
 
 // NewReschedulerService creates a reschduler
 func NewReschedulerService(
-	c InfoListUpdaterInspector,
+	c InfoListUpdaterNodeLister,
 	filterLabel string,
 	envKey string,
 	tickerInterval time.Duration,
@@ -131,9 +131,11 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cHolder.CallAndSet(value, cancel)
 
-	typeStr := "worker"
+	var typeStr string
 	if manager {
 		typeStr = "manager"
+	} else {
+		typeStr = "worker"
 	}
 
 	go func() {
@@ -238,22 +240,10 @@ func (r *reschedulerService) RescheduleAll(value string) (string, error) {
 }
 
 func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (bool, error) {
-	var nodeCnt int
-	var err error
 
-	info, err := r.c.Info(context.Background())
+	nodeCnt, err := r.c.NodeReadyCnt(context.Background(), manager)
 	if err != nil {
-		return false, errors.Wrap(err, "Unable to get docker info for node count")
-	}
-
-	if manager {
-		nodeCnt = info.Swarm.Managers
-	} else {
-		nodeCnt = info.Swarm.Nodes - info.Swarm.Managers
-	}
-
-	if nodeCnt < 0 {
-		return false, fmt.Errorf("total node count: %d is negative", nodeCnt)
+		return false, errors.Wrap(err, "Unable to get docker node count")
 	}
 
 	return nodeCnt == targetNodeCnt, nil

@@ -256,10 +256,9 @@ func (s *ReschedulerTestSuite) Test_RescheduleAll_PartialErrors() {
 	s.Equal("web_test failed to reschedule (web_test2 succeeded)", err.Error())
 }
 
-func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_InfoError() {
-	info := s.getInfo()
-	expErr := errors.New("Info error")
-	s.clientMock.On("Info", s.ctx).Return(info, expErr)
+func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_NodeReadyCntError() {
+	expErr := errors.New("Node list error")
+	s.clientMock.On("NodeReadyCnt", s.ctx, true).Return(0, expErr)
 
 	tickerC := make(chan time.Time)
 	errorC := make(chan error)
@@ -283,15 +282,13 @@ L:
 		}
 	}
 
-	s.Equal("Unable to get docker info for node count: Info error", err.Error())
+	s.Equal("Unable to get docker info for node count: Node list error", err.Error())
 	s.clientMock.AssertExpectations(s.T())
 }
 
 func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_ServiceListFail() {
 
-	info := s.getInfo()
-
-	s.clientMock.On("Info", s.ctx).Return(info, nil).
+	s.clientMock.On("NodeReadyCnt", s.ctx, true).Return(3, nil).
 		On("ServiceList", s.ctx, s.getFilter()).Return([]swarm.Service{}, errors.New("update error"))
 
 	tickerC := make(chan time.Time)
@@ -321,13 +318,8 @@ L:
 
 func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Manager() {
 
-	info := s.getInfo()
 	ts := s.getTestService()
-	newInfo := s.getInfo()
-	newInfo.Swarm.Managers = 4
-	newInfo.Swarm.Nodes = 6
-
-	s.clientMock.On("Info", s.ctx).Return(info, nil).Return(newInfo, nil).
+	s.clientMock.On("NodeReadyCnt", s.ctx, true).Return(3, nil).Return(4, nil).
 		On("ServiceList", s.ctx, s.getFilter()).Return([]swarm.Service{ts}, nil).
 		On("ServiceUpdate", s.ctx, mock.AnythingOfType("string"), mock.AnythingOfType("swarm.Version"),
 			mock.AnythingOfType("swarm.ServiceSpec")).
@@ -364,13 +356,9 @@ L:
 
 func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Worker() {
 
-	info := s.getInfo()
 	ts := s.getTestService()
-	newInfo := s.getInfo()
-	newInfo.Swarm.Managers = 3
-	newInfo.Swarm.Nodes = 7
 
-	s.clientMock.On("Info", s.ctx).Return(info, nil).Return(newInfo, nil).
+	s.clientMock.On("NodeReadyCnt", s.ctx, false).Return(3, nil).Return(4, nil).
 		On("ServiceList", s.ctx, s.getFilter()).Return([]swarm.Service{ts}, nil).
 		On("ServiceUpdate", s.ctx, mock.AnythingOfType("string"), mock.AnythingOfType("swarm.Version"),
 			mock.AnythingOfType("swarm.ServiceSpec")).
@@ -409,9 +397,7 @@ L:
 
 func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_Timeout() {
 
-	info := s.getInfo()
-
-	s.clientMock.On("Info", s.ctx).Return(info, nil)
+	s.clientMock.On("NodeReadyCnt", s.ctx, true).Return(3, nil)
 
 	tickerC := make(chan time.Time)
 	errorC := make(chan error)
@@ -474,9 +460,7 @@ L:
 
 func (s *ReschedulerTestSuite) Test_RescheduleServicesWaitForNodes_IsWaitingToRescheduling() {
 
-	info := s.getInfo()
-
-	s.clientMock.On("Info", s.ctx).Return(info, nil)
+	s.clientMock.On("NodeReadyCnt", s.ctx, false).Return(4, nil)
 
 	tickerC := make(chan time.Time)
 	errorC := make(chan error)
@@ -494,7 +478,7 @@ L:
 			break L
 		case <-timer:
 			s.Fail("Timeout")
-			break L
+			return
 		case <-tickerC:
 			waiting = s.reschedulerService.IsWaitingToReschedule()
 		case <-statusC:
@@ -531,15 +515,6 @@ func (s *ReschedulerTestSuite) getTestService() swarm.Service {
 					Env: []string{},
 				},
 			},
-		},
-	}
-}
-
-func (s *ReschedulerTestSuite) getInfo() types.Info {
-	return types.Info{
-		Swarm: swarm.Info{
-			Managers: 3,
-			Nodes:    5,
 		},
 	}
 }

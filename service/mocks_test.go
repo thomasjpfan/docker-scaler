@@ -22,9 +22,9 @@ func (m *DockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, 
 	return called.Error(0)
 }
 
-func (m *DockerClientMock) Info(ctx context.Context) (types.Info, error) {
-	called := m.Called(ctx)
-	return called.Get(0).(types.Info), called.Error(1)
+func (m *DockerClientMock) NodeReadyCnt(ctx context.Context, manager bool) (int, error) {
+	called := m.Called(ctx, manager)
+	return called.Int(0), called.Error(1)
 }
 
 func (m *DockerClientMock) ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
