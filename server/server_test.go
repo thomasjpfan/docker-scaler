@@ -511,17 +511,14 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
 	logMessage2 := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
-	calls := 0
 	done := make(chan struct{})
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil).
-		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale up", "error", mock.AnythingOfType("string")).Return(nil).
-		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale up", "success", mock.AnythingOfType("string")).Return(nil).Run(func(args mock.Arguments) {
-		calls++
-		if calls == 2 {
-			done <- struct{}{}
-		}
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "pending", rescheduleMsg).Return(nil).
+		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale", "error", mock.AnythingOfType("string")).Return(nil).
+		On("Send", "reschedule_service", "reschedule", "Waiting for nodes to scale", "pending", mock.AnythingOfType("string")).Return(nil).
+		On("Send", "reschedule_service", "reschedule", "4 worker nodes are online, status: web_test rescheduled", "success", "4 worker nodes are online, status: web_test rescheduled").Return(nil).Run(func(args mock.Arguments) {
+		done <- struct{}{}
 	})
 
 	var tickerC chan<- time.Time
@@ -653,7 +650,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_QueryInURL() {
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", mock.AnythingOfType("string")).Return(nil)
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "pending", mock.AnythingOfType("string")).Return(nil)
 
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(4), nil)
 
@@ -806,7 +803,7 @@ func (s *ServerTestSuite) Test_RescheduleAllServicesError() {
 	logMessage := fmt.Sprintf("reschedule-services error: %s", expErr)
 
 	s.rsm.On("RescheduleAll", mock.AnythingOfType("string")).Return("", expErr)
-	s.am.On("Send", "reschedule_services", "reschedule", requestMessage, "error", expErr.Error()).Return(nil)
+	s.am.On("Send", "reschedule_service", "reschedule", requestMessage, "error", expErr.Error()).Return(nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
@@ -826,7 +823,7 @@ func (s *ServerTestSuite) Test_RescheduleAllServices() {
 	logMessage := fmt.Sprintf("reschedule-services success: %s", message)
 
 	s.rsm.On("RescheduleAll", mock.AnythingOfType("string")).Return(message, nil)
-	s.am.On("Send", "reschedule_services", "reschedule", requestMessage, "success", message).Return(nil)
+	s.am.On("Send", "reschedule_service", "reschedule", requestMessage, "success", message).Return(nil)
 
 	req, _ := http.NewRequest("POST", url, nil)
 	rec := httptest.NewRecorder()
