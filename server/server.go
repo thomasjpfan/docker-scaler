@@ -281,13 +281,13 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
 	// Call rescheduler if nodesNow is greater than nodesBefore
 
-	if nodesNow > nodesBefore {
+	if nodesNow > nodesBefore || s.rescheduler.IsWaitingToReschedule() {
 		rightNow := time.Now().UTC().Format("20060102T150405")
 		reqMsg := fmt.Sprintf("Waiting for %s nodes to scale from %d to %d for rescheduling", typeStr, nodesBefore, nodesNow)
 		s.logger.Printf("scale-nodes: %s", reqMsg)
 		s.sendAlert("scale_nodes", "reschedule", "Wait to reschedule", "pending", reqMsg)
 
-		go s.rescheduleServiceWait(isManager, typeStr, int(nodesBefore), int(nodesNow), rightNow)
+		go s.rescheduleServiceWait(isManager, typeStr, int(nodesBefore), int(nodesNow), rightNow, direction)
 	}
 }
 
@@ -376,7 +376,7 @@ func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousNodeCnt int, targetNodeCnt int, nowStr string) {
+func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousNodeCnt int, targetNodeCnt int, nowStr string, direction service.ScaleDirection) {
 
 	tickerC := make(chan time.Time)
 	errC := make(chan error)

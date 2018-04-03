@@ -69,6 +69,11 @@ func (rsm *ReschedulerServiceMock) RescheduleAll(value string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (rsm *ReschedulerServiceMock) IsWaitingToReschedule() bool {
+	args := rsm.Called()
+	return args.Bool(0)
+}
+
 type ServerTestSuite struct {
 	suite.Suite
 	m   *ScalerServicerMock
@@ -526,8 +531,9 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp() {
 	var statusC chan<- string
 	waitCalled := make(chan struct{})
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(4), nil)
-	s.rsm.On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
-		mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
+	s.rsm.
+		On("RescheduleServicesWaitForNodes", false, 4, mock.AnythingOfType("string"),
+			mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
 		tickerC = args.Get(3).(chan<- time.Time)
 		errC = args.Get(4).(chan<- error)
 		statusC = args.Get(5).(chan<- string)
@@ -586,6 +592,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(3), uint64(2), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -596,6 +603,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_QueryInBody() {
@@ -608,6 +616,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_QueryInBody() {
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(3), uint64(2), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -618,6 +627,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_QueryInBody() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_QueryInBodyWithServiceTrigger() {
@@ -630,6 +640,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_QueryInBodyWithServiceT
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "node_exporter").Return(uint64(3), uint64(2), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -640,6 +651,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_QueryInBodyWithServiceT
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_QueryInURL() {
@@ -692,6 +704,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeManagerType, "").Return(uint64(4), uint64(4), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -702,6 +715,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerUp_MaxAlertOn() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
@@ -714,6 +728,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(3), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -724,6 +739,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertOn() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
@@ -734,6 +750,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleUpDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(3), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -748,6 +765,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerUp_MaxAlertFalse() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertNotCalled(s.T(), "Send", "scale_nodes", "mock", requestMessage, "success", message)
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_MinAlertTrue() {
@@ -760,6 +778,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_MinAlertTrue() {
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil)
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "").Return(uint64(1), uint64(1), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -774,6 +793,55 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_MinAlertTrue() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
+}
+
+func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_IsWaitingToReschedule() {
+	url := "/v1/scale-nodes?type=worker&by=1"
+	requestMessage := "Scale nodes down on: mock, by: 1, type: worker"
+	message := "Changing the number of worker nodes on mock from 3 to 2"
+	logMessage := fmt.Sprintf("scale-nodes success: %s", message)
+	rescheduleMsg := "Waiting for worker nodes to scale from 3 to 2 for rescheduling"
+	rescheduleLogMsg := fmt.Sprintf("scale-nodes: %s", rescheduleMsg)
+	jsonStr := `{"groupLabels":{"scale":"down"}}`
+
+	s.am.
+		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil)
+
+	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(2), nil)
+
+	waitCalled := make(chan struct{})
+	s.rsm.On("IsWaitingToReschedule").Return(true).
+		On("RescheduleServicesWaitForNodes", false, 2, mock.AnythingOfType("string"),
+			mock.AnythingOfType("chan<- time.Time"), mock.AnythingOfType("chan<- error"), mock.AnythingOfType("chan<- string")).Return().Run(func(args mock.Arguments) {
+		waitCalled <- struct{}{}
+	})
+
+	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
+	rec := httptest.NewRecorder()
+	ser := NewServer(s.m, s.am,
+		s.nsm, s.rsm, s.l, false, true, true, true)
+	serRouter := ser.MakeRouter("/")
+
+	serRouter.ServeHTTP(rec, req)
+	s.Equal(http.StatusOK, rec.Code)
+
+L:
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+		case <-waitCalled:
+			break L
+		}
+	}
+
+	s.RequireResponse(rec.Body.Bytes(), "OK", message)
+	s.RequireLogs(s.b.String(), requestMessage, logMessage, rescheduleLogMsg)
+	s.nsm.AssertExpectations(s.T())
+	s.am.AssertExpectations(s.T())
+	s.rsm.AssertExpectations(s.T())
 }
 
 func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_MinAlertFalse() {
@@ -784,6 +852,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_MinAlertFalse() {
 	jsonStr := `{"groupLabels":{"scale":"down"}}`
 
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeManagerType, "").Return(uint64(1), uint64(1), nil)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 	rec := httptest.NewRecorder()
@@ -794,6 +863,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleManagerDown_MinAlertFalse() {
 	s.RequireLogs(s.b.String(), requestMessage, logMessage)
 	s.nsm.AssertExpectations(s.T())
 	s.am.AssertNotCalled(s.T(), "Send", "scale_nodes", "mock", requestMessage, "success", message)
+	s.rsm.On("IsWaitingToReschedule").Return(false)
 }
 
 func (s *ServerTestSuite) Test_RescheduleAllServicesError() {

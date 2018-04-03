@@ -18,6 +18,7 @@ type ReschedulerServicer interface {
 	RescheduleService(serviceID, value string) error
 	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string)
 	RescheduleAll(value string) (string, error)
+	IsWaitingToReschedule() bool
 }
 
 // InfoListUpdaterInspector is an interface needd for rescheduling events
@@ -34,6 +35,47 @@ type reschedulerService struct {
 	envKey         string
 	tickerInterval time.Duration
 	timeOut        time.Duration
+	cHolder        *cancelHolder
+}
+
+type cancelHolder struct {
+	funcMap map[string]context.CancelFunc
+	mux     sync.RWMutex
+}
+
+func newCancelHolder() *cancelHolder {
+	return &cancelHolder{
+		funcMap: map[string]context.CancelFunc{},
+		mux:     sync.RWMutex{},
+	}
+}
+
+func (h *cancelHolder) CallAndSet(key string, newF context.CancelFunc) {
+	h.mux.Lock()
+	defer h.mux.Unlock()
+	for key, cancel := range h.funcMap {
+		if cancel != nil {
+			cancel()
+		}
+		delete(h.funcMap, key)
+	}
+	h.funcMap[key] = newF
+}
+
+func (h *cancelHolder) CallAndDelete(key string) {
+	h.mux.Lock()
+	defer h.mux.Unlock()
+	f, ok := h.funcMap[key]
+	if ok && f != nil {
+		f()
+	}
+	delete(h.funcMap, key)
+}
+
+func (h *cancelHolder) HasCancel() bool {
+	h.mux.Lock()
+	defer h.mux.Unlock()
+	return len(h.funcMap) > 0
 }
 
 // NewReschedulerService creates a reschduler
@@ -54,6 +96,7 @@ func NewReschedulerService(
 		envKey:         envKey,
 		tickerInterval: tickerInterval,
 		timeOut:        timeOut,
+		cHolder:        newCancelHolder(),
 	}, nil
 }
 
@@ -85,36 +128,48 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
 func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string) {
 
-	tickerChan := time.NewTicker(r.tickerInterval).C
-	timerChan := time.NewTimer(r.timeOut).C
+	ctx, cancel := context.WithCancel(context.Background())
+	r.cHolder.CallAndSet(value, cancel)
 
-	for {
-		select {
-		case tc := <-tickerChan:
-			tickerC <- tc
-			equalTarget, err := r.equalTargetCount(targetNodeCnt, manager)
-			if err != nil {
-				errorC <- err
+	go func() {
+		defer r.cHolder.CallAndDelete(value)
+		tickerChan := time.NewTicker(r.tickerInterval).C
+		timerChan := time.NewTimer(r.timeOut).C
+
+		for {
+			select {
+			case tc := <-tickerChan:
+				tickerC <- tc
+				equalTarget, err := r.equalTargetCount(targetNodeCnt, manager)
+				if err != nil {
+					errorC <- err
+					return
+				}
+				if !equalTarget {
+					continue
+				}
+
+				status, err := r.RescheduleAll(value)
+				if err != nil {
+					errorC <- err
+					return
+				}
+				statusC <- status
+				return
+			case <-timerChan:
+				errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
+				return
+			case <-ctx.Done():
+				statusC <- "Rescheduling is canceled by another rescheduler"
 				return
 			}
-			if !equalTarget {
-				continue
-			}
-
-			status, err := r.RescheduleAll(value)
-			if err != nil {
-				errorC <- err
-				return
-			}
-			statusC <- status
-			return
-		case <-timerChan:
-			errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
-			return
-
 		}
-	}
+	}()
 
+}
+
+func (r *reschedulerService) IsWaitingToReschedule() bool {
+	return r.cHolder.HasCancel()
 }
 
 func (r *reschedulerService) RescheduleAll(value string) (string, error) {
