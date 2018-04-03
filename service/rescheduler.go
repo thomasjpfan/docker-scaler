@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -15,16 +16,16 @@ import (
 // ReschedulerServicer is an interface for rescheduling services
 type ReschedulerServicer interface {
 	RescheduleService(serviceID, value string) error
-	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error)
-	RescheduleAll(value string) error
+	RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string)
+	RescheduleAll(value string) (string, error)
 }
 
 // InfoListUpdaterInspector is an interface needd for rescheduling events
 type InfoListUpdaterInspector interface {
 	Info(ctx context.Context) (types.Info, error)
 	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
-	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
-	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	ServiceInspect(ctx context.Context, serviceID string) (swarm.Service, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec) error
 }
 
 type reschedulerService struct {
@@ -58,8 +59,8 @@ func NewReschedulerService(
 
 func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 
-	serviceInfo, _, err := r.c.ServiceInspectWithRaw(
-		context.Background(), serviceID, types.ServiceInspectOptions{})
+	serviceInfo, err := r.c.ServiceInspect(
+		context.Background(), serviceID)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to inspect service %s", serviceID)
 	}
@@ -82,7 +83,7 @@ func (r *reschedulerService) RescheduleService(serviceID, value string) error {
 	return nil
 }
 
-func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error) {
+func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, targetNodeCnt int, value string, tickerC chan<- time.Time, errorC chan<- error, statusC chan<- string) {
 
 	tickerChan := time.NewTicker(r.tickerInterval).C
 	timerChan := time.NewTimer(r.timeOut).C
@@ -100,12 +101,12 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 				continue
 			}
 
-			err = r.RescheduleAll(value)
+			status, err := r.RescheduleAll(value)
 			if err != nil {
 				errorC <- err
 				return
 			}
-			errorC <- nil
+			statusC <- status
 			return
 		case <-timerChan:
 			errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
@@ -116,29 +117,64 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 
 }
 
-func (r *reschedulerService) RescheduleAll(value string) error {
+func (r *reschedulerService) RescheduleAll(value string) (string, error) {
 	labelFitler := filters.NewArgs()
 	labelFitler.Add("label", r.filterLabel)
 
 	services, err := r.c.ServiceList(context.Background(), types.ServiceListOptions{Filters: labelFitler})
 	if err != nil {
-		return errors.Wrap(err, "Unable to get service list to reschedule")
+		return "", errors.Wrap(err, "Unable to get service list to reschedule")
 	}
 
-	// This could be concurrent
-	errorServices := []string{}
-	for _, service := range services {
-		err = r.rescheduleSingleService(service, value)
-		if err != nil {
-			errorServices = append(errorServices, service.Spec.Name)
+	if len(services) == 0 {
+		return "No services to reschedule", nil
+	}
+
+	failed := make(chan string)
+	success := make(chan string)
+	done := make(chan struct{})
+
+	failedList := []string{}
+	successList := []string{}
+	go func() {
+		for {
+			select {
+			case f := <-failed:
+				failedList = append(failedList, f)
+			case s := <-success:
+				successList = append(successList, s)
+			case <-done:
+				return
+			}
 		}
-	}
-	if len(errorServices) != 0 {
-		errorServicesStr := strings.Join(errorServices, ", ")
-		return fmt.Errorf("Unable to reschedule services: %s", errorServicesStr)
-	}
+	}()
 
-	return nil
+	var wg sync.WaitGroup
+	for _, service := range services {
+		wg.Add(1)
+		go func(service swarm.Service) {
+			defer wg.Done()
+			err = r.rescheduleSingleService(service, value)
+			if err != nil {
+				failed <- service.Spec.Name
+				return
+			}
+			success <- service.Spec.Name
+		}(service)
+	}
+	wg.Wait()
+	done <- struct{}{}
+
+	successStr := strings.Join(successList, ", ")
+
+	if len(failedList) > 0 {
+		failedStr := strings.Join(failedList, ", ")
+		if len(successStr) > 0 {
+			return "", fmt.Errorf("%s failed to reschedule (%s succeeded)", failedStr, successStr)
+		}
+		return "", fmt.Errorf("%s failed to reschedule", failedStr)
+	}
+	return fmt.Sprintf("%s rescheduled", successStr), nil
 }
 
 func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (bool, error) {
@@ -156,14 +192,18 @@ func (r *reschedulerService) equalTargetCount(targetNodeCnt int, manager bool) (
 		nodeCnt = info.Swarm.Nodes - info.Swarm.Managers
 	}
 
-	if err != nil {
-		return false, errors.Wrap(err, "Equal target count error")
+	if nodeCnt < 0 {
+		return false, fmt.Errorf("total node count: %d is negative", nodeCnt)
 	}
+
 	return nodeCnt == targetNodeCnt, nil
 }
 
 func (r *reschedulerService) rescheduleSingleService(service swarm.Service, value string) error {
 	spec := &service.Spec
+	if spec.TaskTemplate.ContainerSpec == nil {
+		spec.TaskTemplate.ContainerSpec = &swarm.ContainerSpec{}
+	}
 	envs := spec.TaskTemplate.ContainerSpec.Env
 
 	addedNewEnv := false
@@ -199,9 +239,8 @@ func (r *reschedulerService) rescheduleSingleService(service swarm.Service, valu
 	}
 
 	spec.TaskTemplate.ContainerSpec.Env = newEnvs
-	updateOpts := types.ServiceUpdateOptions{}
 
-	_, err := r.c.ServiceUpdate(context.Background(), service.ID, service.Version, *spec, updateOpts)
+	err := r.c.ServiceUpdate(context.Background(), service.ID, service.Version, *spec)
 	if err != nil {
 		return err
 	}

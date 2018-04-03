@@ -6,12 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"time"
 
 	"github.com/thomasjpfan/docker-scaler/server/handler"
 	"github.com/thomasjpfan/docker-scaler/service"
+	"github.com/thomasjpfan/docker-scaler/service/cloud"
 
 	"github.com/gorilla/mux"
 )
@@ -20,7 +22,7 @@ import (
 type Server struct {
 	serviceScaler service.ScalerServicer
 	alerter       service.AlertServicer
-	nodeScaler    service.NodeScaler
+	nodeScaler    service.NodeScaling
 	rescheduler   service.ReschedulerServicer
 	logger        *log.Logger
 	alertScaleMin bool
@@ -33,7 +35,7 @@ type Server struct {
 func NewServer(
 	serviceScaler service.ScalerServicer,
 	alerter service.AlertServicer,
-	nodeScaler service.NodeScaler,
+	nodeScaler service.NodeScaling,
 	rescheduler service.ReschedulerServicer,
 	logger *log.Logger,
 	alertScaleMin bool,
@@ -67,15 +69,18 @@ func (s *Server) MakeRouter(prefix string) *mux.Router {
 }
 
 func (s *Server) addRoutes(router *mux.Router) {
+
+	if s.nodeScaler != nil {
+		router.Path("/scale-nodes").
+			Methods("POST").
+			HandlerFunc(s.ScaleNodes).
+			Name("ScaleNode")
+	}
+
 	router.Path("/scale-service").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
-	router.Path("/scale-nodes").
-		Queries("type", "{type}", "by", "{by}").
-		Methods("POST").
-		HandlerFunc(s.ScaleNodes).
-		Name("ScaleNode")
 	router.Path("/reschedule-services").
 		Methods("POST").
 		HandlerFunc(s.RescheduleAllServices).
@@ -108,59 +113,44 @@ func (s *Server) PingHandler(w http.ResponseWriter, req *http.Request) {
 func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-
-	if r.Body == nil {
-		message := "No POST body"
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		message := "Unable to recognize POST body"
-		s.logger.Printf("scale-service error: %s", message)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
 	var ssReq ScaleRequest
-	err = json.Unmarshal(body, &ssReq)
 
-	if err != nil {
-		message := "Unable to decode POST body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
-		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
+	if r.Body != nil {
+		body, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		if err != nil {
+			message := "Unable to recognize POST body"
+			s.logger.Printf("scale-service error: %s", message)
+			s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
+			respondWithError(w, http.StatusBadRequest, message)
+			return
+		}
+
+		json.Unmarshal(body, &ssReq)
 	}
 
-	serviceName := ssReq.GroupLabels.Service
-	scaleDirection := ssReq.GroupLabels.Scale
+	serviceName, scaleDirection, by, _ := s.getServiceScaleByType(r.URL.Query(), ssReq)
 
 	if len(serviceName) == 0 {
-		message := "No service name in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "No service name in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
 
 	if len(scaleDirection) == 0 {
-		message := "No scale direction in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "No scale direction in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
 
 	if scaleDirection != "up" && scaleDirection != "down" {
-		message := "Incorrect scale direction in request body"
-		s.logger.Printf("scale-service error: %s, body: %s", message, body)
+		message := "Incorrect scale direction in request"
+		s.logger.Printf("scale-service error: %s", message)
 		s.sendAlert("scale_service", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
@@ -171,10 +161,11 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 
 	var message string
 	var atBound bool
+	var err error
 	if scaleDirection == "down" {
-		message, atBound, err = s.serviceScaler.ScaleDown(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, by, service.ScaleDownDirection)
 	} else {
-		message, atBound, err = s.serviceScaler.ScaleUp(ctx, serviceName)
+		message, atBound, err = s.serviceScaler.Scale(ctx, serviceName, by, service.ScaleUpDirection)
 	}
 
 	if err != nil {
@@ -198,71 +189,39 @@ func (s *Server) ScaleService(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-
-	q := r.URL.Query()
-	typeStr := q.Get("type")
-	byStr := q.Get("by")
-
-	if r.Body == nil {
-		message := "No POST body"
-		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
-	byInt, err := strconv.Atoi(byStr)
-
-	if err != nil {
-		message := fmt.Sprintf("Non integer by query parameter: %s", byStr)
-		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
-	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-
-	if err != nil {
-		message := "Unable to recognize POST body"
-		s.logger.Printf("scale-nodes error: %s", message)
-		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
-	}
-
 	var ssReq ScaleRequest
-	err = json.Unmarshal(body, &ssReq)
 
-	if err != nil {
-		message := "Unable to decode POST body"
-		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
-		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
-		respondWithError(w, http.StatusBadRequest, message)
-		return
+	if r.Body != nil {
+		body, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+
+		if err != nil {
+			message := "Unable to recognize POST body"
+			s.logger.Printf("scale-nodes error: %s", message)
+			s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
+			respondWithError(w, http.StatusBadRequest, message)
+			return
+		}
+
+		json.Unmarshal(body, &ssReq)
 	}
 
-	scaleDirection := ssReq.GroupLabels.Scale
+	serviceName, scaleDirection, by, typeStr := s.getServiceScaleByType(r.URL.Query(), ssReq)
 
 	if len(scaleDirection) == 0 {
-		message := "No scale direction in request body"
-		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
+		message := "No scale direction"
+		s.logger.Printf("scale-nodes error: %s", message)
 		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
 	}
 
 	if scaleDirection != "up" && scaleDirection != "down" {
-		message := "Incorrect scale direction in request body"
-		s.logger.Printf("scale-nodes error: %s, body: %s", message, body)
+		message := "Incorrect scale direction"
+		s.logger.Printf("scale-nodes error: %s", message)
 		s.sendAlert("scale_nodes", "bad_request", "Incorrect request", "error", message)
 		respondWithError(w, http.StatusBadRequest, message)
 		return
-	}
-
-	if scaleDirection == "down" {
-		byInt *= -1
 	}
 
 	if typeStr != "worker" && typeStr != "manager" {
@@ -273,18 +232,28 @@ func (s *Server) ScaleNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %s, type: %s", scaleDirection, s.nodeScaler, byStr, typeStr)
+	requestMessage := fmt.Sprintf("Scale nodes %s on: %s, by: %d, type: %s", scaleDirection, s.nodeScaler, by, typeStr)
 	s.logger.Printf(requestMessage)
-
-	var nodesBefore, nodesNow uint64
 
 	isManager := (typeStr == "manager")
 
-	if isManager {
-		nodesBefore, nodesNow, err = s.nodeScaler.ScaleManagerByDelta(ctx, byInt)
+	var direction service.ScaleDirection
+	var nodeType cloud.NodeType
+
+	if scaleDirection == "up" {
+		direction = service.ScaleUpDirection
 	} else {
-		nodesBefore, nodesNow, err = s.nodeScaler.ScaleWorkerByDelta(ctx, byInt)
+		direction = service.ScaleDownDirection
 	}
+
+	if isManager {
+		nodeType = cloud.NodeManagerType
+	} else {
+		nodeType = cloud.NodeWorkerType
+	}
+	nodesBefore, nodesNow, err := s.nodeScaler.Scale(
+		ctx, by, direction, nodeType, serviceName)
+
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		s.logger.Printf("scale-nodes error: %s", err)
@@ -327,9 +296,38 @@ func (s *Server) sendAlert(alertName string, serviceName string, request string,
 	err := s.alerter.Send(alertName, serviceName, request, status, message)
 	if err != nil {
 		s.logger.Printf("Alertmanager did not receive message: %s, error: %v", message, err)
-	} else {
-		s.logger.Printf("Alertmanager received message: %s", message)
 	}
+}
+
+func (s *Server) getServiceScaleByType(q url.Values, ssReq ScaleRequest) (string, string, uint64, string) {
+
+	service := ssReq.GroupLabels.Service
+	scale := ssReq.GroupLabels.Scale
+	by := ssReq.GroupLabels.By
+	typeStr := ssReq.GroupLabels.Type
+
+	if qService := q.Get("service"); len(qService) > 0 {
+		service = qService
+	}
+	if qScale := q.Get("scale"); len(qScale) > 0 {
+		scale = qScale
+	}
+	if byStr := q.Get("by"); len(byStr) > 0 {
+		byInt, err := strconv.Atoi(byStr)
+		if err == nil {
+			if byInt < 0 {
+				by = uint64(-1 * byInt)
+			} else {
+				by = uint64(byInt)
+			}
+		}
+	}
+
+	if qTypeStr := q.Get("type"); len(qTypeStr) > 0 {
+		typeStr = qTypeStr
+	}
+
+	return service, scale, by, typeStr
 }
 
 // RescheduleAllServices reschedules all services
@@ -338,7 +336,7 @@ func (s *Server) RescheduleAllServices(w http.ResponseWriter, r *http.Request) {
 	s.logger.Print(requestMessage)
 
 	nowStr := time.Now().UTC().Format("20060102T150405")
-	err := s.rescheduler.RescheduleAll(nowStr)
+	message, err := s.rescheduler.RescheduleAll(nowStr)
 
 	if err != nil {
 		s.logger.Printf("reschedule-services error: %s", err)
@@ -347,7 +345,6 @@ func (s *Server) RescheduleAllServices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	message := "Rescheduled all services"
 	s.logger.Printf("reschedule-services success: %s", message)
 	s.sendAlert("reschedule_services", "reschedule", requestMessage, "success", message)
 	respondWithJSON(w, http.StatusOK, Response{Status: "OK", Message: message})
@@ -382,9 +379,10 @@ func (s *Server) RescheduleOneService(w http.ResponseWriter, r *http.Request) {
 func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousNodeCnt int, targetNodeCnt int, nowStr string) {
 
 	tickerC := make(chan time.Time)
-	errC := make(chan error, 1)
+	errC := make(chan error)
+	statusC := make(chan string)
 
-	go s.rescheduler.RescheduleServicesWaitForNodes(isManager, targetNodeCnt, nowStr, tickerC, errC)
+	go s.rescheduler.RescheduleServicesWaitForNodes(isManager, targetNodeCnt, nowStr, tickerC, errC, statusC)
 
 	requestMsg := "Waiting for nodes to scale up"
 	deltaCnt := targetNodeCnt - previousNodeCnt
@@ -398,15 +396,14 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousN
 			s.logger.Printf("scale-nodes-reschedule: %s", msg)
 			s.sendAlert("reschedule_service", "reschedule", requestMsg, "success", msg)
 		case err := <-errC:
-			close(tickerC)
 			if err != nil {
 				s.logger.Printf("scale-nodes-reschedule error: %s", err)
 				s.sendAlert("reschedule_service", "reschedule", requestMsg, "error", err.Error())
-			} else {
-				msg := fmt.Sprintf("%d %s nodes are online and services are rescheduled", targetNodeCnt, typeStr)
-				s.logger.Print(msg)
-				s.sendAlert("reschedule_service", "reschedule", requestMsg, "success", msg)
 			}
+		case status := <-statusC:
+			msg := fmt.Sprintf("%d %s nodes are online and %s", targetNodeCnt, status, typeStr)
+			s.logger.Printf("scale-nodes-reschedule: %s", msg)
+			s.sendAlert("reschedule_service", "reschedule", requestMsg, "success", msg)
 			return
 		}
 	}

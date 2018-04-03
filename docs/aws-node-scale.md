@@ -220,8 +220,9 @@ route:
     - match_re:
         alertname: scale_service|reschedule_service|scale_nodes
       group_by: [alertname, service]
-      group_wait: 5s
-      group_interval: 15s
+      repeat_interval: 10s
+      group_interval: 1s
+      group_wait: 0s
       receiver: 'slack-scaler'
 
 receivers:

@@ -53,33 +53,13 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.falseRescheduleService = falseRescheduleService
 }
 
-func (s *IntegrationTestSuite) Test_NoPOSTBody() {
-	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
-	req, _ := http.NewRequest("POST", url, nil)
-
-	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "Unable to decode POST body"
-	requestMsg := "Incorrect request"
-	s.Equal("NOK", resp.Status)
-	s.Equal(message, resp.Message)
-
-	// Check alert
-	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "error", "bad_request")
-	s.Require().NoError(err)
-	s.Require().Len(alerts, 1)
-
-	alert := alerts[0]
-	s.Equal(requestMsg, string(alert.Annotations["request"]))
-	s.True(strings.Contains(string(alert.Annotations["summary"]), message))
-}
-
 func (s *IntegrationTestSuite) Test_ScaleServiceNoServiceNameInBody() {
 	url := fmt.Sprintf("%s/scale-service", s.scaleURL)
 	jsonStr := `{"groupLabels":{"scale":"up"}}`
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "No service name in request body"
+	message := "No service name in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -100,7 +80,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceNoScaleNameInBody() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "No scale direction in request body"
+	message := "No scale direction in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -121,7 +101,7 @@ func (s *IntegrationTestSuite) Test_ScaleServiceIncorrectScaleName() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusBadRequest)
-	message := "Incorrect scale direction in request body"
+	message := "Incorrect scale direction in request"
 	requestMsg := "Incorrect request"
 	s.Equal("NOK", resp.Status)
 	s.Equal(message, resp.Message)
@@ -167,7 +147,7 @@ func (s *IntegrationTestSuite) Test_ServiceScaledPassMax() {
 	req, _ := http.NewRequest("POST", url, bytes.NewBufferString(jsonStr))
 
 	resp := s.responseForRequest(req, http.StatusOK)
-	message := fmt.Sprintf("Scaling %s from 4 to 5 replicas (max: 5)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 4 to 5 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -239,7 +219,34 @@ func (s *IntegrationTestSuite) Test_ServiceScaledUp() {
 	resp := s.responseForRequest(req, http.StatusOK)
 	s.Require().Equal(5, s.getReplicas(s.targetService))
 
-	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas (max: 5)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 5 replicas (min: 2, max: 5)", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Scale service up: %s", s.targetService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
+}
+
+func (s *IntegrationTestSuite) Test_ServiceScaledUp_Query() {
+
+	s.scaleService(s.targetService, 3)
+	time.Sleep(1 * time.Second)
+
+	// Now service is scaled to the min of 3
+	url := fmt.Sprintf("%s/scale-service?service=%s&scale=up&by=1", s.scaleURL, s.targetService)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusOK)
+	s.Require().Equal(4, s.getReplicas(s.targetService))
+
+	message := fmt.Sprintf("Scaling %s from 3 to 4 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -267,7 +274,34 @@ func (s *IntegrationTestSuite) Test_ServiceScaledDown() {
 	resp := s.responseForRequest(req, http.StatusOK)
 	s.Require().Equal(2, s.getReplicas(s.targetService))
 
-	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas (min: 2)", s.targetService)
+	message := fmt.Sprintf("Scaling %s from 3 to 2 replicas (min: 2, max: 5)", s.targetService)
+	s.Equal("OK", resp.Status)
+	s.Equal(message, resp.Message)
+
+	// Check alert
+	alerts, err := service.FetchAlerts(s.alertURL, "scale_service", "success", s.targetService)
+	s.Require().NoError(err)
+	s.Require().Len(alerts, 1)
+
+	alert := alerts[0]
+	request := fmt.Sprintf("Scale service down: %s", s.targetService)
+	s.Equal(request, string(alert.Annotations["request"]))
+	s.Equal(message, string(alert.Annotations["summary"]))
+}
+
+func (s *IntegrationTestSuite) Test_ServiceScaledDown_Query() {
+
+	s.scaleService(s.targetService, 5)
+	time.Sleep(1 * time.Second)
+
+	// Now service is scaled to the min of 2
+	url := fmt.Sprintf("%s/scale-service?service=%s&scale=down&by=2", s.scaleURL, s.targetService)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp := s.responseForRequest(req, http.StatusOK)
+	s.Require().Equal(3, s.getReplicas(s.targetService))
+
+	message := fmt.Sprintf("Scaling %s from 5 to 3 replicas (min: 2, max: 5)", s.targetService)
 	s.Equal("OK", resp.Status)
 	s.Equal(message, resp.Message)
 
@@ -289,9 +323,8 @@ func (s *IntegrationTestSuite) Test_RescheduleAll() {
 
 	resp := s.responseForRequest(req, http.StatusOK)
 
-	message := "Rescheduled all services"
 	s.Equal("OK", resp.Status)
-	s.Equal(message, resp.Message)
+	s.Equal("test_web1 rescheduled", resp.Message)
 
 	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_services", "success", "reschedule")
 	s.Require().NoError(err)
@@ -376,6 +409,16 @@ func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
 
 	s.Equal("", target)
 
+}
+
+func (s *IntegrationTestSuite) Test_ScaleNode_ReturnsStatusNotFound() {
+	url := fmt.Sprintf("%s/scale-nodes", s.scaleURL)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	resp, err := http.DefaultClient.Do(req)
+	s.Require().NoError(err)
+
+	s.Equal(http.StatusNotFound, resp.StatusCode)
 }
 
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {

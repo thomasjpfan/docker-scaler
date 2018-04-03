@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/suite"
 )
@@ -43,34 +43,29 @@ func (s *AlertTestSuite) Test_SendAlert() {
 		cmd := "docker container stop am9093"
 		exec.Command("/bin/sh", "-c", cmd).Output()
 	}()
-	cmd := `docker run --name am9093 --rm -p 9093:9093 \
-			-d prom/alertmanager:v0.14.0`
+	cmd := `docker run --rm --name am9093 -d -p 9093:9093 prom/alertmanager:v0.14.0`
 	_, err := exec.Command("/bin/sh", "-c", cmd).Output()
-	if err != nil {
-		s.T().Skipf(fmt.Sprintf("Unable to create alertmanager: %s", err.Error()))
-		return
-	}
+	s.Require().NoError(err)
 
-	running := false
-	// Wait for am to come online
-	for i := 1; i <= 60; i++ {
-		info, _ := s.client.ContainerInspect(context.Background(), "am9093")
-		if info.State.Running {
-			running = true
-			break
+L:
+	for {
+		select {
+		case <-time.NewTicker(time.Second).C:
+			_, _, err := s.client.ServiceInspectWithRaw(context.Background(), "am9093", types.ServiceInspectOptions{})
+			if err != nil {
+				break L
+			}
+		case <-time.After(time.Second * 5):
+			s.Fail("Timeout")
+			return
 		}
-		time.Sleep(1 * time.Second)
-	}
-	if !running {
-		s.T().Skipf(fmt.Sprintf("Alertmanager not created"))
-		return
 	}
 
 	require := s.Require()
 	serviceName := "web"
 	alertname := "service_scaler"
 	status := "success"
-	summary := "Scaled web from 3 to 4 replicas"
+	summary := "Scaled web from 3 to 5 replicas"
 	request := "Scale web with delta=1"
 
 	err = s.alertService.Send(alertname, serviceName, request, status, summary)
