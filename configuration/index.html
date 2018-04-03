@@ -1,4 +1,7 @@
 
+
+
+
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <head>
@@ -12,9 +15,24 @@
         <meta name="author" content="Thomas Fan">
       
       
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      
         <link rel="shortcut icon" href="../assets/images/favicon.png">
       
-      <meta name="generator" content="mkdocs-0.16.3, mkdocs-material-1.10.3">
+      <meta name="generator" content="mkdocs-0.17.1, mkdocs-material-2.0.1">
     
     
       
@@ -25,29 +43,23 @@
       <script src="../assets/javascripts/modernizr-e826f8942a.js"></script>
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application-9011e2d3f8.css">
-      
-        <link rel="stylesheet" href="../assets/stylesheets/application-23f75ab9c7.palette.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application-462a8722ef.css">
       
     
     
       
-        
-        
-        
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
         <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
       
       <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     
     
+      <link rel="stylesheet" href="../stylesheets/custom.css">
+    
     
   </head>
   
-  
-  
-  
-    <body data-md-color-primary="blue" data-md-color-accent="light-blue">
+    <body>
   
     <svg class="md-svg">
       <defs>
@@ -67,7 +79,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a href=".." title="Docker Scaler" class="md-header-nav__button md-logo">
           
-            <i class="md-icon md-icon--home"></i>
+            <i class="md-icon">school</i>
           
         </a>
       </div>
@@ -86,8 +98,9 @@
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
         
-          <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
           
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
 <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="search"></label>
   <div class="md-search__inner">
@@ -98,8 +111,8 @@
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result" data-md-lang-search="" data-md-lang-tokenizer="[\s\-]+">
-          <div class="md-search-result__meta" data-md-lang-result-none="No matching documents" data-md-lang-result-one="1 matching document" data-md-lang-result-other="# matching documents">
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
             Type to start searching
           </div>
           <ol class="md-search-result__list"></ol>
@@ -108,6 +121,7 @@
     </div>
   </div>
 </div>
+          
         
       </div>
       
@@ -119,7 +133,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -141,8 +155,6 @@
     
     <div class="md-container">
       
-      
-      
       <main class="md-main">
         <div class="md-main__inner md-grid" data-md-component="container">
           
@@ -152,11 +164,11 @@
                   <div class="md-sidebar__inner">
                     <nav class="md-nav md-nav--primary" data-md-level="0">
   <label class="md-nav__title md-nav__title--site" for="drawer">
-    <div class="md-nav__button md-logo">
+    <span class="md-nav__button md-logo">
       
-        <i class="md-icon md-icon--home"></i>
+        <i class="md-icon">school</i>
       
-    </div>
+    </span>
     Docker Scaler
   </label>
   
@@ -167,7 +179,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -328,6 +340,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#changing-the-default-labels" title="Changing the Default Labels" class="md-nav__link">
+    Changing the Default Labels
+  </a>
+  
+</li>
+      
       
       
     </ul>
@@ -342,46 +361,22 @@
       
 
 
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
-    
-    <label class="md-nav__link" for="nav-5">
-      About
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-5">
-        About
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
   <li class="md-nav__item">
     <a href="../feedback-and-contribution/" title="Feedback and Contribution" class="md-nav__link">
       Feedback and Contribution
     </a>
   </li>
 
-        
-          
-          
-          
+    
+      
+      
+      
 
 
   <li class="md-nav__item">
     <a href="../license/" title="License" class="md-nav__link">
       License
     </a>
-  </li>
-
-        
-      </ul>
-    </nav>
   </li>
 
     
@@ -445,6 +440,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#changing-the-default-labels" title="Changing the Default Labels" class="md-nav__link">
+    Changing the Default Labels
+  </a>
+  
+</li>
+      
       
       
     </ul>
@@ -480,23 +482,7 @@
 <tbody>
 <tr>
 <td>SERVER_PREFIX</td>
-<td>Custom prefix for REST endpoint.<br><strong>Default:</strong> <code>/</code></td>
-</tr>
-<tr>
-<td>MIN_SCALE_LABEL</td>
-<td>Service label key with value representing the minimum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMin</code></td>
-</tr>
-<tr>
-<td>MAX_SCALE_LABEL</td>
-<td>Service label key with value representing the maximum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMax</code></td>
-</tr>
-<tr>
-<td>SCALE_DOWN_BY_LABEL</td>
-<td>Service label key with value representing the number of replicas to scale down by.<br><strong>Default:</strong> <code>com.df.scaleDownBy</code></td>
-</tr>
-<tr>
-<td>SCALE_UP_BY_LABEL</td>
-<td>Service label key with value representing the number of replicas to scale up by.<br><strong>Default:</strong> <code>com.df.scaleUpBy</code></td>
+<td>Custom prefix for REST endpoint. <br><strong>Default:</strong> <code>/</code></td>
 </tr>
 <tr>
 <td>ALERT_SCALE_MIN</td>
@@ -524,15 +510,11 @@
 </tr>
 <tr>
 <td>ALERTMANAGER_ADDRESS</td>
-<td>Address for alertmanager.<br><strong>Default:</strong> <code>http://alertmanager:9093</code></td>
+<td>Address for alertmanager.<br><strong>Default:</strong> ``</td>
 </tr>
 <tr>
 <td>ALERT_TIMEOUT</td>
 <td>Alert timeout duration (seconds).<br><strong>Default:</strong> 10</td>
-</tr>
-<tr>
-<td>RESCHEDULE_FILTER_LABEL</td>
-<td>Services with this label will be rescheduled after node scaling.<br><strong>Default:</strong> <code>com.df.reschedule=true&quot;</code></td>
 </tr>
 <tr>
 <td>RESCHEDULE_TICKER_INTERVAL</td>
@@ -560,7 +542,7 @@
 <tbody>
 <tr>
 <td>NODE_SCALER_BACKEND</td>
-<td>Backend of node backend.<br><strong>Accepted Values:</strong> [none, aws]<br><strong>Default:</strong> none</td>
+<td>Backend of node backend.<br><strong>Accepted Values:</strong> [aws]<br><strong>Default:</strong> ""</td>
 </tr>
 <tr>
 <td>DEFAULT_MIN_MANAGER_NODES</td>
@@ -572,11 +554,27 @@
 </tr>
 <tr>
 <td>DEFAULT_MIN_WORKER_NODES</td>
-<td>Miniumum number of worker nodes.<br><strong>Default:</strong> 1</td>
+<td>Miniumum number of worker nodes.<br><strong>Default:</strong> 0</td>
 </tr>
 <tr>
 <td>DEFAULT_MAX_WORKER_NODES</td>
 <td>Maximum number of worker nodes.<br><strong>Default:</strong> 5</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_MANAGER_NODE_DOWN_BY</td>
+<td>Default number of manager nodes to scale down by.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_MANAGER_NODE_UP_BY</td>
+<td>Default number of manager nodes to scale up by.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_WORKER_NODE_DOWN_BY</td>
+<td>Default number of worker nodes to scale down by.<br><strong>Default:</strong> 1</td>
+</tr>
+<tr>
+<td>DEFAULT_SCALE_WORKER_NODE_UP_BY</td>
+<td>Default number of worker nodes to scale up by.<br><strong>Default:</strong> 1</td>
 </tr>
 <tr>
 <td>ALERT_NODE_MIN</td>
@@ -622,6 +620,71 @@
 <span class="s1">export AWS_SECRET_ACCESS_KEY=xxxx</span>
 <span class="s1">&#39;</span> <span class="p">|</span> docker secret create aws -
 </pre></div>
+
+<h2 id="changing-the-default-labels">Changing the Default Labels<a class="headerlink" href="#changing-the-default-labels" title="Permanent link">&para;</a></h2>
+<p>The service labels targets can be changed by setting the following environmental variables.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MIN_SCALE_LABEL</td>
+<td>Service label key for the minimum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMin</code></td>
+</tr>
+<tr>
+<td>MAX_SCALE_LABEL</td>
+<td>Service label key for the maximum number of replicas.<br><strong>Default:</strong> <code>com.df.scaleMax</code></td>
+</tr>
+<tr>
+<td>SCALE_DOWN_BY_LABEL</td>
+<td>Service label key for the number of replicas to scale down by.<br><strong>Default:</strong> <code>com.df.scaleDownBy</code></td>
+</tr>
+<tr>
+<td>SCALE_UP_BY_LABEL</td>
+<td>Service label key for the number of replicas to scale up by.<br><strong>Default:</strong> <code>com.df.scaleUpBy</code></td>
+</tr>
+<tr>
+<td>RESCHEDULE_FILTER_LABEL</td>
+<td>Services with this label will be rescheduled after node scaling.<br><strong>Default:</strong> <code>com.df.reschedule=true&quot;</code></td>
+</tr>
+<tr>
+<td>MIN_SCALE_MANAGER_NODE_LABEL</td>
+<td>Service label for the minimum number of manager nodes.<br><strong>Default:</strong> <code>com.df.scaleManagerNodeMin</code></td>
+</tr>
+<tr>
+<td>MAX_SCALE_MANAGER_NODE_LABEL</td>
+<td>Service label for the maximum number of manager nodes.<br><strong>Default:</strong> <code>com.df.scaleManagerNodeMax</code></td>
+</tr>
+<tr>
+<td>SCALE_MANAGER_NODE_DOWN_BY_LABEL</td>
+<td>Service label for the number of manager nodes to scale down by.<br><strong>Default:</strong> <code>com.df.scaleManagerNodeDownBy</code></td>
+</tr>
+<tr>
+<td>SCALE_MANAGER_NODE_UP_BY_LABEL</td>
+<td>Service label for the number of manager nodes to scale up by.<br><strong>Default:</strong> <code>com.df.scaleManagerNodeUpBy</code></td>
+</tr>
+<tr>
+<td>MIN_SCALE_WORKER_NODE_LABEL</td>
+<td>Service label for the minimum number of worker nodes.<br><strong>Default:</strong> <code>com.df.scaleWorkerNodeMin</code></td>
+</tr>
+<tr>
+<td>MAX_SCALE_WORKER_NODE_LABEL</td>
+<td>Service label for the maximum number of worker nodes.<br><strong>Default:</strong> <code>com.df.scaleWorkerNodeMax</code></td>
+</tr>
+<tr>
+<td>SCALE_WORKER_NODE_DOWN_BY_LABEL</td>
+<td>Service label for the number of worker nodes to scale down by.<br><strong>Default:</strong> <code>com.df.scaleWorkerNodeDownBy</code></td>
+</tr>
+<tr>
+<td>SCALE_WORKER_NODE_UP_BY_LABEL</td>
+<td>Service label for the number of worker nodes to scale up by.<br><strong>Default:</strong> <code>com.df.scaleWorkerNodeUpBy</code></td>
+</tr>
+</tbody>
+</table>
                 
                   
                 
@@ -695,10 +758,9 @@
       
     </div>
     
-      <script src="../assets/javascripts/application-f3ab9e5ff8.js"></script>
+      <script src="../assets/javascripts/application-84693e5e49.js"></script>
       
-      
-      <script>app.initialize({url:{base:".."}})</script>
+      <script>app.initialize({version:"0.17.1",url:{base:".."}})</script>
       
     
     

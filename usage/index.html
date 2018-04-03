@@ -1,4 +1,7 @@
 
+
+
+
 <!DOCTYPE html>
 <html lang="en" class="no-js">
   <head>
@@ -12,9 +15,24 @@
         <meta name="author" content="Thomas Fan">
       
       
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      
         <link rel="shortcut icon" href="../assets/images/favicon.png">
       
-      <meta name="generator" content="mkdocs-0.16.3, mkdocs-material-1.10.3">
+      <meta name="generator" content="mkdocs-0.17.1, mkdocs-material-2.0.1">
     
     
       
@@ -25,29 +43,23 @@
       <script src="../assets/javascripts/modernizr-e826f8942a.js"></script>
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application-9011e2d3f8.css">
-      
-        <link rel="stylesheet" href="../assets/stylesheets/application-23f75ab9c7.palette.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application-462a8722ef.css">
       
     
     
       
-        
-        
-        
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
         <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
       
       <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     
     
+      <link rel="stylesheet" href="../stylesheets/custom.css">
+    
     
   </head>
   
-  
-  
-  
-    <body data-md-color-primary="blue" data-md-color-accent="light-blue">
+    <body>
   
     <svg class="md-svg">
       <defs>
@@ -67,7 +79,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a href=".." title="Docker Scaler" class="md-header-nav__button md-logo">
           
-            <i class="md-icon md-icon--home"></i>
+            <i class="md-icon">school</i>
           
         </a>
       </div>
@@ -86,8 +98,9 @@
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
         
-          <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
           
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
 <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="search"></label>
   <div class="md-search__inner">
@@ -98,8 +111,8 @@
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="result" data-md-lang-search="" data-md-lang-tokenizer="[\s\-]+">
-          <div class="md-search-result__meta" data-md-lang-result-none="No matching documents" data-md-lang-result-one="1 matching document" data-md-lang-result-other="# matching documents">
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
             Type to start searching
           </div>
           <ol class="md-search-result__list"></ol>
@@ -108,6 +121,7 @@
     </div>
   </div>
 </div>
+          
         
       </div>
       
@@ -119,7 +133,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -141,8 +155,6 @@
     
     <div class="md-container">
       
-      
-      
       <main class="md-main">
         <div class="md-main__inner md-grid" data-md-component="container">
           
@@ -152,11 +164,11 @@
                   <div class="md-sidebar__inner">
                     <nav class="md-nav md-nav--primary" data-md-level="0">
   <label class="md-nav__title md-nav__title--site" for="drawer">
-    <div class="md-nav__button md-logo">
+    <span class="md-nav__button md-logo">
       
-        <i class="md-icon md-icon--home"></i>
+        <i class="md-icon">school</i>
       
-    </div>
+    </span>
     Docker Scaler
   </label>
   
@@ -167,7 +179,7 @@
   
 
 
-  <a href="https://github.com/thomasjpfan/docker-scaler" title="Go to repository" class="md-source" data-md-source="github">
+  <a href="https://github.com/thomasjpfan/docker-scaler/" title="Go to repository" class="md-source" data-md-source="github">
     
       <div class="md-source__icon">
         <svg viewBox="0 0 24 24" width="24" height="24">
@@ -281,6 +293,26 @@
     Scaling Services
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-services-alertmanager-webhook" title="Scaling Services - Alertmanager Webhook" class="md-nav__link">
+    Scaling Services - Alertmanager Webhook
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-services-user-friendly-endpoint" title="Scaling Services - User Friendly Endpoint" class="md-nav__link">
+    Scaling Services - User Friendly Endpoint
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -301,6 +333,26 @@
   <a href="#scaling-nodes" title="Scaling Nodes" class="md-nav__link">
     Scaling Nodes
   </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-nodes-alertmanager-webhook" title="Scaling Nodes - AlertManager Webhook" class="md-nav__link">
+    Scaling Nodes - AlertManager Webhook
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-nodes-user-friendly-endpoint" title="Scaling Nodes - User Friendly Endpoint" class="md-nav__link">
+    Scaling Nodes - User Friendly Endpoint
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -330,46 +382,22 @@
       
 
 
-  <li class="md-nav__item md-nav__item--nested">
-    
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
-    
-    <label class="md-nav__link" for="nav-5">
-      About
-    </label>
-    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
-      <label class="md-nav__title" for="nav-5">
-        About
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
   <li class="md-nav__item">
     <a href="../feedback-and-contribution/" title="Feedback and Contribution" class="md-nav__link">
       Feedback and Contribution
     </a>
   </li>
 
-        
-          
-          
-          
+    
+      
+      
+      
 
 
   <li class="md-nav__item">
     <a href="../license/" title="License" class="md-nav__link">
       License
     </a>
-  </li>
-
-        
-      </ul>
-    </nav>
   </li>
 
     
@@ -398,6 +426,26 @@
     Scaling Services
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-services-alertmanager-webhook" title="Scaling Services - Alertmanager Webhook" class="md-nav__link">
+    Scaling Services - Alertmanager Webhook
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-services-user-friendly-endpoint" title="Scaling Services - User Friendly Endpoint" class="md-nav__link">
+    Scaling Services - User Friendly Endpoint
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -418,6 +466,26 @@
   <a href="#scaling-nodes" title="Scaling Nodes" class="md-nav__link">
     Scaling Nodes
   </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-nodes-alertmanager-webhook" title="Scaling Nodes - AlertManager Webhook" class="md-nav__link">
+    Scaling Nodes - AlertManager Webhook
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-nodes-user-friendly-endpoint" title="Scaling Nodes - User Friendly Endpoint" class="md-nav__link">
+    Scaling Nodes - User Friendly Endpoint
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -441,7 +509,8 @@
                 <h1 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h1>
 <p><em>Docker Scaler</em> is controlled by sending HTTP requests to <strong>[SCALER_IP]:[SCALER_PORT]</strong></p>
 <h2 id="scaling-services">Scaling Services<a class="headerlink" href="#scaling-services" title="Permanent link">&para;</a></h2>
-<p>This request queries docker service labels: <code>com.df.scaleMin</code>, <code>com.df.scaleMax</code>, <code>com.df.scaleDownBy</code>, <code>com.df.scaleUpBy</code> to determine how much to scale the service. Please see <a href="../configuration/">configuration</a> for details.</p>
+<h3 id="scaling-services-alertmanager-webhook">Scaling Services - Alertmanager Webhook<a class="headerlink" href="#scaling-services-alertmanager-webhook" title="Permanent link">&para;</a></h3>
+<p>This request queries docker service labels: <code>com.df.scaleMin</code>, <code>com.df.scaleMax</code>, <code>com.df.scaleDownBy</code>, <code>com.df.scaleUpBy</code> to determine how much to scale the service by. The request body conforms to the alertmanager notifications so that <em>Docker Scaler</em> can be used as a webhook.</p>
 <ul>
 <li>
 <p><strong>URL:</strong>
@@ -464,6 +533,74 @@
 </pre></div>
 
 <p>The <code>service</code> value is the name of the service to scale. The <code>scale</code> value accepts <code>up</code> for scaling up and <code>down</code> for scaling down.</p>
+<table>
+<thead>
+<tr>
+<th>Service Label</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>com.df.scaleMin</code></td>
+<td>Minimum number of replicas</td>
+</tr>
+<tr>
+<td><code>com.df.scaleMax</code></td>
+<td>Maximum number of replicas</td>
+</tr>
+<tr>
+<td><code>com.df.scaleDownBy</code></td>
+<td>Number of replicas to scale down by</td>
+</tr>
+<tr>
+<td><code>com.df.scaleUpBy</code></td>
+<td>Number of replicas to scale up by</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaling-services-user-friendly-endpoint">Scaling Services - User Friendly Endpoint<a class="headerlink" href="#scaling-services-user-friendly-endpoint" title="Permanent link">&para;</a></h3>
+<p>The whole scaling event can be place in the url:</p>
+<ul>
+<li>
+<p><strong>URL:</strong>
+    <code>/v1/scale-service</code></p>
+</li>
+<li>
+<p><strong>Method:</strong>
+    <code>POST</code></p>
+</li>
+<li>
+<p><strong>Query Parameters:</strong></p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>service</td>
+<td>Name of service to reschedule</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>scale</td>
+<td>Direction to scale (<code>up</code> or <code>down</code>)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>by</td>
+<td>Number of replicas to scale by</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>com.df.scaleMax</code> and <code>com.df.scaleMin</code> will still be used to bound the number of replicas for the service.</p>
 <h2 id="rescheduling-all-services">Rescheduling All Services<a class="headerlink" href="#rescheduling-all-services" title="Permanent link">&para;</a></h2>
 <p>This request only reschedule services with label: <code>com.df.reschedule=true</code>. See <a href="../configuration/">Configuration</a> to change this default.</p>
 <ul>
@@ -508,6 +645,75 @@
 </tbody>
 </table>
 <h2 id="scaling-nodes">Scaling Nodes<a class="headerlink" href="#scaling-nodes" title="Permanent link">&para;</a></h2>
+<p>The node scaling feature is activated by setting <code>NODE_SCALER_BACKEND</code> to a backend.</p>
+<h3 id="scaling-nodes-alertmanager-webhook">Scaling Nodes - AlertManager Webhook<a class="headerlink" href="#scaling-nodes-alertmanager-webhook" title="Permanent link">&para;</a></h3>
+<p>The request body conforms to the alertmanager notifications so that <em>Docker Scaler</em> can be used as a webhook.</p>
+<ul>
+<li>
+<p><strong>URL:</strong>
+    <code>/v1/scale-nodes</code></p>
+</li>
+<li>
+<p><strong>Method:</strong>
+    <code>POST</code></p>
+</li>
+<li>
+<p><strong>Request Body:</strong></p>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;groupLabels&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;service&quot;</span><span class="p">:</span> <span class="s2">&quot;node_exporter&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>The <code>scale</code> value accepts <code>up</code> for scaling up and <code>down</code> for scaling down. When <em>Docker Scaler</em> it setup to send the service name that trigger the alert, the <code>service</code> parameter can be passed on to <em>Docker Scaler</em> as a group label. <em>Docker Scaler</em> will use the following labels on the <code>service</code> to configure how to scale nodes:</p>
+<table>
+<thead>
+<tr>
+<th>Service Label</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>com.df.scaleManagerNodeMin</code></td>
+<td>Minimum number of managers</td>
+</tr>
+<tr>
+<td><code>com.df.scaleManagerNodeMax</code></td>
+<td>Maximum number of managers</td>
+</tr>
+<tr>
+<td><code>com.df.scaleManagerNodeDownBy</code></td>
+<td>Number of nodes to scale managers down by</td>
+</tr>
+<tr>
+<td><code>com.df.scaleManagerNodeUpBy</code></td>
+<td>Number of nodes to scale managers up by</td>
+</tr>
+<tr>
+<td><code>com.df.scaleWorkerNodeMin</code></td>
+<td>Minimum number of workers</td>
+</tr>
+<tr>
+<td><code>com.df.scaleWorkerNodeMax</code></td>
+<td>Maximum number of workers</td>
+</tr>
+<tr>
+<td><code>com.df.scaleWorkerNodeDownBy</code></td>
+<td>Number of nodes to scale workers down by</td>
+</tr>
+<tr>
+<td><code>com.df.scaleWorkerNodeUpBy</code></td>
+<td>Number of nodes to scale workers up by</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaling-nodes-user-friendly-endpoint">Scaling Nodes - User Friendly Endpoint<a class="headerlink" href="#scaling-nodes-user-friendly-endpoint" title="Permanent link">&para;</a></h3>
+<p>The whole node scaling event can be place in the url:</p>
 <ul>
 <li>
 <p><strong>URL:</strong>
@@ -535,19 +741,18 @@
 <td>The number of nodes to scale up or down by</td>
 <td>yes</td>
 </tr>
+<tr>
+<td>scale</td>
+<td>Direction to scale (<code>up</code> or <code>down</code>)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>type</td>
+<td>Type of node to scale (<code>manager</code> or <code>worker</code>)</td>
+<td>yes</td>
+</tr>
 </tbody>
 </table>
-<ul>
-<li><strong>Request Body:</strong></li>
-</ul>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;groupLabels&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;down&quot;</span><span class="p">,</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
-<p>The <code>scale</code> value accepts <code>up</code> for scaling up and <code>down</code> for scaling down.</p>
                 
                   
                 
@@ -621,10 +826,9 @@
       
     </div>
     
-      <script src="../assets/javascripts/application-f3ab9e5ff8.js"></script>
+      <script src="../assets/javascripts/application-84693e5e49.js"></script>
       
-      
-      <script>app.initialize({url:{base:".."}})</script>
+      <script>app.initialize({version:"0.17.1",url:{base:".."}})</script>
       
     
     
