@@ -411,6 +411,13 @@ func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
 
 }
 
+func (s *IntegrationTestSuite) Test_ScaleNode_Returns() {
+	url := fmt.Sprintf("%s/scale-nodes", s.scaleURL)
+	req, _ := http.NewRequest("POST", url, nil)
+
+	s.responseForRequest(req, http.StatusNotFound)
+}
+
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
 	require := s.Require()
 

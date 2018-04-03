@@ -35,7 +35,25 @@ type specification struct {
 	AlertNodeMin              bool   `envconfig:"ALERT_NODE_MIN"`
 	AlertNodeMax              bool   `envconfig:"ALERT_NODE_MAX"`
 
-	AwsEnvFile string `envconfig:"AWS_ENV_FILE"`
+	AwsEnvFile                  string `envconfig:"AWS_ENV_FILE"`
+	MinScaleManagerNodeLabel    string `envconfig:"MIN_SCALE_MANAGER_NODE_LABEL"`
+	MaxScaleManagerNodeLabel    string `envconfig:"MAX_SCALE_MANAGER_NODE_LABEL"`
+	ScaleManagerNodeDownByLabel string `envconfig:"SCALE_MANAGER_NODE_DOWN_BY_LABEL"`
+	ScaleManagerNodeUpByLabel   string `envconfig:"SCALE_MANAGER_NODE_UP_BY_LABEL"`
+	MinScaleWorkerNodeLabel     string `envconfig:"MIN_SCALE_WORKER_NODE_LABEL"`
+	MaxScaleWorkerNodeLabel     string `envconfig:"MAX_SCALE_WORKER_NODE_LABEL"`
+	ScaleWorkerNodeDownByLabel  string `envconfig:"SCALE_WORKER_NODE_DOWN_BY_LABEL"`
+	ScaleWorkerNodeUpByLabel    string `envconfig:"SCALE_WORKER_NODE_UP_BY_LABEL"`
+
+	DefaultMinManagerNodes uint64 `envconfig:"DEFAULT_MIN_MANAGER_NODES"`
+	DefaultMaxManagerNodes uint64 `envconfig:"DEFAULT_MAX_MANAGER_NODES"`
+	DefaultMinWorkerNodes  uint64 `envconfig:"DEFAULT_MIN_WORKER_NODES"`
+	DefaultMaxWorkerNodes  uint64 `envconfig:"DEFAULT_MAX_WORKER_NODES"`
+
+	DefaultScaleManagerNodeDownBy uint64 `envconfig:"DEFAULT_SCALE_MANAGER_NODE_DOWN_BY"`
+	DefaultScaleManagerNodeUpBy   uint64 `envconfig:"DEFAULT_SCALE_MANAGER_NODE_UP_BY"`
+	DefaultScaleWorkerNodeDownBy  uint64 `envconfig:"DEFAULT_SCALE_WORKER_NODE_DOWN_BY"`
+	DefaultScaleWorkerNodeUpBy    uint64 `envconfig:"DEFAULT_SCALE_WORKER_NODE_UP_BY"`
 }
 
 // Run starts docker-scaler service
@@ -77,11 +95,30 @@ func Run() {
 	cloud, err := cloud.NewCloud(spec.NodeScalerBackend, cloudOptions)
 	if err != nil {
 		logger.Printf("No cloud provider for node scaling configured")
+	} else {
+		logger.Printf("Using node-scaling backend: %s", spec.NodeScalerBackend)
 	}
-	logger.Printf("Using node-scaling backend: %s", spec.NodeScalerBackend)
 
-	managerResolveOpts := service.ResolveDeltaOptions{}
-	workerResolveOpts := service.ResolveDeltaOptions{}
+	managerResolveOpts := service.ResolveDeltaOptions{
+		MinLabel:           spec.MinScaleManagerNodeLabel,
+		MaxLabel:           spec.MaxScaleManagerNodeLabel,
+		ScaleDownByLabel:   spec.ScaleManagerNodeDownByLabel,
+		ScaleUpByLabel:     spec.ScaleManagerNodeUpByLabel,
+		DefaultMin:         spec.DefaultMinManagerNodes,
+		DefaultMax:         spec.DefaultMaxManagerNodes,
+		DefaultScaleDownBy: spec.DefaultScaleManagerNodeDownBy,
+		DefaultScaleUpBy:   spec.DefaultScaleManagerNodeUpBy,
+	}
+	workerResolveOpts := service.ResolveDeltaOptions{
+		MinLabel:           spec.MinScaleWorkerNodeLabel,
+		MaxLabel:           spec.MaxScaleWorkerNodeLabel,
+		ScaleDownByLabel:   spec.ScaleWorkerNodeDownByLabel,
+		ScaleUpByLabel:     spec.ScaleWorkerNodeUpByLabel,
+		DefaultMin:         spec.DefaultMinWorkerNodes,
+		DefaultMax:         spec.DefaultMaxWorkerNodes,
+		DefaultScaleDownBy: spec.DefaultScaleWorkerNodeDownBy,
+		DefaultScaleUpBy:   spec.DefaultScaleWorkerNodeUpBy,
+	}
 
 	nodeScaler := service.NewNodeScaler(
 		cloud, client, managerResolveOpts, workerResolveOpts)

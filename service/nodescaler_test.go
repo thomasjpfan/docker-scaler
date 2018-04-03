@@ -117,6 +117,11 @@ func (s *NodeScalerTestSuite) getNodeService() swarm.Service {
 	}
 }
 
+func (s *NodeScalerTestSuite) Test_NewNodeScaler_NilCloudProvider() {
+	nodeScaler := NewNodeScaler(nil, s.inspectorMock, s.managerOpts, s.workerOpts)
+	s.Nil(nodeScaler)
+}
+
 func (s *NodeScalerTestSuite) Test_Scale_InspectError() {
 	expErr := errors.New("docker inspect error")
 	s.inspectorMock.On("ServiceInspect", s.ctx, "node_monitor").

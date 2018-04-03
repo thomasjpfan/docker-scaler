@@ -410,6 +410,18 @@ func (s *ServerTestSuite) Test_ScaleService_ScaleDown_Error() {
 	s.m.AssertExpectations(s.T())
 }
 
+func (s *ServerTestSuite) Test_ScaleNode_Nil_NodeScaler() {
+	server := NewServer(s.m, s.am,
+		nil, s.rsm, s.l, false, true, false, true)
+	router := server.MakeRouter("/")
+
+	url := "/v1/scale-nodes"
+	req, _ := http.NewRequest("POST", url, nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	s.Require().Equal(http.StatusNotFound, rec.Code)
+}
+
 func (s *ServerTestSuite) Test_ScaleNode_NoScaleDirectionInBody() {
 	errorMessage := "No scale direction"
 	url := "/v1/scale-nodes?by=1&type=worker"

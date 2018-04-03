@@ -29,6 +29,9 @@ type NodeScaler struct {
 // NewNodeScaler returns new node scaler
 func NewNodeScaler(cloudProvider cloud.Cloud,
 	inspector Inspector, managerOpts, workerOpts ResolveDeltaOptions) NodeScaling {
+	if cloudProvider == nil {
+		return nil
+	}
 	return &NodeScaler{
 		cloudProvider: cloudProvider,
 		inspector:     inspector,

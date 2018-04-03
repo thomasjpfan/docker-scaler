@@ -69,14 +69,18 @@ func (s *Server) MakeRouter(prefix string) *mux.Router {
 }
 
 func (s *Server) addRoutes(router *mux.Router) {
+
+	if s.nodeScaler != nil {
+		router.Path("/scale-nodes").
+			Methods("POST").
+			HandlerFunc(s.ScaleNodes).
+			Name("ScaleNode")
+	}
+
 	router.Path("/scale-service").
 		Methods("POST").
 		HandlerFunc(s.ScaleService).
 		Name("ScaleService")
-	router.Path("/scale-nodes").
-		Methods("POST").
-		HandlerFunc(s.ScaleNodes).
-		Name("ScaleNode")
 	router.Path("/reschedule-services").
 		Methods("POST").
 		HandlerFunc(s.RescheduleAllServices).
