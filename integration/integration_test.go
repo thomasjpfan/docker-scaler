@@ -411,11 +411,14 @@ func (s *IntegrationTestSuite) Test_RescheduleOneFalseOne() {
 
 }
 
-func (s *IntegrationTestSuite) Test_ScaleNode_Returns() {
+func (s *IntegrationTestSuite) Test_ScaleNode_ReturnsStatusNotFound() {
 	url := fmt.Sprintf("%s/scale-nodes", s.scaleURL)
 	req, _ := http.NewRequest("POST", url, nil)
 
-	s.responseForRequest(req, http.StatusNotFound)
+	resp, err := http.DefaultClient.Do(req)
+	s.Require().NoError(err)
+
+	s.Equal(http.StatusNotFound, resp.StatusCode)
 }
 
 func (s *IntegrationTestSuite) scaleService(serviceName string, count uint64) {
