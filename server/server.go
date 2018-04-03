@@ -391,7 +391,7 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousN
 	for {
 		select {
 		case t := <-tickerC:
-			msg := fmt.Sprintf("Waited %d seconds for %d a total of %s nodes to come online", int(t.Sub(timeStart).Seconds()), targetNodeCnt, typeStr)
+			msg := fmt.Sprintf("Waited %d seconds for a total of %d %s nodes to come online", int(t.Sub(timeStart).Seconds()), targetNodeCnt, typeStr)
 			s.logger.Printf("scale-nodes-reschedule: %s", msg)
 			s.sendAlert("reschedule_service", "reschedule", requestMsg, "pending", msg)
 		case err := <-errC:
@@ -400,9 +400,8 @@ func (s *Server) rescheduleServiceWait(isManager bool, typeStr string, previousN
 				s.sendAlert("reschedule_service", "reschedule", requestMsg, "error", err.Error())
 			}
 		case status := <-statusC:
-			msg := fmt.Sprintf("%d %s nodes are online, status: %s", targetNodeCnt, typeStr, status)
-			s.logger.Printf("scale-nodes-reschedule: %s", msg)
-			s.sendAlert("reschedule_service", "reschedule", msg, "success", msg)
+			s.logger.Printf("scale-nodes-reschedule: %s", status)
+			s.sendAlert("reschedule_service", "reschedule", status, "success", status)
 			return
 		}
 	}

@@ -358,7 +358,7 @@ L:
 			break L
 		}
 	}
-	s.Equal("web_test rescheduled", status)
+	s.Equal("4 manager nodes are up, web_test rescheduled", status)
 	s.clientMock.AssertExpectations(s.T())
 }
 
@@ -401,7 +401,7 @@ L:
 			break L
 		}
 	}
-	s.Equal("web_test rescheduled", status)
+	s.Equal("4 worker nodes are up, web_test rescheduled", status)
 	s.clientMock.AssertExpectations(s.T())
 	waiting := s.reschedulerService.IsWaitingToReschedule()
 	s.False(waiting)

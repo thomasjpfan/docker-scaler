@@ -131,6 +131,11 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cHolder.CallAndSet(value, cancel)
 
+	typeStr := "worker"
+	if manager {
+		typeStr = "manager"
+	}
+
 	go func() {
 		defer r.cHolder.CallAndDelete(value)
 		tickerChan := time.NewTicker(r.tickerInterval).C
@@ -154,10 +159,10 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 					errorC <- err
 					return
 				}
-				statusC <- status
+				statusC <- fmt.Sprintf("%d %s nodes are up, %s", targetNodeCnt, typeStr, status)
 				return
 			case <-timerChan:
-				errorC <- fmt.Errorf("Waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
+				errorC <- fmt.Errorf("Timeout, waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
 				return
 			case <-ctx.Done():
 				statusC <- "Rescheduling is canceled by another rescheduler"

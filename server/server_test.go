@@ -559,7 +559,7 @@ H:
 	go func() {
 		tickerC <- time.Now()
 		errC <- errors.New("Here is an error")
-		statusC <- "web_test rescheduled"
+		statusC <- "4 worker nodes are online, status: web_test rescheduled"
 	}()
 
 L:
@@ -807,7 +807,7 @@ func (s *ServerTestSuite) Test_ScaleNode_ScaleWorkerDown_IsWaitingToReschedule()
 
 	s.am.
 		On("Send", "scale_nodes", "mock", requestMessage, "success", message).Return(nil).
-		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "success", rescheduleMsg).Return(nil)
+		On("Send", "scale_nodes", "reschedule", "Wait to reschedule", "pending", rescheduleMsg).Return(nil)
 
 	s.nsm.On("Scale", mock.AnythingOfType("*context.valueCtx"), uint64(1), service.ScaleDownDirection, cloud.NodeWorkerType, "").Return(uint64(3), uint64(2), nil)
 
