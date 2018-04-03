@@ -74,12 +74,12 @@ func (s *NodeScalerTestSuite) SetupTest() {
 		DefaultScaleUpBy:   1,
 	}
 
-	s.nodeScaler = &NodeScaler{
-		cloudProvider: s.cloudProviderMock,
-		inspector:     s.inspectorMock,
-		managerOpts:   s.managerOpts,
-		workerOpts:    s.workerOpts,
-	}
+	s.nodeScaler = NewNodeScaler(
+		s.cloudProviderMock,
+		s.inspectorMock,
+		s.managerOpts,
+		s.workerOpts,
+	).(*NodeScaler)
 	s.ctx = context.Background()
 }
 

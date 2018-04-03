@@ -107,3 +107,9 @@ func (s *AlertTestSuite) Test_generateAlert() {
 	s.Equal(endsAt, alert.EndsAt)
 	s.Equal("", alert.GeneratorURL)
 }
+
+func (s *AlertTestSuite) Test_SilentAlert() {
+	sa := NewSilentAlertService()
+	err := sa.Send("", "", "", "", "")
+	s.NoError(err)
+}
