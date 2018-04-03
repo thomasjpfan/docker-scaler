@@ -282,7 +282,7 @@ L:
 		}
 	}
 
-	s.Equal("Unable to get docker info for node count: Node list error", err.Error())
+	s.Equal("Unable to get docker node count: Node list error", err.Error())
 	s.clientMock.AssertExpectations(s.T())
 }
 
@@ -423,7 +423,8 @@ L:
 			return
 		}
 	}
-	s.Contains(err.Error(), "Waited")
+	s.Contains(err.Error(), "Timeout: waited")
+	s.Contains(err.Error(), "4 manager nodes to activate")
 	s.clientMock.AssertExpectations(s.T())
 }
 

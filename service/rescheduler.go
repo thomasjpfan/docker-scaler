@@ -164,7 +164,7 @@ func (r *reschedulerService) RescheduleServicesWaitForNodes(manager bool, target
 				statusC <- fmt.Sprintf("%d %s nodes are up, %s", targetNodeCnt, typeStr, status)
 				return
 			case <-timerChan:
-				errorC <- fmt.Errorf("Timeout, waited %f seconds for %d nodes to activate", r.timeOut.Seconds(), targetNodeCnt)
+				errorC <- fmt.Errorf("Timeout: waited %f seconds for %d %s nodes to activate", r.timeOut.Seconds(), targetNodeCnt, typeStr)
 				return
 			case <-ctx.Done():
 				statusC <- "Rescheduling is canceled by another rescheduler"
