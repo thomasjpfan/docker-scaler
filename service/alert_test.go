@@ -29,7 +29,7 @@ func (s *AlertTestSuite) SetupSuite() {
 		s.T().Skipf("Unable to connect to Docker Client")
 	}
 	s.url = "http://localhost:9093"
-	s.alertService = NewAlertService(s.url)
+	s.alertService = NewAlertService(s.url, time.Second*15)
 	s.client = client.dc
 }
 
@@ -93,8 +93,10 @@ func (s *AlertTestSuite) Test_generateAlert() {
 	summary := "Scaled web from 3 to 4 replicas"
 	request := "Scale web with delta=1"
 	startsAt := time.Now().UTC()
+	timeout := time.Second
+	endsAt := startsAt.Add(timeout)
 
-	alert := generateAlert(alertname, serviceName, request, status, summary, startsAt)
+	alert := generateAlert(alertname, serviceName, request, status, summary, startsAt, timeout)
 	s.Require().NotNil(alert)
 	s.Equal(alertname, string(alert.Labels["alertname"]))
 	s.Equal(serviceName, string(alert.Labels["service"]))
@@ -102,5 +104,6 @@ func (s *AlertTestSuite) Test_generateAlert() {
 	s.Equal(summary, string(alert.Annotations["summary"]))
 	s.Equal(request, string(alert.Annotations["request"]))
 	s.Equal(startsAt, alert.StartsAt)
+	s.Equal(endsAt, alert.EndsAt)
 	s.Equal("", alert.GeneratorURL)
 }
