@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 )
@@ -42,9 +43,29 @@ func (c DockerClient) ServiceUpdate(ctx context.Context, serviceID string, versi
 	return err
 }
 
-// Info wraps `dc.Info`
-func (c DockerClient) Info(ctx context.Context) (types.Info, error) {
-	return c.dc.Info(ctx)
+// NodeReadyCnt wraps `dc.NodeList`
+func (c DockerClient) NodeReadyCnt(ctx context.Context, manager bool) (int, error) {
+	var typeStr string
+	if manager {
+		typeStr = "manager"
+	} else {
+		typeStr = "worker"
+	}
+	f := filters.NewArgs()
+	f.Add("role", typeStr)
+	nodes, err := c.dc.NodeList(ctx, types.NodeListOptions{Filters: f})
+	if err != nil {
+		return 0, err
+	}
+
+	cnt := 0
+	for _, n := range nodes {
+		if n.Status.State == swarm.NodeStateReady {
+			cnt++
+		}
+	}
+
+	return cnt, nil
 }
 
 // ServiceList wraps `dc.ServiceList`

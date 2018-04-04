@@ -122,6 +122,10 @@ func (s *NodeScalerTestSuite) Test_NewNodeScaler_NilCloudProvider() {
 	s.Nil(nodeScaler)
 }
 
+func (s *NodeScalerTestSuite) Test_Stringer() {
+	s.Equal("cloudmock", s.nodeScaler.String())
+}
+
 func (s *NodeScalerTestSuite) Test_Scale_InspectError() {
 	expErr := errors.New("docker inspect error")
 	s.inspectorMock.On("ServiceInspect", s.ctx, "node_monitor").

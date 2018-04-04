@@ -11,6 +11,7 @@ import (
 // NodeScaling is an interface for node scaling
 type NodeScaling interface {
 	Scale(ctx context.Context, by uint64, direction ScaleDirection, nodeType cloud.NodeType, serviceName string) (uint64, uint64, error)
+	String() string
 }
 
 // Inspector is an interface for inspecting services
@@ -73,4 +74,9 @@ func (s *NodeScaler) Scale(ctx context.Context, by uint64, direction ScaleDirect
 	}
 
 	return currentNodes, newNodes, nil
+}
+
+// String adapts to the String interface
+func (s NodeScaler) String() string {
+	return s.cloudProvider.String()
 }

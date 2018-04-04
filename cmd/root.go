@@ -3,7 +3,6 @@ package cmd
 // Reads configuration from environment to create and run scaling service
 
 import (
-	"context"
 	"log"
 	"os"
 	"time"
@@ -72,11 +71,6 @@ func Run() {
 		logger.Panic(err)
 	}
 	defer client.Close()
-
-	_, err = client.Info(context.Background())
-	if err != nil {
-		logger.Panic(err)
-	}
 
 	var alerter service.AlertServicer
 	if len(spec.AlertmanagerAddress) != 0 {

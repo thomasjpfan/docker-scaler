@@ -326,7 +326,7 @@ func (s *IntegrationTestSuite) Test_RescheduleAll() {
 	s.Equal("OK", resp.Status)
 	s.Equal("test_web1 rescheduled", resp.Message)
 
-	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_services", "success", "reschedule")
+	alerts, err := service.FetchAlerts(s.alertURL, "reschedule_service", "success", "reschedule")
 	s.Require().NoError(err)
 	s.Require().Len(alerts, 1)
 

@@ -110,7 +110,7 @@ route:
     receiver: 'scale'
   - match:
       alertname: scale_service
-    group_by: [alertname, service]
+    group_by: [alertname, service, status]
     repeat_interval: 10s
     group_interval: 1s
     group_wait: 0s
@@ -126,7 +126,7 @@ receivers:
   - name: 'slack-scaler'
     slack_configs:
       - title: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.request }}'
-        color: '{{ if eq .CommonLabels.status \"error\" }}danger{{ else }}good{{ end }}'
+        color: '{{ if eq .GroupLabels.status \"error\" }}danger{{ else }}good{{ end }}'
         title_link: 'http://$(docker-machine ip swarm-1)/monitor/alerts'
         text: '{{ .CommonAnnotations.summary }}'
   - name: 'scale'
