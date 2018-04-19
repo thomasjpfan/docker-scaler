@@ -2,10 +2,15 @@ sudo: required
 
 language: go
 go:
-  - 1.9
+  - 1.10
 
 services:
   - docker
+
+env:
+  global:
+    - TAG=$TRAVIS_COMMIT
+    - DOCKER_REPO=thomasjpfan/docker-scaler
 
 before_install:
   - sudo apt-get update
@@ -13,31 +18,30 @@ before_install:
   - go env && pwd
 
 install:
-  - go get github.com/mattn/goveralls
-  - go get golang.org/x/tools/cmd/cover
+  - make dep
   - docker swarm init
 
 script:
   - >
     ./scripts/coverage.sh &&
-    docker image build -t thomasjpfan/docker-scaler:$TRAVIS_COMMIT . &&
-    docker stack deploy -c stacks/docker-scaler-test.yml test &&
-    ./scripts/integration_test.sh
+    make build_image &&
+    make deploy_test &&
+    make integration_test
 
 after_script:
-  - docker stack rm test
+  - make undeploy_test
 
 after_success:
   - ./scripts/coverage.sh coveralls
   - >
     if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       if [ "$TRAVIS_BRANCH" == "master" ]; then
-        docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-        docker tag thomasjpfan/docker-scaler:$TRAVIS_COMMIT thomasjpfan/docker-scaler:latest
-        docker push thomasjpfan/docker-scaler:latest
+        echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin
+        docker tag DOCKER_REPO:$TAG DOCKER_REPO:latest
+        docker push DOCKER_REPO:latest
       elif [ "$TRAVIS_BRANCH" == "$TRAVIS_TAG" ]; then
-        docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-        docker tag thomasjpfan/docker-scaler:$TRAVIS_COMMIT thomasjpfan/docker-scaler:$TRAVIS_TAG
-        docker push thomasjpfan/docker-scaler:$TRAVIS_TAG
+        echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin
+        docker tag DOCKER_REPO:$TAG DOCKER_REPO:$TRAVIS_TAG
+        docker push DOCKER_REPO:$TRAVIS_TAG
       fi
     fi

@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
   scaler:
-    image: thomasjpfan/docker-scaler:${TRAVIS_COMMIT:-master}
+    image: thomasjpfan/docker-scaler:${TAG:-master}
     environment:
       - ALERTMANAGER_ADDRESS=http://alertmanager:9093
     volumes:
