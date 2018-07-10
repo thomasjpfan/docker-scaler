@@ -9,7 +9,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-var dockerAPIVersion = "v1.25"
+var dockerAPIVersion = "v1.37"
 
 // DockerClient wraps `*client.Client` in docker
 type DockerClient struct {
@@ -24,6 +24,7 @@ func NewDockerClientFromEnv() (DockerClient, error) {
 	if err != nil {
 		return DockerClient{}, err
 	}
+	c.NegotiateAPIVersion(context.Background())
 	return DockerClient{c}, nil
 }
 
