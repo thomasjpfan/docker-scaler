@@ -15,11 +15,11 @@ required = ["github.com/docker/distribution"]
 
 [[constraint]]
   name = "github.com/docker/docker"
-  revision = "e3831a62a3052472d7252049bc59835d5d7dc8bd"
+  revision = "56b14b8c259640e570becfaffa7aeb3209239991"
 
 [[constraint]]
   name = "github.com/docker/distribution"
-  revision = "6664ec703991875e14419ff4960921cce7678bab"
+  revision = "749f6afb4572201e3c37325d0ffedb6f32be8950"
 
 [[constraint]]
   name = "github.com/pkg/errors"
