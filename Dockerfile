@@ -1,4 +1,4 @@
-FROM golang:1.10.0-alpine3.7 as build
+FROM golang:1.10.3-alpine3.7 as build
 WORKDIR /go/src/github.com/thomasjpfan/docker-scaler
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' main.go

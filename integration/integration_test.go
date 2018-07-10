@@ -36,6 +36,7 @@ func TestIntegrationTestSuite(t *testing.T) {
 
 func (s *IntegrationTestSuite) SetupSuite() {
 	dc, err := client.NewEnvClient()
+	dc.NegotiateAPIVersion(context.Background())
 	s.Require().NoError(err)
 	s.dc = dc
 
