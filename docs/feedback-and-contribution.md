@@ -24,31 +24,26 @@ This project is developed using **Test Driven Development**. When a new feature 
 git clone https://github.com/thomasjpfan/docker-scaler
 ```
 
-2. Install [dep](https://github.com/golang/dep).
-
-!!! tip
-    When adding a feature that uses a vendored dependency, you may need to run `dep ensure` to pull in those files. The `Gopkg.toml` file sets `unused-packages = true` which prunes out files from directories that do not appear in the package import graph
-
-3. Unit Testing
+2. Unit Testing
 
 ```bash
 make unit_test
 ```
 
-4. Build
+3. Build
 
 ```bash
 make build
 ```
 
-5. Test
+4. Test
 
 ```bash
 make deploy_test
 make integration_test
 ```
 
-6. Cleanup
+5. Cleanup
 
 ```bash
 make undeploy_test
