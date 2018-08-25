@@ -1,3 +1,4 @@
 site
 .cover
 bin
+docker-scaler

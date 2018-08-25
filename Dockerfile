@@ -1,15 +1,15 @@
-FROM golang:1.10.3-alpine3.7 as build
-WORKDIR /go/src/github.com/thomasjpfan/docker-scaler
+FROM golang:1.11rc2-alpine3.8 as build
+WORKDIR /develop
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' -mod vendor main.go
 
-FROM alpine:3.7
+FROM alpine:3.8
 RUN apk add --no-cache tini ca-certificates
 
 HEALTHCHECK --interval=5s CMD \
     wget --quiet --tries=1 --spider http://localhost:8080/v1/ping || exit 1
 
-COPY --from=build /go/src/github.com/thomasjpfan/docker-scaler/docker-scaler /usr/local/bin/docker-scaler
+COPY --from=build /develop/docker-scaler /usr/local/bin/docker-scaler
 RUN chmod +x /usr/local/bin/docker-scaler
 
 ENV SERVER_PREFIX="/" \
