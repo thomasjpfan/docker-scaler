@@ -10,7 +10,6 @@ DOCKER_REPO ?= thomasjpfan/docker-scaler
 .PHONY: all
 
 dep:
-	go get -v -u github.com/golang/dep/cmd/dep && \
 	go get github.com/mattn/goveralls
 
 build_image:
