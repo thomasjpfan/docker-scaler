@@ -14,7 +14,7 @@ services:
       placement:
         constraints: [node.role == manager]
   web1:
-    image: alpine:3.6
+    image: alpine:3.8
     deploy:
       replicas: 3
       labels:
@@ -27,7 +27,7 @@ services:
     networks:
       - scaling
   web2:
-    image: alpine:3.6
+    image: alpine:3.8
     deploy:
       replicas: 1
       labels:
@@ -36,7 +36,7 @@ services:
     networks:
       - scaling
   alertmanager:
-    image: prom/alertmanager:v0.14.0
+    image: prom/alertmanager:v0.15.2
     ports:
       - 9093:9093
     networks:
