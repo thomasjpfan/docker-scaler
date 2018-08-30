@@ -1,4 +1,4 @@
-FROM golang:1.11rc2-alpine3.8 as build
+FROM golang:1.11.0-alpine3.8 as build
 WORKDIR /develop
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o docker-scaler -ldflags '-w' -mod vendor main.go
